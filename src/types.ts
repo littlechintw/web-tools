@@ -7,6 +7,7 @@ export type CategoryId =
   | 'convert'
   | 'generate'
   | 'media'
+  | 'pdf'
   | 'datetime'
   | 'dev'
   | 'data'

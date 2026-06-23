@@ -12,6 +12,7 @@
     "typecheck": "vue-tsc -b --noEmit"
   },
   "dependencies": {
+    "@cantoo/pdf-lib": "^2.7.1",
     "@mdi/font": "^7.4.47",
     "@zxing/browser": "^0.2.0",
     "@zxing/library": "^0.23.0",
@@ -20,10 +21,12 @@
     "cronstrue": "^3.21.0",
     "diff": "^9.0.0",
     "dompurify": "^3.4.11",
+    "fabric": "^7.4.0",
     "js-yaml": "^5.1.0",
     "jsbarcode": "^3.12.3",
     "marked": "^18.0.5",
     "papaparse": "^5.5.4",
+    "pdfjs-dist": "^6.0.227",
     "pinia": "^3.0.4",
     "qrcode": "^1.5.4",
     "smol-toml": "^1.7.0",
@@ -34,8 +37,8 @@
   },
   "devDependencies": {
     "@types/diff": "^7.0.2",
-    "@types/node": "^26.0.0",
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^26.0.0",
     "@types/papaparse": "^5.3.16",
     "@types/qrcode": "^1.5.5",
     "@vitejs/plugin-vue": "^6.0.7",

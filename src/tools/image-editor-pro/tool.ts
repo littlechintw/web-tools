@@ -1,0 +1,30 @@
+import type { ToolMeta } from '@/types'
+
+export const meta: ToolMeta = {
+  id: 'image-editor-pro',
+  route: 'image-editor-pro',
+  category: 'media',
+  icon: 'mdi-layers-edit',
+  keywords: [
+    'image',
+    'editor',
+    'layers',
+    'fabric',
+    'canvas',
+    'annotate',
+    'draw',
+    'text',
+    'shape',
+    '圖片',
+    '圖層',
+    '編輯',
+    '標註',
+    '繪圖',
+    '画像',
+    'レイヤー',
+    '注釈',
+    '이미지',
+    '레이어',
+    '편집',
+  ],
+}
