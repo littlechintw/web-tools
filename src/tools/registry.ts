@@ -33,25 +33,54 @@ for (const [path, mod] of Object.entries(metaModules)) {
   tools.push({ ...meta, component })
 }
 
-// Stable sort: by category order, then explicit order, then title.
-const categoryOrder: CategoryId[] = [
-  'encode',
-  'text',
-  'data',
-  'convert',
-  'datetime',
-  'generate',
-  'media',
-  'dev',
+// Global "usefulness" ranking — most practical/everyday tools first. The home
+// page grid and the in-category sidebar order both follow this. Tools not listed
+// here fall to the end (alphabetically). Tweak the order here, in one place.
+const POPULARITY: string[] = [
+  'json-format',
+  'base64',
+  'qrcode-generate',
+  'timestamp',
+  'url-encode',
+  'hash',
+  'password-generator',
+  'uuid',
+  'color-convert',
+  'case-convert',
+  'text-diff',
+  'json-convert',
+  'jwt-decode',
+  'markdown-preview',
+  'regex-tester',
+  'qr-scan',
+  'number-base',
+  'unit-convert',
+  'date-calc',
+  'cron-parser',
+  'text-stats',
+  'image-convert',
+  'image-base64',
+  'countdown',
+  'stopwatch',
+  'text-sort',
+  'lorem-ipsum',
+  'hmac',
+  'bcrypt',
+  'barcode-generate',
+  'color-picker-image',
+  'user-agent',
+  'ip-subnet',
 ]
 
+function rank(id: string): number {
+  const i = POPULARITY.indexOf(id)
+  return i === -1 ? POPULARITY.length : i
+}
+
 tools.sort((a, b) => {
-  const ca = categoryOrder.indexOf(a.category)
-  const cb = categoryOrder.indexOf(b.category)
-  if (ca !== cb) return ca - cb
-  const oa = a.order ?? 100
-  const ob = b.order ?? 100
-  if (oa !== ob) return oa - ob
+  const ra = rank(a.id)
+  const rb = rank(b.id)
+  if (ra !== rb) return ra - rb
   return a.title['zh-TW'].localeCompare(b.title['zh-TW'])
 })
 
@@ -76,12 +105,12 @@ export function collectToolMessages(): Record<string, Record<string, unknown>> {
 }
 
 export const categoryLabels: Record<CategoryId, LocalizedText> = {
-  encode: { 'zh-TW': '編碼 / 加密', en: 'Encode / Crypto' },
-  text: { 'zh-TW': '文字處理', en: 'Text' },
-  data: { 'zh-TW': '資料格式', en: 'Data Formats' },
-  convert: { 'zh-TW': '轉換 / 計算', en: 'Convert / Calc' },
-  datetime: { 'zh-TW': '日期 / 時間', en: 'Date / Time' },
-  generate: { 'zh-TW': '產生器', en: 'Generators' },
-  media: { 'zh-TW': '圖片 / 多媒體', en: 'Media' },
-  dev: { 'zh-TW': '網路 / 開發', en: 'Network / Dev' },
+  encode: { 'zh-TW': '編碼 / 加密', en: 'Encode / Crypto', ja: 'エンコード / 暗号', ko: '인코딩 / 암호' },
+  text: { 'zh-TW': '文字處理', en: 'Text', ja: 'テキスト', ko: '텍스트' },
+  data: { 'zh-TW': '資料格式', en: 'Data Formats', ja: 'データ形式', ko: '데이터 형식' },
+  convert: { 'zh-TW': '轉換 / 計算', en: 'Convert / Calc', ja: '変換 / 計算', ko: '변환 / 계산' },
+  datetime: { 'zh-TW': '日期 / 時間', en: 'Date / Time', ja: '日付 / 時刻', ko: '날짜 / 시간' },
+  generate: { 'zh-TW': '產生器', en: 'Generators', ja: 'ジェネレーター', ko: '생성기' },
+  media: { 'zh-TW': '圖片 / 多媒體', en: 'Media', ja: '画像 / メディア', ko: '이미지 / 미디어' },
+  dev: { 'zh-TW': '網路 / 開發', en: 'Network / Dev', ja: 'ネットワーク / 開発', ko: '네트워크 / 개발' },
 }

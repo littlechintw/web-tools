@@ -5,12 +5,19 @@ export const meta: ToolMeta = {
   route: 'text-diff',
   category: 'text',
   icon: 'mdi-file-compare',
-  title: { 'zh-TW': '文字比對 (Diff)', en: 'Text Diff' },
+  title: {
+    'zh-TW': '文字比對 (Diff)',
+    en: 'Text Diff',
+    ja: 'テキスト差分 (Diff)',
+    ko: '텍스트 비교 (Diff)',
+  },
   description: {
     'zh-TW': '比對兩段文字，逐行或逐字顯示差異。',
     en: 'Compare two texts and highlight line or word differences.',
+    ja: '2 つのテキストを比較し、行単位または単語単位で差分を強調表示します。',
+    ko: '두 텍스트를 비교하여 줄 또는 단어 단위로 차이를 강조 표시합니다.',
   },
-  keywords: ['diff', 'compare', 'text', '比對', '差異', '對比'],
+  keywords: ['diff', 'compare', 'text', '比對', '差異', '對比', '差分', '比較', '비교', '차이'],
 }
 
 export const messages: ToolMessages = {

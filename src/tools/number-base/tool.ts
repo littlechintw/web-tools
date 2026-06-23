@@ -5,12 +5,19 @@ export const meta: ToolMeta = {
   route: 'number-base',
   category: 'convert',
   icon: 'mdi-numeric',
-  title: { 'zh-TW': '進制轉換', en: 'Number Base Converter' },
+  title: {
+    'zh-TW': '進制轉換',
+    en: 'Number Base Converter',
+    ja: '基数変換',
+    ko: '진법 변환',
+  },
   description: {
     'zh-TW': '在二進位、八進位、十進位、十六進位與任意 2-36 進制間轉換整數。',
     en: 'Convert integers between binary, octal, decimal, hex and any base 2-36.',
+    ja: '2進数・8進数・10進数・16進数、および任意の 2〜36 進数の間で整数を変換します。',
+    ko: '2진수, 8진수, 10진수, 16진수 및 임의의 2~36진법 사이에서 정수를 변환합니다.',
   },
-  keywords: ['base', 'radix', 'binary', 'hex', 'octal', '進制', '二進位', '十六進位', 'bigint'],
+  keywords: ['base', 'radix', 'binary', 'hex', 'octal', '進制', '二進位', '十六進位', 'bigint', '基数', '進数', '진법', '진수'],
 }
 
 export const messages: ToolMessages = {

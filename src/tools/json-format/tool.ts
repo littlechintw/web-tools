@@ -5,12 +5,19 @@ export const meta: ToolMeta = {
   route: 'json-format',
   category: 'text',
   icon: 'mdi-code-json',
-  title: { 'zh-TW': 'JSON 格式化 / 驗證', en: 'JSON Format / Validate' },
+  title: {
+    'zh-TW': 'JSON 格式化 / 驗證',
+    en: 'JSON Format / Validate',
+    ja: 'JSON 整形 / 検証',
+    ko: 'JSON 포맷 / 검증',
+  },
   description: {
     'zh-TW': '格式化、壓縮、排序鍵並即時驗證 JSON。',
     en: 'Format, minify, sort keys and validate JSON live.',
+    ja: 'JSON を整形・圧縮し、キーを並べ替えてリアルタイムに検証します。',
+    ko: 'JSON을 포맷, 압축, 키 정렬하고 실시간으로 검증합니다.',
   },
-  keywords: ['json', 'format', 'minify', 'validate', 'pretty', '格式化', '壓縮', '驗證'],
+  keywords: ['json', 'format', 'minify', 'validate', 'pretty', '格式化', '壓縮', '驗證', '整形', '検証', '포맷', '검증'],
 }
 
 export const messages: ToolMessages = {
@@ -39,5 +46,31 @@ export const messages: ToolMessages = {
     valid: 'Valid JSON',
     parseError: 'Parse error: {msg}',
     download: 'Download .json',
+  },
+  ja: {
+    inputJson: 'JSON を入力',
+    format: '整形',
+    minify: '圧縮',
+    sortKeys: 'キーを並べ替え',
+    indent: 'インデント',
+    indent2: 'スペース 2 個',
+    indent4: 'スペース 4 個',
+    indentTab: 'タブ',
+    valid: 'JSON は有効です',
+    parseError: '解析エラー：{msg}',
+    download: '.json をダウンロード',
+  },
+  ko: {
+    inputJson: 'JSON 입력',
+    format: '포맷',
+    minify: '압축',
+    sortKeys: '키 정렬',
+    indent: '들여쓰기',
+    indent2: '공백 2칸',
+    indent4: '공백 4칸',
+    indentTab: '탭',
+    valid: '유효한 JSON',
+    parseError: '파싱 오류: {msg}',
+    download: '.json 다운로드',
   },
 }

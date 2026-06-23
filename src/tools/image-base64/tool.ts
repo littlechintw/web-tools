@@ -5,12 +5,19 @@ export const meta: ToolMeta = {
   route: 'image-base64',
   category: 'media',
   icon: 'mdi-image-text',
-  title: { 'zh-TW': '圖片 ↔ Base64', en: 'Image ↔ Base64' },
+  title: {
+    'zh-TW': '圖片 ↔ Base64',
+    en: 'Image ↔ Base64',
+    ja: '画像 ↔ Base64',
+    ko: '이미지 ↔ Base64',
+  },
   description: {
     'zh-TW': '把圖片轉成 Base64 Data URI，或把 Data URI 還原成圖片預覽。',
     en: 'Turn an image into a Base64 data URI, or render a data URI back into an image.',
+    ja: '画像を Base64 の Data URI に変換したり、Data URI を画像プレビューに復元したりできます。',
+    ko: '이미지를 Base64 Data URI 로 변환하거나 Data URI 를 이미지 미리보기로 복원합니다.',
   },
-  keywords: ['image', 'base64', 'data uri', 'datauri', '圖片', '編碼'],
+  keywords: ['image', 'base64', 'data uri', 'datauri', '圖片', '編碼', '画像', 'データURI', '이미지', '데이터 URI'],
 }
 
 export const messages: ToolMessages = {
@@ -39,5 +46,31 @@ export const messages: ToolMessages = {
     preview: 'Preview',
     download: 'Download',
     errInvalid: 'Not a valid image data URI.',
+  },
+  ja: {
+    toBase64: '画像を Base64 に変換',
+    toImage: 'Base64 を画像に変換',
+    uploadHint: '画像をアップロード',
+    dataUri: 'Data URI',
+    byteSize: 'バイトサイズ',
+    cssSnippet: 'CSS background',
+    imgSnippet: '<img> タグ',
+    pasteHint: 'data URI を貼り付け（data:image/...;base64,...）',
+    preview: 'プレビュー',
+    download: 'ダウンロード',
+    errInvalid: '有効な画像 Data URI ではありません。',
+  },
+  ko: {
+    toBase64: '이미지를 Base64 로 변환',
+    toImage: 'Base64 를 이미지로 변환',
+    uploadHint: '이미지 업로드',
+    dataUri: 'Data URI',
+    byteSize: '바이트 크기',
+    cssSnippet: 'CSS background',
+    imgSnippet: '<img> 태그',
+    pasteHint: 'data URI 붙여넣기 (data:image/...;base64,...)',
+    preview: '미리보기',
+    download: '다운로드',
+    errInvalid: '유효한 이미지 Data URI 가 아닙니다.',
   },
 }

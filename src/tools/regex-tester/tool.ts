@@ -5,12 +5,14 @@ export const meta: ToolMeta = {
   route: 'regex-tester',
   category: 'text',
   icon: 'mdi-regex',
-  title: { 'zh-TW': '正則表達式測試', en: 'Regex Tester' },
+  title: { 'zh-TW': '正則表達式測試', en: 'Regex Tester', ja: '正規表現テスター', ko: '정규식 테스터' },
   description: {
     'zh-TW': '即時測試正則表達式，顯示匹配與擷取群組。',
     en: 'Test regular expressions live with matches and capture groups.',
+    ja: '正規表現をリアルタイムでテストし、マッチとキャプチャグループを表示します。',
+    ko: '정규식을 실시간으로 테스트하고 매치와 캡처 그룹을 표시합니다.',
   },
-  keywords: ['regex', 'regexp', 'pattern', 'match', '正則', '正規', '表達式'],
+  keywords: ['regex', 'regexp', 'pattern', 'match', '正則', '正規', '表達式', '正規表現', '정규식'],
 }
 
 export const messages: ToolMessages = {
@@ -39,5 +41,31 @@ export const messages: ToolMessages = {
     group: 'Group {n}',
     namedGroup: 'Group "{name}"',
     invalidRegex: 'Invalid regex: {msg}',
+  },
+  ja: {
+    pattern: '正規表現',
+    flags: 'フラグ',
+    testString: 'テスト文字列',
+    matchCount: 'マッチ数：{n}',
+    noMatch: 'マッチなし。',
+    match: 'マッチ #{n}',
+    indexAt: '位置 {i}',
+    groups: 'キャプチャグループ',
+    group: 'グループ {n}',
+    namedGroup: 'グループ「{name}」',
+    invalidRegex: '無効な正規表現：{msg}',
+  },
+  ko: {
+    pattern: '정규식',
+    flags: '플래그',
+    testString: '테스트 문자열',
+    matchCount: '매치 수: {n}',
+    noMatch: '매치 없음.',
+    match: '매치 #{n}',
+    indexAt: '위치 {i}',
+    groups: '캡처 그룹',
+    group: '그룹 {n}',
+    namedGroup: '그룹 "{name}"',
+    invalidRegex: '잘못된 정규식: {msg}',
   },
 }

@@ -5,12 +5,19 @@ export const meta: ToolMeta = {
   route: 'cron-parser',
   category: 'dev',
   icon: 'mdi-calendar-clock',
-  title: { 'zh-TW': 'Cron 表達式解析', en: 'Cron Expression Parser' },
+  title: {
+    'zh-TW': 'Cron 表達式解析',
+    en: 'Cron Expression Parser',
+    ja: 'Cron 式パーサー',
+    ko: 'Cron 표현식 파서',
+  },
   description: {
     'zh-TW': '解析 Cron 表達式，給出白話說明並列出接下來的執行時間。',
     en: 'Parse a cron expression into a human description and the next scheduled runs.',
+    ja: 'Cron 式を解析し、分かりやすい説明と次回以降の実行時刻を表示します。',
+    ko: 'Cron 표현식을 해석하여 알기 쉬운 설명과 다음 실행 시각을 보여줍니다.',
   },
-  keywords: ['cron', 'crontab', 'schedule', '排程', 'cronstrue', '表達式'],
+  keywords: ['cron', 'crontab', 'schedule', '排程', 'cronstrue', '表達式', 'スケジュール', '式', '스케줄', '표현식'],
 }
 
 export const messages: ToolMessages = {
@@ -39,5 +46,31 @@ export const messages: ToolMessages = {
     monthly: 'Monthly',
     englishFallback: '(Chinese locale unavailable, showing English)',
     errInvalid: 'Invalid cron expression.',
+  },
+  ja: {
+    expression: 'Cron 式',
+    description: '説明',
+    nextRuns: '次回以降の実行時刻',
+    presets: 'よく使うテンプレート',
+    everyMinute: '毎分',
+    hourly: '毎時',
+    dailyMidnight: '毎日午前0時',
+    weekly: '毎週',
+    monthly: '毎月',
+    englishFallback: '（日本語ロケールが見つからないため英語で表示）',
+    errInvalid: '無効な Cron 式です。',
+  },
+  ko: {
+    expression: 'Cron 표현식',
+    description: '설명',
+    nextRuns: '다음 실행 시각',
+    presets: '자주 쓰는 템플릿',
+    everyMinute: '매분',
+    hourly: '매시간',
+    dailyMidnight: '매일 자정',
+    weekly: '매주',
+    monthly: '매월',
+    englishFallback: '(한국어 로케일을 찾을 수 없어 영어로 표시)',
+    errInvalid: '유효하지 않은 Cron 표현식입니다.',
   },
 }

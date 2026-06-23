@@ -5,12 +5,19 @@ export const meta: ToolMeta = {
   route: 'jwt-decode',
   category: 'encode',
   icon: 'mdi-key-chain',
-  title: { 'zh-TW': 'JWT 解碼器', en: 'JWT Decoder' },
+  title: {
+    'zh-TW': 'JWT 解碼器',
+    en: 'JWT Decoder',
+    ja: 'JWT デコーダー',
+    ko: 'JWT 디코더',
+  },
   description: {
     'zh-TW': '解碼 JWT 的標頭與內容，並列出標準聲明與可讀時間。僅解碼，不驗證簽章。',
     en: 'Decode JWT header and payload, with standard claims and human-readable dates. Decode only — no signature verification.',
+    ja: 'JWT のヘッダーとペイロードをデコードし、標準クレームと読みやすい日時を表示します。デコードのみで、署名は検証しません。',
+    ko: 'JWT 의 헤더와 페이로드를 디코드하고 표준 클레임과 읽기 쉬운 날짜를 표시합니다. 디코드만 하며 서명은 검증하지 않습니다.',
   },
-  keywords: ['jwt', 'token', 'json web token', 'decode', '解碼', '令牌', 'claims'],
+  keywords: ['jwt', 'token', 'json web token', 'decode', '解碼', '令牌', 'claims', 'デコード', '디코드'],
 }
 
 export const messages: ToolMessages = {

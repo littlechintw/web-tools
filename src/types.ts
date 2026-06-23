@@ -1,4 +1,4 @@
-export type Locale = 'zh-TW' | 'en'
+export type Locale = 'zh-TW' | 'en' | 'ja' | 'ko'
 
 /** Top-level grouping shown on the home page. */
 export type CategoryId =
@@ -14,6 +14,8 @@ export type CategoryId =
 export interface LocalizedText {
   'zh-TW': string
   en: string
+  ja: string
+  ko: string
 }
 
 /**
