@@ -77,6 +77,11 @@ const POPULARITY: string[] = [
   'color-picker-image',
   'user-agent',
   'ip-subnet',
+  'wooden-fish',
+  'bubble-wrap',
+  'jiaobei',
+  'joss-paper',
+  'satisfying-switch',
 ]
 
 function rank(id: string): number {
@@ -109,4 +114,5 @@ export const categoryOrder: CategoryId[] = [
   'media',
   'pdf',
   'dev',
+  'fun',
 ]

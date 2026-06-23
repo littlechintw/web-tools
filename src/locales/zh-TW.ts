@@ -86,7 +86,8 @@ export default {
     "generate": "產生器",
     "media": "圖片 / 多媒體",
     "pdf": "PDF 工具",
-    "dev": "網路 / 開發"
+    "dev": "網路 / 開發",
+    "fun": "紓壓小遊戲"
   },
   "tools": {
     "barcode-generate": {
@@ -824,6 +825,56 @@ export default {
       "nanoidSize": "NanoID 長度",
       "regenerate": "重新產生",
       "copyAll": "全部複製"
+    },
+    "bubble-wrap": {
+      "title": "泡泡紙",
+      "description": "戳爆每一顆泡泡，消除壓力！",
+      "popped": "已戳爆",
+      "total": "全部",
+      "reset": "重置泡泡紙",
+      "popAll": "全部戳爆"
+    },
+    "jiaobei": {
+      "title": "擲筊",
+      "description": "擲筊詢問神明，尋求指引。",
+      "throw": "擲杯",
+      "question": "你的問題（選填）",
+      "questionHint": "心中默想問題，再擲杯…",
+      "shengbei": "聖杯",
+      "xiaobei": "笑杯",
+      "yinbei": "陰杯",
+      "shengbeiDesc": "神明答應了！",
+      "xiaobeiDesc": "神明在笑，再問一次",
+      "yinbeiDesc": "時機未到，暫緩",
+      "history": "最近紀錄",
+      "throwing": "擲中…"
+    },
+    "joss-paper": {
+      "title": "燒金紙",
+      "description": "點火燒金紙，累積功德！",
+      "burn": "燒一張",
+      "reset": "重置",
+      "burned": "已燒",
+      "sheets": "張",
+      "sound": "聲音",
+      "mute": "靜音"
+    },
+    "satisfying-switch": {
+      "title": "滿足開關",
+      "description": "按下每一個開關，享受喀嚓的滿足感！",
+      "onCount": "{on} / {total} 開啟",
+      "allOn": "全開",
+      "allOff": "全關",
+      "random": "隨機",
+      "labels": ["燈光","冷氣","電視","音響","風扇","洗碗機","洗衣機","烘乾機","微波爐","烤箱","冰箱","熱水器","咖啡機","吸塵器","掃地機","除濕機","空氣清淨機","監視器","路由器","電腦","印表機","投影機","音樂","夜燈"]
+    },
+    "wooden-fish": {
+      "title": "木魚",
+      "description": "敲木魚累積功德，佛系紓壓！",
+      "merit": "功德",
+      "session": "本次",
+      "total": "累計",
+      "reset": "重置累計"
     }
   }
 }

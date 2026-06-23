@@ -86,7 +86,8 @@ export default {
     "generate": "생성기",
     "media": "이미지 / 미디어",
     "pdf": "PDF",
-    "dev": "네트워크 / 개발"
+    "dev": "네트워크 / 개발",
+    "fun": "힐링 도구"
   },
   "tools": {
     "barcode-generate": {
@@ -786,6 +787,56 @@ export default {
       "nanoidSize": "NanoID 길이",
       "regenerate": "다시 생성",
       "copyAll": "모두 복사"
+    },
+    "jiaobei": {
+      "title": "교배",
+      "description": "교배를 던져 신의 뜻을 물어보세요.",
+      "throw": "던지기",
+      "question": "질문 (선택)",
+      "questionHint": "마음속으로 질문을 생각하고 던지세요…",
+      "shengbei": "성배",
+      "xiaobei": "소배",
+      "yinbei": "음배",
+      "shengbeiDesc": "신이 허락하셨습니다!",
+      "xiaobeiDesc": "신이 웃고 있습니다. 다시 물어보세요",
+      "yinbeiDesc": "아직 때가 아닙니다",
+      "history": "최근 기록",
+      "throwing": "던지는 중…"
+    },
+    "satisfying-switch": {
+      "title": "만족 스위치",
+      "description": "모든 스위치를 켜고 끄며 만족감을 느껴보세요!",
+      "onCount": "{on} / {total} 켜짐",
+      "allOn": "모두 켜기",
+      "allOff": "모두 끄기",
+      "random": "무작위",
+      "labels": ["조명","에어컨","TV","오디오","선풍기","식기세척기","세탁기","건조기","전자레인지","오븐","냉장고","온수기","커피머신","청소기","로봇청소기","제습기","공기청정기","카메라","라우터","컴퓨터","프린터","프로젝터","음악","야간등"]
+    },
+    "joss-paper": {
+      "title": "지전 태우기",
+      "description": "지전을 태워 공덕을 쌓으세요!",
+      "burn": "한 장 태우기",
+      "reset": "초기화",
+      "burned": "태운",
+      "sheets": "장",
+      "sound": "소리",
+      "mute": "음소거"
+    },
+    "bubble-wrap": {
+      "title": "뽁뽁이",
+      "description": "모든 뽁뽁이를 터뜨려 스트레스를 해소하세요!",
+      "popped": "터진",
+      "total": "전체",
+      "reset": "초기화",
+      "popAll": "전부 터뜨리기"
+    },
+    "wooden-fish": {
+      "title": "목어",
+      "description": "목어를 두드려 공덕을 쌓으세요!",
+      "merit": "공덕",
+      "session": "이번",
+      "total": "누적",
+      "reset": "누적 초기화"
     }
   }
 }

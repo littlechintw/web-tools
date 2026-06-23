@@ -86,7 +86,8 @@ export default {
     "generate": "ジェネレーター",
     "media": "画像 / メディア",
     "pdf": "PDF",
-    "dev": "ネットワーク / 開発"
+    "dev": "ネットワーク / 開発",
+    "fun": "癒しツール"
   },
   "tools": {
     "barcode-generate": {
@@ -786,6 +787,56 @@ export default {
       "nanoidSize": "NanoID の長さ",
       "regenerate": "再生成",
       "copyAll": "すべてコピー"
+    },
+    "jiaobei": {
+      "title": "杯筊",
+      "description": "神様にお伺いを立てましょう。",
+      "throw": "投げる",
+      "question": "質問（任意）",
+      "questionHint": "心の中で問いを念じてから投げてください…",
+      "shengbei": "聖杯",
+      "xiaobei": "笑杯",
+      "yinbei": "陰杯",
+      "shengbeiDesc": "神様がOKと言っています！",
+      "xiaobeiDesc": "神様は笑っています。もう一度",
+      "yinbeiDesc": "まだその時ではありません",
+      "history": "最近の記録",
+      "throwing": "投げ中…"
+    },
+    "satisfying-switch": {
+      "title": "スイッチ壁",
+      "description": "全てのスイッチをカチカチしよう！",
+      "onCount": "{on} / {total} オン",
+      "allOn": "全オン",
+      "allOff": "全オフ",
+      "random": "ランダム",
+      "labels": ["照明","エアコン","テレビ","オーディオ","扇風機","食洗機","洗濯機","乾燥機","電子レンジ","オーブン","冷蔵庫","給湯器","コーヒー","掃除機","ロボット掃除機","除湿機","空気清浄機","カメラ","ルーター","パソコン","プリンター","プロジェクター","音楽","常夜灯"]
+    },
+    "joss-paper": {
+      "title": "紙銭を焼く",
+      "description": "紙銭を燃やして功徳を積もう！",
+      "burn": "一枚焼く",
+      "reset": "リセット",
+      "burned": "焼いた",
+      "sheets": "枚",
+      "sound": "音",
+      "mute": "ミュート"
+    },
+    "bubble-wrap": {
+      "title": "プチプチ",
+      "description": "全部のプチプチを潰してストレス発散！",
+      "popped": "潰した",
+      "total": "合計",
+      "reset": "リセット",
+      "popAll": "全部潰す"
+    },
+    "wooden-fish": {
+      "title": "木魚",
+      "description": "木魚を叩いて功徳を積もう！",
+      "merit": "功徳",
+      "session": "今回",
+      "total": "累計",
+      "reset": "累計をリセット"
     }
   }
 }

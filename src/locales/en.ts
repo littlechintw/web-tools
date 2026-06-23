@@ -86,7 +86,8 @@ export default {
     "generate": "Generators",
     "media": "Media",
     "pdf": "PDF",
-    "dev": "Network / Dev"
+    "dev": "Network / Dev",
+    "fun": "Fun & Relax"
   },
   "tools": {
     "barcode-generate": {
@@ -824,6 +825,56 @@ export default {
       "nanoidSize": "NanoID size",
       "regenerate": "Regenerate",
       "copyAll": "Copy all"
+    },
+    "bubble-wrap": {
+      "title": "Bubble Wrap",
+      "description": "Pop every bubble and melt your stress away!",
+      "popped": "Popped",
+      "total": "Total",
+      "reset": "Reset",
+      "popAll": "Pop All"
+    },
+    "jiaobei": {
+      "title": "Moon Blocks",
+      "description": "Throw the moon blocks and seek divine guidance.",
+      "throw": "Throw",
+      "question": "Your question (optional)",
+      "questionHint": "Hold your question in mind, then throw…",
+      "shengbei": "Holy Cup",
+      "xiaobei": "Laughing Cup",
+      "yinbei": "Yin Cup",
+      "shengbeiDesc": "The gods agree!",
+      "xiaobeiDesc": "The gods are laughing — ask again",
+      "yinbeiDesc": "Not yet — wait",
+      "history": "Recent",
+      "throwing": "Throwing…"
+    },
+    "satisfying-switch": {
+      "title": "Satisfying Switches",
+      "description": "Flip every switch and enjoy that satisfying click!",
+      "onCount": "{on} / {total} on",
+      "allOn": "All On",
+      "allOff": "All Off",
+      "random": "Random",
+      "labels": ["Lights","AC","TV","Stereo","Fan","Dishwasher","Washer","Dryer","Microwave","Oven","Fridge","Water Heater","Coffee","Vacuum","Robot Vac","Dehumidifier","Air Filter","Camera","Router","Computer","Printer","Projector","Music","Night Light"]
+    },
+    "joss-paper": {
+      "title": "Burn Joss Paper",
+      "description": "Burn joss paper and accumulate merit!",
+      "burn": "Burn One",
+      "reset": "Reset",
+      "burned": "Burned",
+      "sheets": "sheets",
+      "sound": "Sound",
+      "mute": "Mute"
+    },
+    "wooden-fish": {
+      "title": "Wooden Fish",
+      "description": "Tap the wooden fish to accumulate merit and melt your stress away!",
+      "merit": "Merit",
+      "session": "Session",
+      "total": "Total",
+      "reset": "Reset total"
     }
   }
 }

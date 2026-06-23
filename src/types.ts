@@ -11,6 +11,7 @@ export type CategoryId =
   | 'datetime'
   | 'dev'
   | 'data'
+  | 'fun'
 
 /**
  * Metadata every tool module must export from its `tool.ts`.
