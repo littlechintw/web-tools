@@ -4,11 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useHistoryStore } from '@/stores/history'
 import { allTools, toolsByRoute } from '@/tools/registry'
-import { useLocalized } from '@/composables/useLocalized'
 import type { HistoryEntry } from '@/types'
 
 const { t } = useI18n()
-const loc = useLocalized()
 const router = useRouter()
 const store = useHistoryStore()
 
@@ -38,7 +36,7 @@ const filtered = computed(() => {
 
 function toolName(toolId: string): string {
   const tl = toolById.value[toolId]
-  return tl ? loc(tl.title) : toolId
+  return tl ? t(`tools.${toolId}.title`) : toolId
 }
 
 function toolIcon(toolId: string): string {
@@ -155,7 +153,7 @@ void toolsByRoute
           v-model="toolFilter"
           :items="[
             { title: t('history.allTools'), value: 'all' },
-            ...usedToolIds.map((tl) => ({ title: loc(tl.title), value: tl.id })),
+            ...usedToolIds.map((tl) => ({ title: t(`tools.${tl.id}.title`), value: tl.id })),
           ]"
           hide-details
           density="compact"

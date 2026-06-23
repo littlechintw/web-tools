@@ -8,7 +8,7 @@ add a tool. Just create the folder with two files.
 
 ```
 src/tools/<id>/
-  tool.ts     # metadata + optional i18n messages
+  tool.ts     # metadata only — NO translatable text
   View.vue    # the UI
 ```
 
@@ -16,8 +16,11 @@ src/tools/<id>/
 
 ## tool.ts
 
+`tool.ts` holds **no translatable strings** — only structural metadata. All text
+(title, description, in-tool labels) lives in the locale files (see i18n below).
+
 ```ts
-import type { ToolMeta, ToolMessages } from '@/types'
+import type { ToolMeta } from '@/types'
 
 export const meta: ToolMeta = {
   id: 'my-tool',          // === folder name
@@ -25,25 +28,44 @@ export const meta: ToolMeta = {
   category: 'text',       // see CategoryId below
   icon: 'mdi-foo',        // any Material Design Icon name
   order: 1,               // optional ordering within category
-  title: { 'zh-TW': '中文名', en: 'English name' },
-  description: { 'zh-TW': '一句話說明', en: 'One-line description' },
-  keywords: ['foo', '關鍵字'], // optional, improves search
-}
-
-// Optional. Strings are available in the component as t('tools.my-tool.key').
-export const messages: ToolMessages = {
-  'zh-TW': { greeting: '你好' },
-  en: { greeting: 'Hello' },
+  keywords: ['foo', '關鍵字'], // optional, language-agnostic search terms
 }
 ```
 
 `CategoryId` is one of:
 `encode` | `text` | `data` | `convert` | `datetime` | `generate` | `media` | `dev`
 
+## i18n (centralized)
+
+Every language is ONE file: `src/locales/<code>.ts`, holding the app shell,
+category labels, and every tool's strings under `tools.<id>`. Add your tool's
+strings to **each** locale file (at minimum `zh-TW.ts`; missing languages fall
+back to English → Traditional Chinese automatically):
+
+```ts
+// in src/locales/zh-TW.ts (and en.ts / ja.ts / ko.ts)
+tools: {
+  'my-tool': {
+    title: '我的工具',
+    description: '一句話說明',
+    greeting: '你好',      // any in-tool label
+  },
+}
+```
+
+In the component: `t('tools.my-tool.title')`, `t('tools.my-tool.greeting')`.
+
+> vue-i18n caveat: `@`, `|`, `{`, `}` are special in message strings. To output
+> a literal `@`, write `{'@'}`.
+
+**Adding a new language** = copy a locale file to `<code>.ts`, translate the
+values. It is auto-discovered (glob); optionally add a display label in
+`src/plugins/i18n.ts` (`LOCALE_LABELS`).
+
 ## View.vue
 
 - Wrap everything in `<ToolShell>` — it renders the title/description header
-  from the registry automatically. Import from `@/components/ToolShell.vue`.
+  (from `tools.<id>.title/description`) automatically. Import from `@/components/ToolShell.vue`.
 - Use `<CopyBtn :text="..." />` from `@/components/CopyBtn.vue` for copy buttons.
 - Use `<FileDrop @files="..." accept="image/*" />` from `@/components/FileDrop.vue`
   for file inputs (emits `File[]`).
@@ -66,11 +88,15 @@ See `src/tools/base64/` as the canonical reference.
 - **Pure client-side. No network calls.** All processing happens in the browser.
 - Prefer Web Crypto (`crypto.subtle`) and native APIs over dependencies.
 - Sanitize any HTML you render (use DOMPurify) — security matters.
-- Do NOT edit shared files (registry, router, i18n, locales). Only your folder.
+- Adding a tool touches only: your `src/tools/<id>/` folder + each
+  `src/locales/*.ts` (the `tools.<id>` block). Don't edit the registry/router.
 
 ## Available dependencies
 
-`qrcode`, `@zxing/browser`, `@zxing/library`, `jsbarcode`, `spark-md5`,
-`bcryptjs`, `js-yaml`, `smol-toml`, `papaparse`, `diff`, `marked`, `dompurify`,
-`cronstrue`, `cron-parser`, `ua-parser-js`, `nanoid`, `browser-image-compression`.
-Type packages installed for: diff, js-yaml, papaparse, qrcode, spark-md5.
+Minimal by design (security). `qrcode`, `@zxing/browser`, `@zxing/library`,
+`jsbarcode`, `bcryptjs`, `js-yaml`, `smol-toml`, `papaparse`, `diff`, `marked`,
+`dompurify`, `cronstrue`, `cron-parser`.
+
+Self-written, zero-dependency utils in `src/utils/`: `md5`, `nanoid`,
+`uaParser`. Prefer Web Crypto (`crypto.subtle`, `crypto.getRandomValues`,
+`crypto.randomUUID`) and native canvas APIs before reaching for a package.

@@ -1,21 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { allTools, categoryLabels } from '@/tools/registry'
-import { useLocalized } from '@/composables/useLocalized'
+import { allTools, categoryOrder } from '@/tools/registry'
 import { useFavoritesStore } from '@/stores/favorites'
 import type { CategoryId } from '@/types'
 
 const { t } = useI18n()
-const loc = useLocalized()
 const favorites = useFavoritesStore()
 
 const query = ref('')
 const activeCat = ref<CategoryId | 'all' | 'fav'>('all')
 
-const categories = (Object.keys(categoryLabels) as CategoryId[]).filter((c) =>
-  allTools.some((tl) => tl.category === c),
-)
+const categories = categoryOrder.filter((c) => allTools.some((tl) => tl.category === c))
+
+const toolTitle = (id: string) => t(`tools.${id}.title`)
+const toolDesc = (id: string) => t(`tools.${id}.description`)
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -24,13 +23,7 @@ const filtered = computed(() => {
     if (activeCat.value !== 'all' && activeCat.value !== 'fav' && tl.category !== activeCat.value)
       return false
     if (!q) return true
-    const hay = [
-      tl.title['zh-TW'],
-      tl.title.en,
-      tl.description['zh-TW'],
-      tl.description.en,
-      ...(tl.keywords ?? []),
-    ]
+    const hay = [toolTitle(tl.id), toolDesc(tl.id), tl.id, ...(tl.keywords ?? [])]
       .join(' ')
       .toLowerCase()
     return hay.includes(q)
@@ -81,7 +74,7 @@ const filtered = computed(() => {
         :color="activeCat === c ? 'primary' : undefined"
         @click="activeCat = c"
       >
-        {{ loc(categoryLabels[c]) }}
+        {{ t('categories.' + c) }}
       </v-chip>
     </div>
 
@@ -104,7 +97,7 @@ const filtered = computed(() => {
                 <v-icon :icon="tl.icon" />
               </v-avatar>
             </template>
-            <v-card-title class="text-body-1 font-weight-bold">{{ loc(tl.title) }}</v-card-title>
+            <v-card-title class="text-body-1 font-weight-bold">{{ toolTitle(tl.id) }}</v-card-title>
             <template #append>
               <v-btn
                 :icon="favorites.isFavorite(tl.id) ? 'mdi-star' : 'mdi-star-outline'"
@@ -117,7 +110,7 @@ const filtered = computed(() => {
             </template>
           </v-card-item>
           <v-card-text class="text-body-2 text-medium-emphasis pt-0">
-            {{ loc(tl.description) }}
+            {{ toolDesc(tl.id) }}
           </v-card-text>
         </v-card>
       </v-col>

@@ -11,17 +11,14 @@ export type CategoryId =
   | 'dev'
   | 'data'
 
-export interface LocalizedText {
-  'zh-TW': string
-  en: string
-  ja: string
-  ko: string
-}
-
 /**
  * Metadata every tool module must export from its `tool.ts`.
  * The registry auto-discovers these via import.meta.glob, so adding a tool
- * never requires editing a shared file — just drop a new folder in src/tools/.
+ * never requires editing the registry — just drop a new folder in src/tools/.
+ *
+ * NOTE: tools carry NO translatable text. The title, description and every
+ * in-tool label live in the per-language files under src/locales/ (namespace
+ * `tools.<id>`). Adding a language therefore only touches one locale file.
  */
 export interface ToolMeta {
   /** Stable unique id, also the folder name. kebab-case. */
@@ -31,16 +28,11 @@ export interface ToolMeta {
   category: CategoryId
   /** mdi icon name, e.g. 'mdi-qrcode' */
   icon: string
-  title: LocalizedText
-  description: LocalizedText
   /** Extra search terms (any language). */
   keywords?: string[]
   /** Optional ordering hint within a category (lower = earlier). */
   order?: number
 }
-
-/** Optional per-tool i18n messages, merged under the `tools.<id>` namespace. */
-export type ToolMessages = Partial<Record<Locale, Record<string, unknown>>>
 
 export interface RegisteredTool extends ToolMeta {
   /** Lazy component loader for the router. */

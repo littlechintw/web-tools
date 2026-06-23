@@ -1,20 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useTheme } from 'vuetify'
 import { useDisplay } from 'vuetify'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { allTools, categoryLabels } from '@/tools/registry'
-import { useLocalized } from '@/composables/useLocalized'
+import { useRouter, useRoute } from 'vue-router'
+import { allTools, categoryOrder } from '@/tools/registry'
 import { persistTheme } from '@/plugins/vuetify'
 import { SUPPORTED_LOCALES, setLocale } from '@/plugins/i18n'
-import type { CategoryId, Locale } from '@/types'
+import type { Locale } from '@/types'
 
 const theme = useTheme()
 const { mobile } = useDisplay()
 const { t, locale } = useI18n()
-const loc = useLocalized()
 const router = useRouter()
+const route = useRoute()
+
+// Keep the browser tab title in sync with the active route and locale.
+watch(
+  [() => route.meta.titleKey, locale],
+  () => {
+    const key = route.meta.titleKey as string | undefined
+    document.title = key ? `${t(key)} · ${t('app.name')}` : t('app.name')
+  },
+  { immediate: true },
+)
 
 const drawer = ref(!mobile.value)
 
@@ -30,11 +39,10 @@ function pickLocale(l: Locale) {
 
 const GITHUB_URL = 'https://github.com/littlechintw/web-tools'
 
-// Group tools by category for the drawer.
-const grouped = (Object.keys(categoryLabels) as CategoryId[])
+// Group tools by category for the drawer. Labels via t('categories.<id>').
+const grouped = categoryOrder
   .map((cat) => ({
     cat,
-    label: categoryLabels[cat],
     tools: allTools.filter((tl) => tl.category === cat),
   }))
   .filter((g) => g.tools.length > 0)
@@ -87,12 +95,12 @@ function go(path: string) {
     <v-divider />
     <v-list density="compact" nav>
       <template v-for="g in grouped" :key="g.cat">
-        <v-list-subheader>{{ loc(g.label) }}</v-list-subheader>
+        <v-list-subheader>{{ t('categories.' + g.cat) }}</v-list-subheader>
         <v-list-item
           v-for="tl in g.tools"
           :key="tl.id"
           :prepend-icon="tl.icon"
-          :title="loc(tl.title)"
+          :title="t('tools.' + tl.id + '.title')"
           @click="go('/' + tl.route)"
         />
       </template>

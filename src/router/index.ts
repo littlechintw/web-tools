@@ -6,16 +6,16 @@ const toolRoutes: RouteRecordRaw[] = allTools.map((tool) => ({
   path: `/${tool.route}`,
   name: `tool-${tool.id}`,
   component: tool.component,
-  meta: { toolId: tool.id, title: tool.title },
+  meta: { toolId: tool.id, titleKey: `tools.${tool.id}.title` },
 }))
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', name: 'home', component: HomeView, meta: { title: { 'zh-TW': '首頁', en: 'Home' } } },
+  { path: '/', name: 'home', component: HomeView, meta: { titleKey: 'nav.home' } },
   {
     path: '/history',
     name: 'history',
     component: () => import('@/views/HistoryView.vue'),
-    meta: { title: { 'zh-TW': '歷史紀錄', en: 'History' } },
+    meta: { titleKey: 'nav.history' },
   },
   ...toolRoutes,
   {

@@ -11,7 +11,7 @@ browser — no backend, no tracking, your data never leaves your device.
 - 🔒 **隱私優先**：無後端、無追蹤，運算全在瀏覽器
 - 🕘 **歷史紀錄系統**：工具使用紀錄自動存於 LocalStorage，並有集中的管理頁可查看 / 編輯 / 刪除 / 匯入匯出
 - 🌗 深色 / 淺色主題
-- 🌐 i18n（繁體中文 / English）
+- 🌐 i18n（繁體中文 / English / 日本語 / 한국어；新增語言只需加一個語言檔）
 - ⚡ 每個工具都是 lazy-loaded（程式碼分割），只在開啟時才載入
 
 ## 🛠️ 技術棧
@@ -55,7 +55,7 @@ pnpm typecheck  # 只跑型別檢查
 
 ## ➕ 新增工具
 
-每個工具是 `src/tools/<id>/` 下的獨立資料夾，由 registry 自動探索註冊，**不需修改任何共用檔**。
+每個工具是 `src/tools/<id>/` 下的獨立資料夾，由 registry 自動探索註冊（不需改 registry/router）；文字翻譯統一放在 `src/locales/*.ts` 的 `tools.<id>` 區塊。
 詳見 [`docs/AUTHORING_TOOLS.md`](docs/AUTHORING_TOOLS.md)，可參考範本 `src/tools/base64/`。
 
 ## 📂 專案結構
@@ -65,7 +65,7 @@ src/
   components/   共用元件 (ToolShell, CopyBtn, FileDrop)
   composables/  useHistory / useClipboard / useLocalized
   layouts/      AppLayout（側邊欄、搜尋、主題、語言）
-  locales/      shell 層 i18n 字串
+  locales/      每種語言一個檔（shell + 分類 + 所有工具字串），自動載入
   plugins/      vuetify / i18n 設定
   stores/       history / favorites (Pinia, 持久化於 LocalStorage)
   tools/        每個工具一個資料夾 + registry.ts（自動探索）
