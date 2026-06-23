@@ -1,0 +1,63 @@
+import type { ToolMeta, ToolMessages } from '@/types'
+
+export const meta: ToolMeta = {
+  id: 'jwt-decode',
+  route: 'jwt-decode',
+  category: 'encode',
+  icon: 'mdi-key-chain',
+  title: { 'zh-TW': 'JWT 解碼器', en: 'JWT Decoder' },
+  description: {
+    'zh-TW': '解碼 JWT 的標頭與內容，並列出標準聲明與可讀時間。僅解碼，不驗證簽章。',
+    en: 'Decode JWT header and payload, with standard claims and human-readable dates. Decode only — no signature verification.',
+  },
+  keywords: ['jwt', 'token', 'json web token', 'decode', '解碼', '令牌', 'claims'],
+}
+
+export const messages: ToolMessages = {
+  'zh-TW': {
+    inputToken: '貼上 JWT',
+    header: '標頭 (Header)',
+    payload: '內容 (Payload)',
+    claims: '標準聲明',
+    claim: '聲明',
+    value: '值',
+    readable: '可讀時間',
+    invalidToken: '無效的 JWT：必須是以 "." 分隔的三段字串',
+    decodeError: '無法解碼：不是有效的 base64url JSON',
+    note: '注意：此工具僅在瀏覽器中「解碼」JWT，不會驗證簽章，也不會傳送任何資料到伺服器。',
+    claimNames: {
+      iss: '簽發者 (iss)',
+      sub: '主體 (sub)',
+      aud: '受眾 (aud)',
+      exp: '到期時間 (exp)',
+      nbf: '生效時間 (nbf)',
+      iat: '簽發時間 (iat)',
+      jti: 'JWT ID (jti)',
+    },
+    expired: '已過期',
+    notYetValid: '尚未生效',
+  },
+  en: {
+    inputToken: 'Paste a JWT',
+    header: 'Header',
+    payload: 'Payload',
+    claims: 'Standard claims',
+    claim: 'Claim',
+    value: 'Value',
+    readable: 'Readable time',
+    invalidToken: 'Invalid JWT: must be three "."-separated segments',
+    decodeError: 'Cannot decode: not valid base64url JSON',
+    note: 'Note: this tool only DECODES the JWT in your browser. It does NOT verify the signature, and sends nothing to any server.',
+    claimNames: {
+      iss: 'Issuer (iss)',
+      sub: 'Subject (sub)',
+      aud: 'Audience (aud)',
+      exp: 'Expires (exp)',
+      nbf: 'Not before (nbf)',
+      iat: 'Issued at (iat)',
+      jti: 'JWT ID (jti)',
+    },
+    expired: 'Expired',
+    notYetValid: 'Not yet valid',
+  },
+}

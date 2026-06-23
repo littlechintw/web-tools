@@ -1,0 +1,55 @@
+import type { ToolMeta, ToolMessages } from '@/types'
+
+export const meta: ToolMeta = {
+  id: 'password-generator',
+  route: 'password-generator',
+  category: 'encode',
+  icon: 'mdi-form-textbox-password',
+  title: { 'zh-TW': '密碼產生器', en: 'Password Generator' },
+  description: {
+    'zh-TW': '使用密碼學安全亂數產生強密碼，可自訂長度與字元類型。',
+    en: 'Generate strong passwords with cryptographically secure randomness and custom character sets.',
+  },
+  keywords: ['password', 'generator', 'random', 'secure', '密碼', '亂數', '隨機'],
+}
+
+export const messages: ToolMessages = {
+  'zh-TW': {
+    length: '長度',
+    uppercase: '大寫字母 (A-Z)',
+    lowercase: '小寫字母 (a-z)',
+    digits: '數字 (0-9)',
+    symbols: '符號 (!@#…)',
+    excludeAmbiguous: '排除易混淆字元 (0O1lI)',
+    count: '產生數量',
+    regenerate: '重新產生',
+    strength: '強度',
+    entropy: '熵',
+    bits: '位元',
+    veryWeak: '非常弱',
+    weak: '弱',
+    fair: '普通',
+    strong: '強',
+    veryStrong: '非常強',
+    noCharset: '請至少選擇一種字元類型',
+  },
+  en: {
+    length: 'Length',
+    uppercase: 'Uppercase (A-Z)',
+    lowercase: 'Lowercase (a-z)',
+    digits: 'Digits (0-9)',
+    symbols: 'Symbols (!@#…)',
+    excludeAmbiguous: 'Exclude ambiguous (0O1lI)',
+    count: 'Count',
+    regenerate: 'Regenerate',
+    strength: 'Strength',
+    entropy: 'Entropy',
+    bits: 'bits',
+    veryWeak: 'Very weak',
+    weak: 'Weak',
+    fair: 'Fair',
+    strong: 'Strong',
+    veryStrong: 'Very strong',
+    noCharset: 'Select at least one character type',
+  },
+}
