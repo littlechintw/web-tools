@@ -82,6 +82,8 @@ const POPULARITY: string[] = [
   'jiaobei',
   'joss-paper',
   'satisfying-switch',
+  'lottery',
+  'spin-wheel',
 ]
 
 function rank(id: string): number {

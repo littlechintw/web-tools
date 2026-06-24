@@ -5,14 +5,13 @@ import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
 import { useHistory } from '@/composables/useHistory'
+import { parseToBigInt, bigIntToBase } from '@/lib/numberBase'
 
 const TOOL_ID = 'number-base'
 const { t } = useI18n()
 const route = useRoute()
 
 const history = useHistory<{ input: string; sourceBase: number; customBase: number }>(TOOL_ID)
-
-const DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 const input = ref('')
 const sourceBase = ref(10)
@@ -31,41 +30,6 @@ const customBaseItems = Array.from({ length: 35 }, (_, i) => i + 2)
 
 function effectiveSourceBase(): number {
   return sourceBase.value === -1 ? customBase.value : sourceBase.value
-}
-
-function parseToBigInt(str: string, base: number): bigint {
-  let s = str.trim().toLowerCase()
-  if (!s) throw new Error('empty')
-  let neg = false
-  if (s.startsWith('-')) {
-    neg = true
-    s = s.slice(1)
-  } else if (s.startsWith('+')) {
-    s = s.slice(1)
-  }
-  if (!s) throw new Error('empty')
-  const bigBase = BigInt(base)
-  let result = 0n
-  for (const ch of s) {
-    const d = DIGITS.indexOf(ch)
-    if (d < 0 || d >= base) throw new Error('invalid digit')
-    result = result * bigBase + BigInt(d)
-  }
-  return neg ? -result : result
-}
-
-function bigIntToBase(value: bigint, base: number): string {
-  if (value === 0n) return '0'
-  const neg = value < 0n
-  let v = neg ? -value : value
-  const bigBase = BigInt(base)
-  let out = ''
-  while (v > 0n) {
-    const rem = Number(v % bigBase)
-    out = DIGITS[rem] + out
-    v = v / bigBase
-  }
-  return (neg ? '-' : '') + out
 }
 
 const parsed = computed<bigint | null>(() => {

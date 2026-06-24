@@ -1,409 +1,264 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { ref } from 'vue'
 
-const { t } = useI18n()
+const isOn = ref(false)
 
-// ---- constants ----
-const TOTAL = 24
-
-// Color palette cycling through hue spectrum
-const PALETTE = [
-  { h: 4,   name: 'red'    },
-  { h: 24,  name: 'orange' },
-  { h: 44,  name: 'yellow' },
-  { h: 142, name: 'green'  },
-  { h: 187, name: 'cyan'   },
-  { h: 217, name: 'blue'   },
-  { h: 265, name: 'purple' },
-  { h: 330, name: 'pink'   },
-]
-
-function getColor(index: number) {
-  return PALETTE[index % PALETTE.length]
-}
-
-// ---- state ----
-const states = ref<boolean[]>(Array(TOTAL).fill(false))
-
-const onCount = computed(() => states.value.filter(Boolean).length)
-
-// ---- labels ----
-const labels = computed<string[]>(() =>
-  Array.from({ length: TOTAL }, (_, i) =>
-    t(`tools.satisfying-switch.labels[${i}]`),
-  ),
-)
-
-// ---- audio ----
 let audioCtx: AudioContext | null = null
 
-function getAudioCtx(): AudioContext {
+function getCtx(): AudioContext {
   if (!audioCtx) {
-    const Ctor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     audioCtx = new Ctor()
   }
   return audioCtx
 }
 
-function switchClick(ctx: AudioContext, on: boolean) {
-  const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.04), ctx.sampleRate)
-  const data = buf.getChannelData(0)
-  for (let i = 0; i < data.length; i++) {
-    const tSec = i / ctx.sampleRate
-    data[i] = Math.sin(2 * Math.PI * (on ? 2000 : 800) * tSec) * Math.exp(-tSec * 80) * 0.5
-  }
-  const src = ctx.createBufferSource()
-  src.buffer = buf
-  src.connect(ctx.destination)
-  src.start()
+function playClick(on: boolean) {
+  try {
+    const ctx = getCtx()
+    // Two-layer click: sharp transient + body thud
+    const dur = 0.055
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
+    const d = buf.getChannelData(0)
+    for (let i = 0; i < d.length; i++) {
+      const t = i / ctx.sampleRate
+      const freq = on ? 2400 : 900
+      d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * 120) * 0.6
+             + (Math.random() * 2 - 1) * Math.exp(-t * 200) * 0.25
+    }
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    const gain = ctx.createGain()
+    gain.gain.value = 1
+    src.connect(gain)
+    gain.connect(ctx.destination)
+    src.start()
+  } catch { /* silent */ }
 }
 
-// ---- interactions ----
-function toggle(index: number) {
-  states.value[index] = !states.value[index]
-  try {
-    switchClick(getAudioCtx(), states.value[index])
-  } catch {
-    /* audio unavailable */
-  }
-}
-
-function allOn() {
-  states.value = Array(TOTAL).fill(true)
-  try {
-    switchClick(getAudioCtx(), true)
-  } catch {
-    /* audio unavailable */
-  }
-}
-
-function allOff() {
-  states.value = Array(TOTAL).fill(false)
-  try {
-    switchClick(getAudioCtx(), false)
-  } catch {
-    /* audio unavailable */
-  }
-}
-
-function randomize() {
-  states.value = Array.from({ length: TOTAL }, () => Math.random() > 0.5)
-  try {
-    switchClick(getAudioCtx(), Math.random() > 0.5)
-  } catch {
-    /* audio unavailable */
-  }
+function toggle() {
+  isOn.value = !isOn.value
+  playClick(isOn.value)
 }
 </script>
 
 <template>
-  <v-container class="pa-4 panel-bg" style="max-width: 900px">
-    <!-- Header bar -->
-    <div class="d-flex align-center justify-space-between flex-wrap gap-3 mb-6">
-      <div class="counter-display">
-        {{ t('tools.satisfying-switch.onCount', { on: onCount, total: TOTAL }) }}
-      </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <button class="ctrl-btn ctrl-btn--on" @click="allOn">
-          {{ t('tools.satisfying-switch.allOn') }}
-        </button>
-        <button class="ctrl-btn ctrl-btn--off" @click="allOff">
-          {{ t('tools.satisfying-switch.allOff') }}
-        </button>
-        <button class="ctrl-btn ctrl-btn--random" @click="randomize">
-          {{ t('tools.satisfying-switch.random') }}
-        </button>
-      </div>
-    </div>
+  <div class="scene">
+    <div class="panel" :class="{ 'panel--on': isOn }">
 
-    <!-- Switch grid -->
-    <div class="switch-grid">
-      <div
-        v-for="(on, i) in states"
-        :key="i"
-        class="switch-cell"
-        :class="{ 'switch-cell--on': on }"
-        :style="{
-          '--h': getColor(i).h,
-        }"
-        role="button"
-        :aria-pressed="on"
-        :aria-label="labels[i]"
-        tabindex="0"
-        @click="toggle(i)"
-        @keydown.enter.prevent="toggle(i)"
-        @keydown.space.prevent="toggle(i)"
+      <!-- Status LED strip -->
+      <div class="led-row">
+        <div class="led" :class="{ 'led--on': isOn }" />
+        <span class="led-label">{{ isOn ? 'ON' : 'OFF' }}</span>
+      </div>
+
+      <!-- The switch -->
+      <button
+        class="switch-btn"
+        :class="{ 'switch-btn--on': isOn }"
+        :aria-pressed="isOn"
+        aria-label="toggle switch"
+        @click="toggle"
       >
-        <!-- Panel housing -->
-        <div class="switch-housing">
-          <!-- Indicator LED -->
-          <div class="switch-led" />
-
-          <!-- Toggle lever -->
-          <div class="switch-lever-wrap">
-            <div class="switch-lever">
-              <div class="switch-lever-knob" />
-            </div>
-          </div>
-
-          <!-- Label -->
-          <div class="switch-label">{{ labels[i] }}</div>
+        <!-- Housing groove -->
+        <div class="switch-track">
+          <!-- Lever knob -->
+          <div class="switch-knob" />
         </div>
-      </div>
-    </div>
+      </button>
 
-    <!-- Bottom bar — all-on celebration -->
-    <div v-if="onCount === TOTAL" class="celebration mt-5">
-      <span>⚡</span>
-      <span class="celebration-text">{{ t('tools.satisfying-switch.allOn') }}!</span>
-      <span>⚡</span>
+      <!-- ON / OFF markers -->
+      <div class="markers">
+        <span :class="{ 'marker--active': isOn }">ON</span>
+        <span :class="{ 'marker--active': !isOn }">OFF</span>
+      </div>
+
     </div>
-  </v-container>
+  </div>
 </template>
 
 <style scoped>
-/* ── Panel background ────────────────────────────────────────────── */
-.panel-bg {
-  background: #1a1e2a;
-  border-radius: 16px;
-  min-height: 400px;
+.scene {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
 }
 
-/* ── Counter display ─────────────────────────────────────────────── */
-.counter-display {
-  font-family: 'Courier New', monospace;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #7dffd0;
-  text-shadow: 0 0 12px #7dffd055;
-}
-
-/* ── Control buttons ─────────────────────────────────────────────── */
-.ctrl-btn {
-  padding: 6px 18px;
-  border-radius: 6px;
-  border: 1.5px solid #3a4060;
-  background: #252a3a;
-  color: #c0c8dc;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
-  -webkit-tap-highlight-color: transparent;
-}
-.ctrl-btn:hover {
-  background: #2e3450;
-  border-color: #5a6090;
-}
-.ctrl-btn:active {
-  transform: scale(0.94);
-}
-.ctrl-btn--on {
-  border-color: #3a8a50;
-  color: #7dffd0;
-}
-.ctrl-btn--on:hover {
-  background: #1e3a28;
-}
-.ctrl-btn--off {
-  border-color: #6a3040;
-  color: #ffaab0;
-}
-.ctrl-btn--off:hover {
-  background: #2e1a1e;
-}
-.ctrl-btn--random {
-  border-color: #4a5090;
-  color: #aac0ff;
-}
-.ctrl-btn--random:hover {
-  background: #22283e;
-}
-
-/* ── Switch grid ─────────────────────────────────────────────────── */
-.switch-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 14px;
-}
-
-@media (max-width: 700px) {
-  .switch-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .switch-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-}
-
-/* ── Switch cell ─────────────────────────────────────────────────── */
-.switch-cell {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  outline: none;
-  border-radius: 10px;
-  transition: transform 0.1s;
-}
-.switch-cell:active {
-  transform: scale(0.92);
-}
-.switch-cell:focus-visible .switch-housing {
-  box-shadow:
-    0 0 0 2px #fff4,
-    0 2px 8px #0008;
-}
-
-/* ── Switch housing (the panel) ──────────────────────────────────── */
-.switch-housing {
-  background: linear-gradient(160deg, #282e40 0%, #1c2030 100%);
-  border: 1.5px solid #33394e;
-  border-radius: 10px;
-  padding: 10px 8px 8px;
+/* ── Panel ── */
+.panel {
+  background: linear-gradient(160deg, #1e2230 0%, #141720 100%);
+  border: 2px solid #2e3448;
+  border-radius: 24px;
+  padding: 2.5rem 3rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s,
-    background 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-
-/* OFF → ON: housing glow */
-.switch-cell--on .switch-housing {
-  background: linear-gradient(
-    160deg,
-    hsl(var(--h), 70%, 16%) 0%,
-    hsl(var(--h), 60%, 10%) 100%
-  );
-  border-color: hsl(var(--h), 80%, 50%);
+  gap: 2rem;
   box-shadow:
-    0 0 14px hsl(var(--h), 90%, 50%, 0.45),
-    inset 0 0 12px hsl(var(--h), 90%, 50%, 0.12);
+    0 0 0 1px #0a0c12,
+    0 12px 48px rgba(0,0,0,.7),
+    inset 0 1px 0 #ffffff0c;
+  transition: box-shadow 0.35s ease;
+  min-width: 240px;
 }
 
-/* ── LED indicator ───────────────────────────────────────────────── */
-.switch-led {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #2a3040;
-  border: 1.5px solid #3a4050;
-  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
-  align-self: flex-end;
-  margin-right: 2px;
-}
-.switch-cell--on .switch-led {
-  background: hsl(var(--h), 90%, 65%);
-  border-color: hsl(var(--h), 90%, 70%);
+.panel--on {
   box-shadow:
-    0 0 6px hsl(var(--h), 90%, 65%),
-    0 0 12px hsl(var(--h), 90%, 50%);
+    0 0 0 1px #0a0c12,
+    0 12px 48px rgba(0,0,0,.7),
+    0 0 60px rgba(80,200,120,.18),
+    inset 0 1px 0 #ffffff0c;
 }
 
-/* ── Toggle lever ────────────────────────────────────────────────── */
-.switch-lever-wrap {
-  width: 36px;
-  height: 56px;
+/* ── LED row ── */
+.led-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
 }
 
-.switch-lever {
-  width: 22px;
-  height: 52px;
-  background: linear-gradient(180deg, #3a404e 0%, #2a2e3a 100%);
-  border-radius: 11px;
-  border: 1.5px solid #4a5060;
-  position: relative;
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-  box-shadow: inset 0 2px 4px #00000050;
+.led {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1a2020;
+  border: 2px solid #2a3a30;
+  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
-.switch-cell--on .switch-lever {
-  background: linear-gradient(
-    180deg,
-    hsl(var(--h), 80%, 38%) 0%,
-    hsl(var(--h), 70%, 25%) 100%
-  );
-  border-color: hsl(var(--h), 80%, 55%);
+.led--on {
+  background: #50e898;
+  border-color: #70ffb0;
+  box-shadow: 0 0 8px #50e898, 0 0 20px #50e89866;
+}
+
+.led-label {
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #3a4a40;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+
+.panel--on .led-label {
+  color: #50e898;
+  text-shadow: 0 0 12px #50e89888;
+}
+
+/* ── Switch button ── */
+.switch-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.switch-btn:focus-visible .switch-track {
   box-shadow:
-    inset 0 2px 4px #00000050,
-    0 0 8px hsl(var(--h), 90%, 50%, 0.5);
+    0 0 0 3px #ffffff33,
+    inset 0 4px 12px #00000080;
 }
 
-.switch-lever-knob {
+/* ── Track (housing) ── */
+.switch-track {
+  width: 100px;
+  height: 180px;
+  background: linear-gradient(180deg, #0e1018 0%, #1a1e28 60%, #0e1018 100%);
+  border-radius: 50px;
+  border: 3px solid #2a2e3e;
+  box-shadow:
+    inset 0 4px 12px #00000080,
+    inset 0 -2px 8px #ffffff06,
+    0 2px 8px #00000060;
+  position: relative;
+  transition: border-color 0.25s;
+}
+
+.switch-btn--on .switch-track {
+  border-color: #3a6a50;
+}
+
+/* ── Knob ── */
+.switch-knob {
   position: absolute;
   left: 50%;
-  width: 18px;
-  height: 22px;
-  background: linear-gradient(160deg, #bcc0cc 0%, #8890a0 100%);
-  border-radius: 8px;
-  border: 1.5px solid #ccd0dc;
+  width: 72px;
+  height: 78px;
+  border-radius: 36px;
   transform: translateX(-50%);
+  background: linear-gradient(160deg, #d0d4e0 0%, #90959e 50%, #70757e 100%);
+  border: 2px solid #bbbfc8;
   box-shadow:
-    0 2px 6px #00000060,
-    inset 0 1px 2px #ffffff30;
-  transition: top 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, border-color 0.2s;
+    0 4px 16px #00000090,
+    0 1px 0 #ffffff40,
+    inset 0 2px 4px #ffffff30,
+    inset 0 -2px 4px #00000040;
+  transition:
+    top 0.18s cubic-bezier(0.34, 1.45, 0.64, 1),
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
 
-  /* OFF position — knob at bottom */
-  top: calc(100% - 24px);
+  /* OFF: knob at bottom */
+  top: calc(100% - 82px);
 }
 
-.switch-cell--on .switch-lever-knob {
-  /* ON position — knob at top */
-  top: 2px;
-  background: linear-gradient(160deg, #e8f0ff 0%, #c0ccee 100%);
-  border-color: hsl(var(--h), 60%, 80%);
+/* Knob ridge lines */
+.switch-knob::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(0,0,0,.25);
+  box-shadow: 0 -7px 0 rgba(0,0,0,.18), 0 7px 0 rgba(0,0,0,.18);
 }
 
-/* ── Label ───────────────────────────────────────────────────────── */
-.switch-label {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #667;
-  text-align: center;
-  line-height: 1.2;
-  min-height: 1.4em;
-  transition: color 0.2s;
-  word-break: break-word;
-  max-width: 100%;
-}
-.switch-cell--on .switch-label {
-  color: hsl(var(--h), 70%, 72%);
+.switch-btn--on .switch-knob {
+  /* ON: knob at top */
+  top: 4px;
+  background: linear-gradient(160deg, #e8f8ee 0%, #b0d8be 50%, #88b898 100%);
+  border-color: #a0d0b0;
+  box-shadow:
+    0 4px 16px #00000090,
+    0 0 20px rgba(80,200,120,.35),
+    0 1px 0 #ffffff60,
+    inset 0 2px 4px #ffffff40,
+    inset 0 -2px 4px #00000030;
 }
 
-/* ── Celebration bar ─────────────────────────────────────────────── */
-.celebration {
+/* ── Active press effect ── */
+.switch-btn:active .switch-track {
+  box-shadow:
+    inset 0 6px 16px #00000090,
+    inset 0 -2px 8px #ffffff04;
+}
+
+/* ── ON / OFF markers ── */
+.markers {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 1.4rem;
-  color: #ffd060;
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.celebration-text {
+  gap: 2rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-shadow: 0 0 16px #ffd060aa;
+  letter-spacing: 0.12em;
 }
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+
+.markers span {
+  color: #2e3448;
+  transition: color 0.2s, text-shadow 0.2s;
+}
+
+.marker--active {
+  color: #c0c8dc !important;
+  text-shadow: 0 0 10px #c0c8dc88;
 }
 </style>

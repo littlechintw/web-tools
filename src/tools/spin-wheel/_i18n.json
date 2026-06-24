@@ -1,0 +1,38 @@
+{
+  "zh-TW": { "spin-wheel": {
+    "title": "轉輪", "description": "自訂選項與權重，旋轉決定結果！",
+    "options": "選項", "addOption": "新增選項", "label": "名稱", "weight": "權重",
+    "equalWeights": "平均分配", "totalWeight": "總權重",
+    "weightDistribution": "權重分布",
+    "spin": "旋轉！", "spinning": "旋轉中…",
+    "result": "結果", "winner": "結果",
+    "removeOption": "刪除"
+  }},
+  "en": { "spin-wheel": {
+    "title": "Spin Wheel", "description": "Add options with custom weights and spin to decide!",
+    "options": "Options", "addOption": "Add option", "label": "Label", "weight": "Weight",
+    "equalWeights": "Equal weights", "totalWeight": "Total weight",
+    "weightDistribution": "Weight distribution",
+    "spin": "Spin!", "spinning": "Spinning…",
+    "result": "Result", "winner": "Winner",
+    "removeOption": "Remove"
+  }},
+  "ja": { "spin-wheel": {
+    "title": "ルーレット", "description": "オプションと重みを設定してスピン！",
+    "options": "選択肢", "addOption": "選択肢を追加", "label": "ラベル", "weight": "重み",
+    "equalWeights": "均等配分", "totalWeight": "合計重み",
+    "weightDistribution": "重み分布",
+    "spin": "スピン！", "spinning": "スピン中…",
+    "result": "結果", "winner": "当選",
+    "removeOption": "削除"
+  }},
+  "ko": { "spin-wheel": {
+    "title": "돌림판", "description": "옵션과 가중치를 설정하고 돌려서 결정하세요!",
+    "options": "옵션", "addOption": "옵션 추가", "label": "이름", "weight": "가중치",
+    "equalWeights": "균등 분배", "totalWeight": "총 가중치",
+    "weightDistribution": "가중치 분포",
+    "spin": "돌리기!", "spinning": "돌리는 중…",
+    "result": "결과", "winner": "당첨",
+    "removeOption": "삭제"
+  }}
+}
