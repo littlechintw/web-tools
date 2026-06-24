@@ -1,6 +1,0 @@
-{
-  "zh-TW": { "joss-paper": { "title": "燒金紙", "description": "點火燒金紙，累積功德！", "burn": "燒一張", "reset": "重置", "burned": "已燒", "sheets": "張", "sound": "聲音", "mute": "靜音" } },
-  "en": { "joss-paper": { "title": "Burn Joss Paper", "description": "Burn joss paper and accumulate merit!", "burn": "Burn One", "reset": "Reset", "burned": "Burned", "sheets": "sheets", "sound": "Sound", "mute": "Mute" } },
-  "ja": { "joss-paper": { "title": "紙銭を焼く", "description": "紙銭を燃やして功徳を積もう！", "burn": "一枚焼く", "reset": "リセット", "burned": "焼いた", "sheets": "枚", "sound": "音", "mute": "ミュート" } },
-  "ko": { "joss-paper": { "title": "지전 태우기", "description": "지전을 태워 공덕을 쌓으세요!", "burn": "한 장 태우기", "reset": "초기화", "burned": "태운", "sheets": "장", "sound": "소리", "mute": "음소거" } }
-}

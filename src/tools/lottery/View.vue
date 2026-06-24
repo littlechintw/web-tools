@@ -14,6 +14,7 @@ interface Prize {
 
 interface HistoryItem {
   maskedName: string
+  originalName: string
   prizeName: string
 }
 
@@ -22,6 +23,7 @@ type Phase = 'setup' | 'lottery'
 const phase = ref<Phase>('setup')
 
 const namesInput = ref('')
+const privacyEnabled = ref(true)
 const maskPosition = ref<'middle' | 'sides'>('middle')
 const maskCount = ref(1)
 const maskChar = ref('*')
@@ -32,13 +34,13 @@ const prizes = ref<Prize[]>([{ name: '', count: 1 }])
 const names = ref<string[]>([])
 const maskedNames = ref<string[]>([])
 
-// ── Live preview (first 3 names from input) ───────────────────────────────────
+// ── Live preview: ALL names from textarea, masked or plain based on toggle ────
 const previewNames = computed(() => {
   const lines = namesInput.value
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
-    .slice(0, 3)
+  if (!privacyEnabled.value) return lines
   const char = maskChar.value.length > 0 ? maskChar.value[0] : '*'
   return lines.map((n) => maskName(n, maskPosition.value, maskCount.value, char))
 })
@@ -88,7 +90,9 @@ function startLottery() {
 
   const char = maskChar.value.length > 0 ? maskChar.value[0] : '*'
   names.value = rawLines
-  maskedNames.value = rawLines.map((n) => maskName(n, maskPosition.value, maskCount.value, char))
+  maskedNames.value = privacyEnabled.value
+    ? rawLines.map((n) => maskName(n, maskPosition.value, maskCount.value, char))
+    : rawLines
 
   pool.value = rawLines.map((_, i) => i)
 
@@ -149,7 +153,7 @@ function draw() {
       winnerIndex.value = winnerNameIdx
 
       const prize = currentPrize.value!
-      history.value.unshift({ maskedName: maskedNames.value[winnerNameIdx], prizeName: prize.name })
+      history.value.unshift({ maskedName: maskedNames.value[winnerNameIdx], originalName: names.value[winnerNameIdx], prizeName: prize.name })
       prize.count--
 
       // Remove from pool
@@ -160,6 +164,42 @@ function draw() {
   }
 
   animInterval = setTimeout(step, interval)
+}
+
+function drawAll() {
+  if (animating.value) return
+  while (pool.value.length > 0) {
+    const prize = prizeQueue.value.find((p) => p.count > 0)
+    if (!prize) break
+    const winnerPoolIdx = Math.floor(Math.random() * pool.value.length)
+    const winnerNameIdx = pool.value[winnerPoolIdx]
+    history.value.unshift({
+      maskedName: maskedNames.value[winnerNameIdx],
+      originalName: names.value[winnerNameIdx],
+      prizeName: prize.name,
+    })
+    prize.count--
+    pool.value.splice(winnerPoolIdx, 1)
+  }
+  winnerIndex.value = null
+  displayMasked.value = ''
+}
+
+function exportResults(mode: 'plain' | 'masked') {
+  const lines = [...history.value].reverse().map((item, i) =>
+    mode === 'plain'
+      ? `${i + 1}. ${item.prizeName} → ${item.originalName}`
+      : `${i + 1}. ${item.prizeName} → ${item.maskedName}`,
+  )
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'lottery-results.txt'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
@@ -216,47 +256,65 @@ function onMaskCharInput(val: string) {
           />
         </v-col>
 
-        <!-- Mask settings + preview -->
+        <!-- Privacy toggle + mask settings + preview -->
         <v-col cols="12" md="6">
-          <div class="text-subtitle-2 font-weight-medium mb-2">{{ t('tools.lottery.maskSettings') }}</div>
+          <!-- Privacy toggle -->
+          <div class="d-flex align-center justify-space-between mb-3 privacy-toggle-row">
+            <div>
+              <div class="text-subtitle-2 font-weight-medium">{{ t('tools.lottery.privacyToggle') }}</div>
+              <div class="text-caption text-medium-emphasis">{{ t('tools.lottery.maskSettings') }}</div>
+            </div>
+            <v-switch
+              v-model="privacyEnabled"
+              color="primary"
+              hide-details
+              density="compact"
+              inset
+            />
+          </div>
 
-          <v-select
-            v-model="maskPosition"
-            :label="t('tools.lottery.maskPosition')"
-            :items="[
-              { title: t('tools.lottery.maskMiddle'), value: 'middle' },
-              { title: t('tools.lottery.maskSides'), value: 'sides' },
-            ]"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3"
-          />
+          <!-- Mask details: only when privacy is enabled -->
+          <template v-if="privacyEnabled">
+            <v-select
+              v-model="maskPosition"
+              :label="t('tools.lottery.maskPosition')"
+              :items="[
+                { title: t('tools.lottery.maskMiddle'), value: 'middle' },
+                { title: t('tools.lottery.maskSides'), value: 'sides' },
+              ]"
+              variant="outlined"
+              density="comfortable"
+              class="mb-3"
+            />
 
-          <v-text-field
-            :model-value="maskCount"
-            :label="t('tools.lottery.maskCount')"
-            type="number"
-            :min="1"
-            :max="4"
-            variant="outlined"
-            density="comfortable"
-            class="mb-3"
-            @update:model-value="maskCount = Math.min(4, Math.max(1, Number($event) || 1))"
-          />
+            <v-text-field
+              :model-value="maskCount"
+              :label="t('tools.lottery.maskCount')"
+              type="number"
+              :min="1"
+              :max="4"
+              variant="outlined"
+              density="comfortable"
+              class="mb-3"
+              @update:model-value="maskCount = Math.min(4, Math.max(1, Number($event) || 1))"
+            />
 
-          <v-text-field
-            :model-value="maskChar"
-            :label="t('tools.lottery.maskChar')"
-            variant="outlined"
-            density="comfortable"
-            maxlength="2"
-            class="mb-3"
-            @update:model-value="onMaskCharInput($event)"
-          />
+            <v-text-field
+              :model-value="maskChar"
+              :label="t('tools.lottery.maskChar')"
+              variant="outlined"
+              density="comfortable"
+              maxlength="2"
+              class="mb-3"
+              @update:model-value="onMaskCharInput($event)"
+            />
+          </template>
 
-          <!-- Live preview -->
+          <!-- Live preview: all names, updates as you paste -->
           <div v-if="previewNames.length > 0" class="preview-box pa-3 rounded">
-            <div class="text-caption text-medium-emphasis mb-1">{{ t('tools.lottery.preview') }}</div>
+            <div class="text-caption text-medium-emphasis mb-1">
+              {{ t('tools.lottery.preview') }}（{{ previewNames.length }} {{ t('tools.lottery.people') }}）
+            </div>
             <div
               v-for="(name, i) in previewNames"
               :key="i"
@@ -349,7 +407,7 @@ function onMaskCharInput(val: string) {
       <!-- Top row: name pool + prize queue -->
       <v-row class="mb-4">
         <!-- Left: masked name pool -->
-        <v-col cols="12" md="5">
+        <v-col cols="12" md="4">
           <div class="text-subtitle-2 font-weight-medium mb-1">
             {{ t('tools.lottery.remaining') }}：{{ pool.length }} {{ t('tools.lottery.people') }}
           </div>
@@ -369,7 +427,7 @@ function onMaskCharInput(val: string) {
         </v-col>
 
         <!-- Center: animation display + draw button -->
-        <v-col cols="12" md="2" class="d-flex flex-column align-center justify-center">
+        <v-col cols="12" md="4" class="d-flex flex-column align-center justify-center">
           <div
             class="draw-display mb-4"
             :class="{ 'draw-display--animating': animating, 'draw-display--winner': winnerIndex !== null && !animating }"
@@ -397,13 +455,25 @@ function onMaskCharInput(val: string) {
             {{ animating ? t('tools.lottery.drawing') : t('tools.lottery.draw') }}
           </v-btn>
 
+          <v-btn
+            variant="outlined"
+            color="secondary"
+            size="small"
+            :disabled="animating || allDrawn || pool.length === 0"
+            class="mt-2"
+            prepend-icon="mdi-fast-forward"
+            @click="drawAll"
+          >
+            {{ t('tools.lottery.drawAll') }}
+          </v-btn>
+
           <div v-if="allDrawn" class="text-caption text-success mt-2 text-center">
             {{ t('tools.lottery.allDrawn') }}
           </div>
         </v-col>
 
         <!-- Right: prize queue -->
-        <v-col cols="12" md="5">
+        <v-col cols="12" md="4">
           <div class="text-subtitle-2 font-weight-medium mb-1">{{ t('tools.lottery.prizeQueue') }}</div>
           <div class="prize-queue">
             <div
@@ -445,6 +515,27 @@ function onMaskCharInput(val: string) {
         </v-chip>
       </div>
 
+      <div v-if="history.length > 0" class="d-flex justify-center ga-2 mb-4 flex-wrap">
+        <v-btn
+          variant="tonal"
+          color="primary"
+          prepend-icon="mdi-download"
+          size="small"
+          @click="exportResults('masked')"
+        >
+          {{ t('tools.lottery.exportMasked') }}
+        </v-btn>
+        <v-btn
+          variant="tonal"
+          color="secondary"
+          prepend-icon="mdi-download"
+          size="small"
+          @click="exportResults('plain')"
+        >
+          {{ t('tools.lottery.exportPlain') }}
+        </v-btn>
+      </div>
+
       <!-- Reset button -->
       <div class="d-flex justify-center">
         <v-btn
@@ -463,14 +554,23 @@ function onMaskCharInput(val: string) {
 
 <style scoped>
 /* ── Setup ── */
+.privacy-toggle-row {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: rgba(var(--v-theme-on-surface), 0.02);
+}
+
 .preview-box {
   background: rgba(var(--v-theme-on-surface), 0.04);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  max-height: 260px;
+  overflow-y: auto;
 }
 
 .preview-name {
   font-family: monospace;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.7;
   letter-spacing: 0.04em;
 }
@@ -486,21 +586,23 @@ function onMaskCharInput(val: string) {
 
 /* ── Draw display ── */
 .draw-display {
-  width: 130px;
+  width: 100%;
   min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: monospace;
-  font-size: 1.4rem;
+  font-size: clamp(0.85rem, 2.5vw, 1.3rem);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   border: 2px solid rgba(var(--v-theme-on-surface), 0.18);
   border-radius: 10px;
   padding: 8px 12px;
   text-align: center;
   transition: border-color 0.2s, background 0.2s;
   background: rgba(var(--v-theme-on-surface), 0.03);
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .draw-display--animating {

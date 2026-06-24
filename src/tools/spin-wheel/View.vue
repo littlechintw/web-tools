@@ -22,17 +22,41 @@ const PALETTE = [
   '#ff5722', '#00bcd4', '#8bc34a', '#ff9800',
 ]
 
+const STORAGE_KEY = 'app.spin-wheel.items'
+
 let nextId = 4
 
 function colorFor(index: number): string {
   return PALETTE[index % PALETTE.length]
 }
 
-const items = ref<WheelItem[]>([
-  { id: 1, label: '選項 A', weight: 1, color: colorFor(0) },
-  { id: 2, label: '選項 B', weight: 1, color: colorFor(1) },
-  { id: 3, label: '選項 C', weight: 1, color: colorFor(2) },
-])
+function defaultItems(): WheelItem[] {
+  return [
+    { id: 1, label: '選項 A', weight: 1, color: colorFor(0) },
+    { id: 2, label: '選項 B', weight: 1, color: colorFor(1) },
+    { id: 3, label: '選項 C', weight: 1, color: colorFor(2) },
+  ]
+}
+
+function loadItems(): WheelItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return defaultItems()
+    const parsed: Array<{ label: string; weight: number }> = JSON.parse(raw)
+    if (!Array.isArray(parsed) || parsed.length === 0) return defaultItems()
+    nextId = parsed.length + 1
+    return parsed.map((item, idx) => ({
+      id: idx + 1,
+      label: String(item.label ?? `選項 ${idx + 1}`),
+      weight: Math.max(1, Math.min(100, Number(item.weight) || 1)),
+      color: colorFor(idx),
+    }))
+  } catch {
+    return defaultItems()
+  }
+}
+
+const items = ref<WheelItem[]>(loadItems())
 
 function addItem() {
   if (items.value.length >= 20) return
@@ -125,8 +149,17 @@ function redraw() {
   if (canvas) drawWheel(canvas, items.value, currentAngle.value)
 }
 
-// Redraw when items change (label, weight, color) while not spinning
-watch(items, redraw, { deep: true })
+// Redraw and persist when items change
+watch(
+  items,
+  (val) => {
+    redraw()
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(val.map(i => ({ label: i.label, weight: i.weight }))))
+    } catch { /* quota exceeded — ignore */ }
+  },
+  { deep: true },
+)
 
 // ---------------------------------------------------------------------------
 // ResizeObserver
@@ -239,8 +272,9 @@ function spin() {
   for (let i = 0; i < targetIndex; i++) {
     cumAngle += (items.value[i].weight / total2) * 2 * Math.PI
   }
-  const segHalf = (items.value[targetIndex].weight / total2) * Math.PI
-  const segMid = cumAngle + segHalf
+  const segSize = (items.value[targetIndex].weight / total2) * 2 * Math.PI
+  // Land anywhere in the middle 80% of segment (avoids very edges)
+  const segMid = cumAngle + segSize * (0.1 + Math.random() * 0.8)
 
   // We want: startAngle + segMid ≡ -π/2 (mod 2π)
   // => finalAngle = -π/2 - segMid + 2π * k
