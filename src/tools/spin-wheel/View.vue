@@ -98,11 +98,13 @@ function drawWheel(canvas: HTMLCanvasElement, wheelItems: WheelItem[], angle: nu
   const cx = w / 2
   const cy = h / 2
   const r = Math.min(cx, cy) - 20
-  const total = wheelItems.reduce((s, i) => s + i.weight, 0)
+  const wts = wheelItems.map(i => Math.max(1, Number(i.weight) || 1))
+  const total = wts.reduce((s, w) => s + w, 0)
 
   let startAngle = angle
-  for (const item of wheelItems) {
-    const slice = (item.weight / total) * 2 * Math.PI
+  for (let wi = 0; wi < wheelItems.length; wi++) {
+    const item = wheelItems[wi]
+    const slice = (wts[wi] / total) * 2 * Math.PI
 
     ctx.beginPath()
     ctx.moveTo(cx, cy)
@@ -241,12 +243,12 @@ function easeOut(t: number): number {
 
 // Track which segment the pointer is currently in for tick sounds
 function getSegmentAtAngle(angle: number, wheelItems: WheelItem[]): number {
-  const total = wheelItems.reduce((s, i) => s + i.weight, 0)
-  // Pointer is at -π/2 (top). Normalize the angle relative to -π/2
+  const wts = wheelItems.map(i => Math.max(1, Number(i.weight) || 1))
+  const total = wts.reduce((s, w) => s + w, 0)
   let a = ((-Math.PI / 2 - angle) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI)
   let cumAngle = 0
   for (let i = 0; i < wheelItems.length; i++) {
-    cumAngle += (wheelItems[i].weight / total) * 2 * Math.PI
+    cumAngle += (wts[i] / total) * 2 * Math.PI
     if (a < cumAngle) return i
   }
   return wheelItems.length - 1
@@ -257,22 +259,26 @@ function spin() {
   spinning.value = true
   winner.value = null
 
-  // Weighted random pick
-  const total = items.value.reduce((s, i) => s + i.weight, 0)
-  let rand = Math.random() * total
-  let targetIndex = items.value.length - 1
-  for (let i = 0; i < items.value.length; i++) {
-    rand -= items.value[i].weight
-    if (rand <= 0) { targetIndex = i; break }
+  // Snapshot weights as valid integers — guards against string coercion from v-model
+  // (looseToNumber returns "" for empty inputs, causing 0 + "1" + "1" = "011" string concatenation)
+  const ws = items.value.map(i => Math.max(1, Math.round(Number(i.weight) || 1)))
+  const total = ws.reduce((s, w) => s + w, 0)
+
+  // Weighted random pick — cumulative comparison guarantees equal probability per weight unit
+  const rand = Math.random() * total
+  let cumulative = 0
+  let targetIndex = ws.length - 1
+  for (let i = 0; i < ws.length; i++) {
+    cumulative += ws[i]
+    if (rand < cumulative) { targetIndex = i; break }
   }
 
-  // Calculate target angle so the center of targetIndex's segment is under the pointer (top = -π/2)
-  const total2 = items.value.reduce((s, i) => s + i.weight, 0)
+  // Calculate target angle using the same sanitized weights for visual consistency
   let cumAngle = 0
   for (let i = 0; i < targetIndex; i++) {
-    cumAngle += (items.value[i].weight / total2) * 2 * Math.PI
+    cumAngle += (ws[i] / total) * 2 * Math.PI
   }
-  const segSize = (items.value[targetIndex].weight / total2) * 2 * Math.PI
+  const segSize = (ws[targetIndex] / total) * 2 * Math.PI
   // Land anywhere in the middle 80% of segment (avoids very edges)
   const segMid = cumAngle + segSize * (0.1 + Math.random() * 0.8)
 
