@@ -7,6 +7,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { allTools, categoryOrder } from '@/tools/registry'
 import { persistTheme } from '@/plugins/vuetify'
 import { SUPPORTED_LOCALES, setLocale } from '@/plugins/i18n'
+import { useSettingsStore } from '@/stores/settings'
 import type { Locale } from '@/types'
 
 const theme = useTheme()
@@ -38,6 +39,7 @@ function pickLocale(l: Locale) {
 }
 
 const GITHUB_URL = 'https://github.com/littlechintw/web-tools'
+const settings = useSettingsStore()
 
 // Group tools by category for the drawer. Labels via t('categories.<id>').
 const grouped = categoryOrder
@@ -91,6 +93,7 @@ function go(path: string) {
     <v-list density="compact" nav>
       <v-list-item prepend-icon="mdi-home-outline" :title="t('nav.home')" @click="go('/')" />
       <v-list-item prepend-icon="mdi-history" :title="t('nav.history')" @click="go('/history')" />
+      <v-list-item prepend-icon="mdi-cog-outline" :title="t('nav.settings')" @click="go('/settings')" />
     </v-list>
     <v-divider />
     <v-list density="compact" nav>
@@ -126,4 +129,22 @@ function go(path: string) {
       </div>
     </v-footer>
   </v-main>
+
+  <v-snackbar
+    :model-value="!settings.consentBannerDismissed"
+    :timeout="-1"
+    location="bottom center"
+    multi-line
+    max-width="600"
+  >
+    {{ t('analytics.consent.message') }}
+    <template #actions>
+      <v-btn variant="text" :to="'/settings'" @click="settings.dismissConsentBanner()">
+        {{ t('analytics.consent.goToSettings') }}
+      </v-btn>
+      <v-btn color="primary" variant="tonal" @click="settings.dismissConsentBanner()">
+        {{ t('analytics.consent.dismiss') }}
+      </v-btn>
+    </template>
+  </v-snackbar>
 </template>

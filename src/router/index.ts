@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { nextTick } from 'vue'
 import { allTools } from '@/tools/registry'
 import HomeView from '@/views/HomeView.vue'
+import { trackPageView } from '@/plugins/analytics'
 
 const toolRoutes: RouteRecordRaw[] = allTools.map((tool) => ({
   path: `/${tool.route}`,
@@ -17,6 +19,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/HistoryView.vue'),
     meta: { titleKey: 'nav.history' },
   },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/views/SettingsView.vue'),
+    meta: { titleKey: 'nav.settings' },
+  },
   ...toolRoutes,
   {
     path: '/:pathMatch(.*)*',
@@ -31,4 +39,11 @@ export const router = createRouter({
   scrollBehavior() {
     return { top: 0 }
   },
+})
+
+router.afterEach((to) => {
+  // Wait for AppLayout's title watcher to flush before reading document.title
+  nextTick(() => {
+    trackPageView(to.fullPath, document.title)
+  })
 })

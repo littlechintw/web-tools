@@ -10,6 +10,7 @@ export default {
   "nav": {
     "home": "首頁",
     "history": "歷史紀錄",
+    "settings": "設定",
     "theme": "切換深淺色",
     "language": "語言",
     "github": "原始碼",
@@ -928,6 +929,20 @@ export default {
       "result": "結果",
       "winner": "結果",
       "removeOption": "刪除"
+    }
+  },
+  "analytics": {
+    "consent": {
+      "message": "我們使用 Google Analytics 分析工具使用情況，幫助了解哪些功能最受歡迎。如果不希望被追蹤，可以前往設定頁面關閉。",
+      "dismiss": "我知道了",
+      "goToSettings": "前往設定"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "analytics": {
+      "title": "使用分析",
+      "description": "允許傳送匿名使用資料（透過 Google Analytics），幫助我們了解哪些工具最受歡迎。不包含任何個人識別資訊。"
     }
   }
 }

@@ -10,6 +10,7 @@ export default {
   "nav": {
     "home": "Home",
     "history": "History",
+    "settings": "Settings",
     "theme": "Toggle theme",
     "language": "Language",
     "github": "Source",
@@ -928,6 +929,20 @@ export default {
       "result": "Result",
       "winner": "Winner",
       "removeOption": "Remove"
+    }
+  },
+  "analytics": {
+    "consent": {
+      "message": "We use Google Analytics to understand which tools are most useful. If you'd prefer not to be tracked, you can turn it off in Settings.",
+      "dismiss": "Got it",
+      "goToSettings": "Go to Settings"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "analytics": {
+      "title": "Usage Analytics",
+      "description": "Allow anonymous usage data to be sent via Google Analytics. This helps us understand which tools are most popular. No personally identifiable information is collected."
     }
   }
 }

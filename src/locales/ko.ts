@@ -10,6 +10,7 @@ export default {
   "nav": {
     "home": "홈",
     "history": "기록",
+    "settings": "설정",
     "theme": "테마 전환",
     "language": "언어",
     "github": "소스",
@@ -890,6 +891,20 @@ export default {
       "result": "결과",
       "winner": "당첨",
       "removeOption": "삭제"
+    }
+  },
+  "analytics": {
+    "consent": {
+      "message": "Google Analytics를 사용하여 도구 이용 현황을 분석합니다. 추적을 원하지 않으시면 설정 페이지에서 끌 수 있습니다.",
+      "dismiss": "알겠습니다",
+      "goToSettings": "설정으로 이동"
+    }
+  },
+  "settings": {
+    "title": "설정",
+    "analytics": {
+      "title": "이용 분석",
+      "description": "Google Analytics를 통해 익명 이용 데이터를 전송하도록 허용합니다. 어떤 도구가 인기 있는지 파악하는 데 사용됩니다. 개인 식별 정보는 수집하지 않습니다."
     }
   }
 }
