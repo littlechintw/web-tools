@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
@@ -185,10 +185,13 @@ onMounted(() => {
     const e = history.entries.value.find((x) => x.id === h)
     if (e) {
       category.value = e.data.category
-      // set units after category-driven reset
-      fromUnit.value = e.data.from
-      toUnit.value = e.data.to
       value.value = e.data.value
+      // The category watcher resets units on the next flush; restore the
+      // saved units after it has run.
+      void nextTick(() => {
+        fromUnit.value = e.data.from
+        toUnit.value = e.data.to
+      })
     }
   }
 })

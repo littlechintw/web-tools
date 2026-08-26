@@ -36,7 +36,7 @@ function toHexLE(word: number): string {
 function md5Bytes(msg: Uint8Array): string {
   const n = msg.length
   // Pad to a multiple of 64 bytes, reserving 8 bytes for the bit length.
-  const totalLen = (n + 1 + 8 + 63) & ~63
+  const totalLen = Math.ceil((n + 9) / 64) * 64
   const buf = new Uint8Array(totalLen)
   buf.set(msg)
   buf[n] = 0x80

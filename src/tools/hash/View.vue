@@ -41,32 +41,41 @@ async function hashBuffer(buf: ArrayBuffer): Promise<Record<string, string>> {
   return out
 }
 
+// Increment on every new computation so a stale async result (e.g. a large
+// file that finishes after the user switched back to text) can't overwrite
+// the current one.
+let computeSeq = 0
+
 async function computeText() {
+  const seq = ++computeSeq
   computing.value = true
   try {
     if (!input.value) {
-      results.value = {}
+      if (seq === computeSeq) results.value = {}
       return
     }
     const bytes = new TextEncoder().encode(input.value)
     const buf = new ArrayBuffer(bytes.byteLength)
     new Uint8Array(buf).set(bytes)
-    results.value = await hashBuffer(buf)
+    const res = await hashBuffer(buf)
+    if (seq === computeSeq) results.value = res
   } finally {
-    computing.value = false
+    if (seq === computeSeq) computing.value = false
   }
 }
 
 async function onFiles(files: File[]) {
   const file = files[0]
   if (!file) return
+  const seq = ++computeSeq
   fileName.value = file.name
   computing.value = true
   try {
     const buf = await file.arrayBuffer()
-    results.value = await hashBuffer(buf)
+    const res = await hashBuffer(buf)
+    if (seq === computeSeq) results.value = res
   } finally {
-    computing.value = false
+    if (seq === computeSeq) computing.value = false
   }
 }
 

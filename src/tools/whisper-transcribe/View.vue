@@ -230,6 +230,9 @@ function onFilesSelected(files: File[]) {
 // ---------------------------------------------------------------------------
 
 async function startRecording() {
+  // a running file transcription would otherwise keep overwriting the new
+  // recording's transcript via its segment/complete messages
+  if (phase.value !== 'idle') return
   micError.value = ''
   errorMessage.value = ''
   resultText.value = ''
@@ -422,7 +425,9 @@ function getWorker(): Worker {
         modelTotalBytes.value = p.total
       }
     } else if (msg.type === 'ready') {
-      modelLoadedFor.value = model.value
+      // record the model the worker was asked to load, not whatever is
+      // currently selected in the UI (the user may have switched mid-load)
+      modelLoadedFor.value = modelLoadRequested ?? model.value
       modelProgress.value = 100
       phase.value = 'idle'
       void refreshCachedModels()
@@ -492,6 +497,8 @@ async function startTranscription() {
   }
 }
 
+let modelLoadRequested: ModelId | null = null
+
 function ensureModelLoaded(onReady: () => void) {
   if (modelLoadedFor.value === model.value) {
     onReady()
@@ -502,6 +509,7 @@ function ensureModelLoaded(onReady: () => void) {
   modelLoadedBytes.value = 0
   modelTotalBytes.value = 0
   onModelReady = onReady
+  modelLoadRequested = model.value
   getWorker().postMessage({ type: 'load', model: model.value })
 }
 
@@ -764,14 +772,30 @@ async function refreshCachedModels() {
   }
 }
 
+/** Terminate the worker and settle everything waiting on it, so no promise
+ *  hangs and the UI can't get stuck in a busy phase forever. */
+function teardownWorker() {
+  worker?.terminate()
+  worker = null
+  onModelReady = null
+  modelLoadRequested = null
+  for (const pending of liveRequestResolvers.values()) {
+    pending.reject(new Error('worker terminated'))
+  }
+  liveRequestResolvers.clear()
+  if (phase.value === 'loading-model' || phase.value === 'transcribing') {
+    phase.value = 'idle'
+    segmentProgress.value = null
+  }
+}
+
 /** Deleting the model that's currently loaded in the worker just forces a
  *  fresh re-download next time — the live session already in memory keeps
  *  working until the worker is recreated. */
 function forgetLoadedWorkerIfMatches(id: string) {
   if (modelLoadedFor.value !== id) return
   modelLoadedFor.value = null
-  worker?.terminate()
-  worker = null
+  teardownWorker()
 }
 
 async function deleteCachedModel(id: string) {
@@ -787,8 +811,7 @@ async function deleteCachedModel(id: string) {
 async function clearAllCachedModels() {
   await caches.delete(TRANSFORMERS_CACHE_NAME)
   modelLoadedFor.value = null
-  worker?.terminate()
-  worker = null
+  teardownWorker()
   await refreshCachedModels()
 }
 

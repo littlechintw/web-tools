@@ -83,7 +83,7 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, q: number): Promi
   })
 }
 
-function drawScaled(img: HTMLImageElement, scale: number): HTMLCanvasElement {
+function drawScaled(img: HTMLImageElement, scale: number, background?: string): HTMLCanvasElement {
   const w = Math.max(1, Math.round(img.naturalWidth * scale))
   const h = Math.max(1, Math.round(img.naturalHeight * scale))
   const canvas = document.createElement('canvas')
@@ -91,10 +91,18 @@ function drawScaled(img: HTMLImageElement, scale: number): HTMLCanvasElement {
   canvas.height = h
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('ctx')
+  if (background) {
+    ctx.fillStyle = background
+    ctx.fillRect(0, 0, w, h)
+  }
   ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(img, 0, 0, w, h)
   return canvas
 }
+
+// JPEG has no alpha channel; composite transparency over white instead of the
+// encoder's default black.
+const jpegBg = (type: string) => (type === 'image/jpeg' ? '#ffffff' : undefined)
 
 // Native, dependency-free "compress to target size": lower the quality first,
 // then progressively downscale until the encoded blob fits under maxBytes.
@@ -107,7 +115,7 @@ async function compressToTarget(
   let scale = 1
   let smallest: Blob | null = null
   for (let attempt = 0; attempt < 12; attempt++) {
-    const canvas = drawScaled(img, scale)
+    const canvas = drawScaled(img, scale, jpegBg(type))
     let q = initialQuality
     do {
       const blob = await canvasToBlob(canvas, type, q)
@@ -127,21 +135,14 @@ async function convert() {
   busy.value = true
   try {
     const img = await loadImage(sourceUrl.value)
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('ctx')
-    ctx.drawImage(img, 0, 0)
+    const canvas = drawScaled(img, 1, jpegBg(targetFormat.value))
     let blob = await canvasToBlob(canvas, targetFormat.value, quality.value)
 
-    if (useCompress.value) {
-      blob = await compressToTarget(
-        img,
-        targetFormat.value,
-        quality.value,
-        maxSizeMB.value * 1024 * 1024,
-      )
+    // Ignore an empty/invalid size target instead of chasing NaN through
+    // every downscale pass.
+    const maxMB = Number(maxSizeMB.value)
+    if (useCompress.value && Number.isFinite(maxMB) && maxMB > 0) {
+      blob = await compressToTarget(img, targetFormat.value, quality.value, maxMB * 1024 * 1024)
     }
 
     if (resultUrl.value) URL.revokeObjectURL(resultUrl.value)

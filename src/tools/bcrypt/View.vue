@@ -16,14 +16,16 @@ const rounds = ref(10)
 const hashResult = ref('')
 const hashing = ref(false)
 
-function doHash() {
+async function doHash() {
   if (!text.value) {
     hashResult.value = ''
     return
   }
   hashing.value = true
   try {
-    hashResult.value = bcrypt.hashSync(text.value, rounds.value)
+    // async hash yields periodically, so high rounds show the spinner
+    // instead of freezing the UI
+    hashResult.value = await bcrypt.hash(text.value, rounds.value)
   } finally {
     hashing.value = false
   }
@@ -34,13 +36,13 @@ const plaintext = ref('')
 const hashToVerify = ref('')
 const verifyResult = ref<boolean | null>(null)
 
-function doVerify() {
+async function doVerify() {
   if (!plaintext.value || !hashToVerify.value) {
     verifyResult.value = null
     return
   }
   try {
-    verifyResult.value = bcrypt.compareSync(plaintext.value, hashToVerify.value)
+    verifyResult.value = await bcrypt.compare(plaintext.value, hashToVerify.value)
   } catch {
     verifyResult.value = false
   }

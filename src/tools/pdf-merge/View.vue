@@ -20,7 +20,15 @@ let lastUrl: string | null = null
 
 const totalPages = computed(() => items.value.reduce((sum, it) => sum + it.pageCount, 0))
 
-async function onFiles(files: File[]) {
+// Serialize batches so two quick drops append in drop order instead of
+// interleaving their files as each finishes parsing.
+let addQueue: Promise<void> = Promise.resolve()
+
+function onFiles(files: File[]) {
+  addQueue = addQueue.then(() => addFiles(files))
+}
+
+async function addFiles(files: File[]) {
   error.value = ''
   for (const file of files) {
     try {

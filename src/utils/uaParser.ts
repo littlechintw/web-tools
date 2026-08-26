@@ -71,7 +71,7 @@ function parseOS(ua: string): { name?: string; version?: string } {
   }
   if ((m = match(ua, /iPhone OS ([\d_]+)/)) || (m = match(ua, /CPU OS ([\d_]+)/)))
     return { name: 'iOS', version: m[1].replace(/_/g, '.') }
-  if ((m = match(ua, /Mac OS X ([\d_]+)/)))
+  if ((m = match(ua, /Mac OS X ([\d._]+)/)))
     return { name: 'macOS', version: m[1].replace(/_/g, '.') }
   if (/Android/.test(ua)) {
     m = match(ua, /Android ([\d.]+)/)

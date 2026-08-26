@@ -310,6 +310,11 @@ let isHolding = false
 function onCanvasPointerDown(e: PointerEvent) {
   const canvas = canvasRef.value
   if (!canvas) return
+  // a second pointer (multi-touch) must not orphan the previous interval
+  if (holdInterval !== null) {
+    clearInterval(holdInterval)
+    holdInterval = null
+  }
   isHolding = true
   const rect = canvas.getBoundingClientRect()
   const scaleX = canvas.width / rect.width

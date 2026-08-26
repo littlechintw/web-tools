@@ -113,4 +113,10 @@ describe('toCases()', () => {
     expect(empty.find((r) => r.key === 'snake_case')?.value).toBe('')
     expect(empty.find((r) => r.key === 'Sentence case')?.value).toBe('')
   })
+
+  it('keeps non-ASCII letters instead of deleting them', () => {
+    expect(words('café niño')).toEqual(['café', 'niño'])
+    expect(toCases('café niño').find((r) => r.key === 'snake_case')?.value).toBe('café_niño')
+    expect(toCases('你好 世界').find((r) => r.key === 'kebab-case')?.value).toBe('你好-世界')
+  })
 })

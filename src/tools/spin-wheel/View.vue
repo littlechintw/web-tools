@@ -369,6 +369,7 @@ onUnmounted(() => {
               variant="outlined"
               hide-details
               class="label-field"
+              :disabled="spinning"
             />
             <v-text-field
               v-model.number="item.weight"
@@ -380,6 +381,7 @@ onUnmounted(() => {
               variant="outlined"
               hide-details
               class="weight-field"
+              :disabled="spinning"
               @blur="clampWeight(item)"
             />
             <v-btn

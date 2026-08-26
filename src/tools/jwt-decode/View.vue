@@ -66,7 +66,8 @@ interface ClaimRow {
 
 const claimRows = computed<ClaimRow[]>(() => {
   const obj = decoded.value?.payloadObj
-  if (!obj) return []
+  // A valid JWT payload segment can decode to a non-object JSON value.
+  if (!obj || typeof obj !== 'object') return []
   const now = Date.now()
   const rows: ClaimRow[] = []
   for (const key of STANDARD) {

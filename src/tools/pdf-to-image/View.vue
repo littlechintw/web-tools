@@ -33,16 +33,24 @@ async function onFiles(files: File[]) {
   await render(file)
 }
 
+// Bumped per render so a second dropped file cancels the first file's loop
+// instead of both racing to write `pages`.
+let renderSeq = 0
+
 async function render(file: File) {
+  const seq = ++renderSeq
   busy.value = true
   error.value = ''
   revokeAll()
+  const out: RenderedPage[] = []
+  let committed = false
+  let pdf: Awaited<ReturnType<typeof getDocument>['promise']> | null = null
   try {
     const buffer = await file.arrayBuffer()
     // pdf.js may detach the buffer it receives, so hand it a copy.
-    const pdf = await getDocument({ data: new Uint8Array(buffer).slice() }).promise
-    const out: RenderedPage[] = []
+    pdf = await getDocument({ data: new Uint8Array(buffer).slice() }).promise
     for (let n = 1; n <= pdf.numPages; n++) {
+      if (seq !== renderSeq) return
       const page = await pdf.getPage(n)
       const vp = page.getViewport({ scale: scale.value })
       const canvas = document.createElement('canvas')
@@ -55,11 +63,16 @@ async function render(file: File) {
       if (!blob) throw new Error('encode failed')
       out.push({ index: n, url: URL.createObjectURL(blob) })
     }
-    pages.value = out
+    if (seq === renderSeq) {
+      pages.value = out
+      committed = true
+    }
   } catch (e) {
-    error.value = (e as Error).message
+    if (seq === renderSeq) error.value = (e as Error).message
   } finally {
-    busy.value = false
+    if (!committed) out.forEach((p) => URL.revokeObjectURL(p.url))
+    void pdf?.loadingTask.destroy()
+    if (seq === renderSeq) busy.value = false
   }
 }
 
@@ -70,8 +83,13 @@ function downloadPage(p: RenderedPage) {
   a.click()
 }
 
-function downloadAll() {
-  pages.value.forEach((p) => downloadPage(p))
+async function downloadAll() {
+  // Stagger the downloads: firing them all at once trips the browser's
+  // multiple-download throttle and silently drops most files.
+  for (const p of pages.value) {
+    downloadPage(p)
+    await new Promise((r) => setTimeout(r, 300))
+  }
 }
 
 onUnmounted(revokeAll)

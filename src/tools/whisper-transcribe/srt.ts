@@ -9,8 +9,13 @@ function pad(n: number, width = 2): string {
 
 function formatSrtTimestamp(seconds: number): string {
   const clamped = Math.max(0, seconds)
-  const ms = Math.round((clamped % 1) * 1000)
-  const total = Math.floor(clamped)
+  let ms = Math.round((clamped % 1) * 1000)
+  let total = Math.floor(clamped)
+  if (ms === 1000) {
+    // carry a rounded-up fraction into the seconds field
+    ms = 0
+    total += 1
+  }
   const h = Math.floor(total / 3600)
   const m = Math.floor((total % 3600) / 60)
   const s = total % 60

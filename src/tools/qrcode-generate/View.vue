@@ -128,7 +128,8 @@ function snapshot(): SavedData {
     type: type.value,
     text: text.value,
     ssid: ssid.value,
-    password: password.value,
+    // never persist Wi-Fi passwords to localStorage history
+    password: '',
     encryption: encryption.value,
     wifiHidden: wifiHidden.value,
     name: name.value,

@@ -17,15 +17,17 @@ const nanoidSize = ref(21)
 const items = ref<string[]>([])
 
 function generate() {
+  const c = Math.max(1, Math.min(100, Math.floor(count.value || 1)))
+  const size = Math.max(2, Math.min(128, Math.floor(nanoidSize.value || 21)))
   const out: string[] = []
-  for (let i = 0; i < count.value; i++) {
+  for (let i = 0; i < c; i++) {
     if (tab.value === 'uuid') {
       let id: string = crypto.randomUUID()
       if (removeHyphens.value) id = id.replace(/-/g, '')
       if (uppercase.value) id = id.toUpperCase()
       out.push(id)
     } else {
-      out.push(nanoid(nanoidSize.value))
+      out.push(nanoid(size))
     }
   }
   items.value = out

@@ -46,6 +46,8 @@ function determineResult(c1: boolean, c2: boolean): ResultType {
   return c1 ? 'xiaobei' : 'yinbei'
 }
 
+let throwTimeouts: ReturnType<typeof setTimeout>[] = []
+
 function throwCups() {
   if (throwing.value) return
   throwing.value = true
@@ -61,20 +63,20 @@ function throwCups() {
   showFlying.value = true
 
   // Animation is 800ms; at 750ms snap & hide flying, show static
-  setTimeout(() => {
+  throwTimeouts.push(setTimeout(() => {
     cup1FaceUp.value = c1
     cup2FaceUp.value = c2
     showFlying.value = false
 
-    setTimeout(() => {
+    throwTimeouts.push(setTimeout(() => {
       throwing.value = false
       const result: ThrowResult = { type: determineResult(c1, c2), cup1FaceUp: c1, cup2FaceUp: c2 }
       currentResult.value = result
       history.value.unshift({ id: nextId++, type: result.type })
       if (history.value.length > 5) history.value.pop()
       knockSound()
-    }, 120)
-  }, 750)
+    }, 120))
+  }, 750))
 }
 
 const resultConfig: Record<ResultType, { color: string; icon: string }> = {
@@ -83,7 +85,12 @@ const resultConfig: Record<ResultType, { color: string; icon: string }> = {
   yinbei:   { color: 'error',   icon: '⬛' },
 }
 
-onUnmounted(() => { audioCtx?.close().catch(() => {}); audioCtx = null })
+onUnmounted(() => {
+  for (const id of throwTimeouts) clearTimeout(id)
+  throwTimeouts = []
+  audioCtx?.close().catch(() => {})
+  audioCtx = null
+})
 </script>
 
 <template>

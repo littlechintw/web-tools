@@ -67,7 +67,7 @@ async function readBytes(file: File): Promise<Uint8Array> {
 }
 
 /** Decode any image File and re-encode it as PNG bytes via a canvas. */
-async function toPngBytes(file: File): Promise<Uint8Array> {
+async function reencodeBytes(file: File, type: 'image/png' | 'image/jpeg'): Promise<Uint8Array> {
   const url = URL.createObjectURL(file)
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -76,17 +76,55 @@ async function toPngBytes(file: File): Promise<Uint8Array> {
       el.onerror = () => reject(new Error('decode failed'))
       el.src = url
     })
+    // The browser applies EXIF orientation when decoding, so drawing to a
+    // canvas also normalizes rotated phone photos.
     const canvas = document.createElement('canvas')
     canvas.width = img.naturalWidth
     canvas.height = img.naturalHeight
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('no 2d context')
     ctx.drawImage(img, 0, 0)
-    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'))
+    const blob = await new Promise<Blob | null>((res) =>
+      canvas.toBlob(res, type, type === 'image/jpeg' ? 0.92 : undefined),
+    )
     if (!blob) throw new Error('encode failed')
     return new Uint8Array(await blob.arrayBuffer())
   } finally {
     URL.revokeObjectURL(url)
+  }
+}
+
+const toPngBytes = (file: File) => reencodeBytes(file, 'image/png')
+
+/** Read the EXIF orientation tag of a JPEG (1 = upright / none). */
+async function jpegOrientation(file: File): Promise<number> {
+  try {
+    const buf = new DataView(await file.slice(0, 128 * 1024).arrayBuffer())
+    if (buf.byteLength < 4 || buf.getUint16(0) !== 0xffd8) return 1
+    let offset = 2
+    while (offset + 4 <= buf.byteLength) {
+      const marker = buf.getUint16(offset)
+      if ((marker & 0xff00) !== 0xff00) return 1
+      const size = buf.getUint16(offset + 2)
+      if (marker === 0xffe1 && offset + 10 <= buf.byteLength && buf.getUint32(offset + 4) === 0x45786966) {
+        const tiff = offset + 10
+        if (tiff + 8 > buf.byteLength) return 1
+        const little = buf.getUint16(tiff) === 0x4949
+        const ifd = tiff + buf.getUint32(tiff + 4, little)
+        if (ifd + 2 > buf.byteLength) return 1
+        const count = buf.getUint16(ifd, little)
+        for (let i = 0; i < count; i++) {
+          const entry = ifd + 2 + i * 12
+          if (entry + 12 > buf.byteLength) return 1
+          if (buf.getUint16(entry, little) === 0x0112) return buf.getUint16(entry + 8, little) || 1
+        }
+        return 1
+      }
+      offset += 2 + size
+    }
+    return 1
+  } catch {
+    return 1
   }
 }
 
@@ -101,7 +139,12 @@ async function generate() {
       const type = item.file.type
       let embedded
       if (type === 'image/jpeg' || type === 'image/jpg') {
-        embedded = await doc.embedJpg(await readBytes(item.file))
+        // embedJpg ignores EXIF orientation; re-encode rotated photos upright
+        const orientation = await jpegOrientation(item.file)
+        embedded =
+          orientation > 1
+            ? await doc.embedJpg(await reencodeBytes(item.file, 'image/jpeg'))
+            : await doc.embedJpg(await readBytes(item.file))
       } else if (type === 'image/png') {
         embedded = await doc.embedPng(await readBytes(item.file))
       } else {

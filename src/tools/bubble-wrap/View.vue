@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+
+let unmounted = false
+onUnmounted(() => {
+  unmounted = true
+  audioCtx?.close().catch(() => {})
+  audioCtx = null
+})
 
 // ---- config ----
 const ROWS = 10
@@ -81,6 +88,7 @@ async function popAll() {
       ;[indices[i], indices[j]] = [indices[j], indices[i]]
     }
     for (const i of indices) {
+      if (unmounted) break
       bubbles.value[i] = true
       try {
         playPop(ctx, bubbleSizes[i])

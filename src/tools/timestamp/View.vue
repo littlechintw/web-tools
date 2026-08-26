@@ -91,7 +91,11 @@ const tsDetected = computed(() => {
 const dateParsed = computed<Date | null>(() => {
   const raw = dateInput.value.trim()
   if (!raw) return null
-  const d = new Date(raw)
+  // Date-only strings would be parsed as UTC midnight by new Date(), while
+  // date+time strings parse as local time; parse date-only as local midnight
+  // so both forms are consistent.
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(raw)
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(raw)
   return isNaN(d.getTime()) ? null : d
 })
 

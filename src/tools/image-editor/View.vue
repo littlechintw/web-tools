@@ -433,9 +433,22 @@ const cursorClass = computed(() => {
 // --- Export ---------------------------------------------------------------
 
 function download() {
-  const canvas = canvasRef.value
+  let canvas = canvasRef.value
   if (!canvas) return
   const isJpeg = exportFormat.value === 'image/jpeg'
+  if (isJpeg) {
+    // JPEG has no alpha; composite transparency over white, not black
+    const flat = document.createElement('canvas')
+    flat.width = canvas.width
+    flat.height = canvas.height
+    const fctx = flat.getContext('2d')
+    if (fctx) {
+      fctx.fillStyle = '#ffffff'
+      fctx.fillRect(0, 0, flat.width, flat.height)
+      fctx.drawImage(canvas, 0, 0)
+      canvas = flat
+    }
+  }
   canvas.toBlob(
     (blob) => {
       if (!blob) return

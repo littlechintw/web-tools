@@ -1,6 +1,11 @@
 export const DIGITS = '0123456789abcdefghijklmnopqrstuvwxyz'
 
+function assertBase(base: number): void {
+  if (!Number.isInteger(base) || base < 2 || base > 36) throw new Error('invalid base')
+}
+
 export function parseToBigInt(str: string, base: number): bigint {
+  assertBase(base)
   let s = str.trim().toLowerCase()
   if (!s) throw new Error('empty')
   let neg = false
@@ -22,6 +27,7 @@ export function parseToBigInt(str: string, base: number): bigint {
 }
 
 export function bigIntToBase(value: bigint, base: number): string {
+  assertBase(base)
   if (value === 0n) return '0'
   const neg = value < 0n
   let v = neg ? -value : value

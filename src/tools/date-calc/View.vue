@@ -57,8 +57,16 @@ const resultDate = computed<Date | null>(() => {
   const sign = op.value === 'add' ? 1 : -1
   const d = new Date(base.getTime())
   // Apply calendar-aware fields first (months/years), then absolute durations.
-  d.setFullYear(d.getFullYear() + sign * num(years.value))
-  d.setMonth(d.getMonth() + sign * num(months.value))
+  // Clamp to the target month's last day so e.g. Jan 31 + 1 month = Feb 28,
+  // not Mar 3 (setMonth alone overflows).
+  const monthDelta = sign * (num(years.value) * 12 + num(months.value))
+  if (monthDelta !== 0) {
+    const day = d.getDate()
+    d.setDate(1)
+    d.setMonth(d.getMonth() + monthDelta)
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    d.setDate(Math.min(day, daysInMonth))
+  }
   d.setDate(d.getDate() + sign * (num(weeks.value) * 7 + num(days.value)))
   d.setHours(d.getHours() + sign * num(hours.value))
   d.setMinutes(d.getMinutes() + sign * num(minutes.value))

@@ -9,7 +9,16 @@ const { t } = useI18n()
 const STORAGE_KEY = 'app.wooden-fish.merit'
 
 const sessionMerit = ref(0)
-const totalMerit = ref(parseInt(localStorage.getItem(STORAGE_KEY) ?? '0'))
+const totalMerit = ref(loadTotalMerit())
+
+function loadTotalMerit(): number {
+  try {
+    const n = parseInt(localStorage.getItem(STORAGE_KEY) ?? '0')
+    return Number.isFinite(n) ? n : 0
+  } catch {
+    return 0
+  }
+}
 
 // ── Floating +1 particles ────────────────────────────────────────────────────
 interface Particle {

@@ -19,10 +19,10 @@ const parts = computed(() => {
 })
 
 const additions = computed(() =>
-  parts.value.filter((p) => p.added).reduce((n, p) => n + p.value.length, 0),
+  parts.value.filter((p) => p.added).reduce((n, p) => n + (p.count ?? 0), 0),
 )
 const deletions = computed(() =>
-  parts.value.filter((p) => p.removed).reduce((n, p) => n + p.value.length, 0),
+  parts.value.filter((p) => p.removed).reduce((n, p) => n + (p.count ?? 0), 0),
 )
 const hasDiff = computed(() => parts.value.some((p) => p.added || p.removed))
 </script>

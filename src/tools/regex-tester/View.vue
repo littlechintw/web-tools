@@ -57,7 +57,7 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
   let m: RegExpExecArray | null
 
   while ((m = re.exec(str)) !== null) {
-    if (count++ > MAX_MATCHES) break
+    if (count++ >= MAX_MATCHES) break
     const idx = m.index
     if (idx > last) segments.push({ text: str.slice(last, idx), match: false })
     segments.push({ text: m[0], match: true })
@@ -77,8 +77,13 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
     }
     matches.push({ index: idx, full: m[0], groups })
 
-    // guard against zero-length-match infinite loops
-    if (m[0] === '') re.lastIndex++
+    // guard against zero-length-match infinite loops; advance a full code
+    // point, since with the 'u' flag exec() snaps a mid-surrogate lastIndex
+    // back to the pair's start and would loop forever
+    if (m[0] === '') {
+      const cp = str.codePointAt(re.lastIndex)
+      re.lastIndex += cp !== undefined && cp > 0xffff ? 2 : 1
+    }
   }
   if (last < str.length) segments.push({ text: str.slice(last), match: false })
 

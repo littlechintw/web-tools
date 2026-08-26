@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PDFDocument } from '@cantoo/pdf-lib'
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
 import { getDocument } from '@/utils/pdfjs'
@@ -40,7 +41,18 @@ const placement = ref<PlacementPoint | null>(null)
 
 /* ---------------- PDF load ---------------- */
 
+// The parsed pdf.js document is cached for the lifetime of the loaded file
+// so page flips don't re-parse the whole PDF (and don't leak worker memory).
+let pdfDoc: PDFDocumentProxy | null = null
+
+function destroyDoc() {
+  const doc = pdfDoc
+  pdfDoc = null
+  if (doc) void doc.loadingTask.destroy()
+}
+
 function clearState() {
+  destroyDoc()
   rawBytes.value = null
   fileName.value = ''
   pageCount.value = 0
@@ -59,11 +71,13 @@ async function onFiles(files: File[]) {
   fileName.value = file.name
   try {
     rawBytes.value = new Uint8Array(await file.arrayBuffer())
-    const pdf = await getDocument({ data: new Uint8Array(rawBytes.value.slice(0)) }).promise
-    pageCount.value = pdf.numPages
-    await pdf.cleanup()
+    pdfDoc = await getDocument({ data: new Uint8Array(rawBytes.value.slice(0)) }).promise
+    pageCount.value = pdfDoc.numPages
     currentPage.value = 1
-    await renderPreview()
+    // The preview canvas only exists once loading is false, so flip it
+    // before rendering the first page.
+    loading.value = false
+    queueRender()
   } catch {
     clearState()
     error.value = t('tools.pdf-sign.loadError')
@@ -72,34 +86,45 @@ async function onFiles(files: File[]) {
   }
 }
 
+// pdf.js rejects overlapping render() calls on the same canvas, so renders
+// are serialized through a promise chain (last requested page wins).
+let renderChain: Promise<void> = Promise.resolve()
+
+function queueRender() {
+  renderChain = renderChain.then(renderPreview).catch(() => {})
+}
+
 async function renderPreview() {
-  if (!rawBytes.value) return
+  const doc = pdfDoc
+  if (!doc) return
   await nextTick()
   const canvas = previewCanvas.value
   if (!canvas) return
-  const pdf = await getDocument({ data: new Uint8Array(rawBytes.value.slice(0)) }).promise
-  try {
-    const page = await pdf.getPage(currentPage.value)
-    // Fit preview to a sensible max width.
-    const base = page.getViewport({ scale: 1 })
-    const scale = Math.min(1.5, 640 / base.width)
-    const viewport = page.getViewport({ scale })
-    canvas.width = Math.floor(viewport.width)
-    canvas.height = Math.floor(viewport.height)
-    previewW.value = canvas.width
-    previewH.value = canvas.height
-    const ctx = canvas.getContext('2d')
-    if (ctx) {
-      await page.render({ canvasContext: ctx, viewport, canvas }).promise
-    }
-  } finally {
-    await pdf.cleanup()
+  const page = await doc.getPage(currentPage.value)
+  if (pdfDoc !== doc) return
+  // Fit preview to a sensible max width.
+  const base = page.getViewport({ scale: 1 })
+  const scale = Math.min(1.5, 640 / base.width)
+  const viewport = page.getViewport({ scale })
+  canvas.width = Math.floor(viewport.width)
+  canvas.height = Math.floor(viewport.height)
+  previewW.value = canvas.width
+  previewH.value = canvas.height
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise
   }
 }
 
 watch(currentPage, () => {
   placement.value = null
-  void renderPreview()
+  queueRender()
+})
+
+// Toggling away from draw mode destroys the pad canvas (v-if), so a fresh
+// blank canvas must not still count as a signature.
+watch(sigMode, (m) => {
+  if (m === 'draw') hasDrawing.value = false
 })
 
 /* ---------------- Placement ---------------- */
@@ -227,23 +252,24 @@ const hasSignature = computed(() =>
 
 /* ---------------- Apply ---------------- */
 
-function signaturePngBytes(): Uint8Array | null {
-  if (sigMode.value === 'upload') {
-    if (!uploadedSig.value) return null
-    const b64 = uploadedSig.value.dataUrl.split(',')[1] ?? ''
-    const bin = atob(b64)
-    const out = new Uint8Array(bin.length)
-    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
-    return out
-  }
-  const c = padCanvas.value
-  if (!c) return null
-  const dataUrl = c.toDataURL('image/png')
+function dataUrlToBytes(dataUrl: string): Uint8Array {
   const b64 = dataUrl.split(',')[1] ?? ''
   const bin = atob(b64)
   const out = new Uint8Array(bin.length)
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
   return out
+}
+
+function signatureImage(): { bytes: Uint8Array; kind: 'png' | 'jpg' } | null {
+  if (sigMode.value === 'upload') {
+    if (!uploadedSig.value) return null
+    const { dataUrl } = uploadedSig.value
+    const kind = /^data:image\/jpe?g[;,]/i.test(dataUrl) ? 'jpg' : 'png'
+    return { bytes: dataUrlToBytes(dataUrl), kind }
+  }
+  const c = padCanvas.value
+  if (!c) return null
+  return { bytes: dataUrlToBytes(c.toDataURL('image/png')), kind: 'png' }
 }
 
 async function apply() {
@@ -259,12 +285,12 @@ async function apply() {
   error.value = ''
   applying.value = true
   try {
-    const pngBytes = signaturePngBytes()
-    if (!pngBytes) throw new Error('no signature')
+    const sig = signatureImage()
+    if (!sig) throw new Error('no signature')
 
     const doc = await PDFDocument.load(rawBytes.value)
     const page = doc.getPage(currentPage.value - 1)
-    const png = await doc.embedPng(pngBytes)
+    const png = sig.kind === 'jpg' ? await doc.embedJpg(sig.bytes) : await doc.embedPng(sig.bytes)
 
     const { width: pw, height: ph } = page.getSize()
     const box = sigBox.value
@@ -355,14 +381,15 @@ onBeforeUnmount(() => {
               class="preview-canvas"
               @click="onPreviewClick"
             />
+            <!-- Percentages so the ghost tracks the canvas when it is CSS-downscaled -->
             <div
               v-if="sigBox"
               class="sig-ghost"
               :style="{
-                left: sigBox.left + 'px',
-                top: sigBox.top + 'px',
-                width: sigBox.width + 'px',
-                height: sigBox.height + 'px',
+                left: (sigBox.left / previewW) * 100 + '%',
+                top: (sigBox.top / previewH) * 100 + '%',
+                width: (sigBox.width / previewW) * 100 + '%',
+                height: (sigBox.height / previewH) * 100 + '%',
               }"
             />
           </div>
@@ -410,7 +437,7 @@ onBeforeUnmount(() => {
 
           <template v-else>
             <FileDrop
-              accept="image/png"
+              accept="image/png,image/jpeg"
               :hint="t('tools.pdf-sign.uploadSignatureHint')"
               @files="onSigFiles"
             />

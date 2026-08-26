@@ -64,5 +64,23 @@ describe('maskName()', () => {
       // char = '**', repeat(1) = '**'
       expect(maskName('abc', 'middle', 1, '**')).toBe('a**c')
     })
+
+    it('counts code points, not UTF-16 units (surrogate pairs stay intact)', () => {
+      // 𠀋 is a non-BMP ideograph (2 UTF-16 units); it must never be split.
+      expect(maskName('王𠀋明', 'middle', 1, '*')).toBe('王*明')
+      expect(maskName('😀😃😄', 'middle', 1, '*')).toBe('😀*😄')
+    })
+
+    it('negative mask count returns the name unchanged', () => {
+      expect(maskName('hello', 'sides', -1, '*')).toBe('hello')
+    })
+
+    it('mask count = 0 on a single-char name returns the name', () => {
+      expect(maskName('A', 'middle', 0, '*')).toBe('A')
+    })
+
+    it('empty name returns empty string', () => {
+      expect(maskName('', 'middle', 1, '*')).toBe('')
+    })
   })
 })

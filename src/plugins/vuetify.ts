@@ -6,7 +6,12 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 const STORAGE_KEY = 'app.theme'
 
 function initialTheme(): 'light' | 'dark' {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  let saved: string | null = null
+  try {
+    saved = localStorage.getItem(STORAGE_KEY)
+  } catch {
+    // storage access can throw (blocked cookies, some embedded contexts)
+  }
   if (saved === 'light' || saved === 'dark') return saved
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
@@ -50,5 +55,9 @@ export const vuetify = createVuetify({
 })
 
 export function persistTheme(theme: string) {
-  localStorage.setItem(STORAGE_KEY, theme)
+  try {
+    localStorage.setItem(STORAGE_KEY, theme)
+  } catch {
+    // best-effort persistence
+  }
 }

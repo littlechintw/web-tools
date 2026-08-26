@@ -110,4 +110,12 @@ describe('convertAll()', () => {
     expect(convertAll('xyz', 10)).toBeNull()
     expect(convertAll('', 10)).toBeNull()
   })
+
+  it('rejects out-of-range bases instead of looping or emitting garbage', () => {
+    expect(() => bigIntToBase(5n, 1)).toThrow()
+    expect(() => bigIntToBase(39n, 40)).toThrow()
+    expect(() => parseToBigInt('z', 99)).toThrow()
+    expect(() => parseToBigInt('10', 2.5)).toThrow()
+    expect(convertAll('10', 1)).toBeNull()
+  })
 })

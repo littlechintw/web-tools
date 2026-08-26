@@ -27,6 +27,13 @@ function onDrop(e: DragEvent) {
   handleFiles(e.dataTransfer?.files ?? null)
 }
 
+function onDragLeave(e: DragEvent) {
+  // dragleave also fires when moving over child elements; only deactivate
+  // when the pointer actually leaves the drop zone.
+  const to = e.relatedTarget as Node | null
+  if (!to || !(e.currentTarget as Node).contains(to)) dragging.value = false
+}
+
 function onSelect(e: Event) {
   handleFiles((e.target as HTMLInputElement).files)
   ;(e.target as HTMLInputElement).value = ''
@@ -42,7 +49,7 @@ function onSelect(e: Event) {
     @click="inputRef?.click()"
     @keydown.enter.prevent="inputRef?.click()"
     @dragover.prevent="dragging = true"
-    @dragleave.prevent="dragging = false"
+    @dragleave.prevent="onDragLeave"
     @drop.prevent="onDrop"
   >
     <v-icon icon="mdi-cloud-upload-outline" size="40" class="mb-2 text-medium-emphasis" />
@@ -54,6 +61,7 @@ function onSelect(e: Event) {
       :multiple="multiple"
       hidden
       @change="onSelect"
+      @click.stop
     />
   </div>
 </template>

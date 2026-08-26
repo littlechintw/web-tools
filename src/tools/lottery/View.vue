@@ -41,7 +41,8 @@ const previewNames = computed(() => {
     .map((l) => l.trim())
     .filter(Boolean)
   if (!privacyEnabled.value) return lines
-  const char = maskChar.value.length > 0 ? maskChar.value[0] : '*'
+  // index by code point so an emoji mask char isn't split into surrogates
+  const char = Array.from(maskChar.value)[0] ?? '*'
   return lines.map((n) => maskName(n, maskPosition.value, maskCount.value, char))
 })
 
@@ -88,7 +89,8 @@ function startLottery() {
     .map((l) => l.trim())
     .filter(Boolean)
 
-  const char = maskChar.value.length > 0 ? maskChar.value[0] : '*'
+  // index by code point so an emoji mask char isn't split into surrogates
+  const char = Array.from(maskChar.value)[0] ?? '*'
   names.value = rawLines
   maskedNames.value = privacyEnabled.value
     ? rawLines.map((n) => maskName(n, maskPosition.value, maskCount.value, char))
@@ -227,7 +229,9 @@ onUnmounted(() => {
 
 // ── Mask char validation (keep single char) ───────────────────────────────────
 function onMaskCharInput(val: string) {
-  maskChar.value = val.length > 0 ? val[val.length - 1] : '*'
+  // keep the last code point, not the last UTF-16 unit (emoji are 2 units)
+  const chars = Array.from(val)
+  maskChar.value = chars.length > 0 ? chars[chars.length - 1] : '*'
 }
 </script>
 

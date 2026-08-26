@@ -39,7 +39,8 @@ const output = computed(() => {
       if (urlSafe.value) b64 = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
       return b64
     } else {
-      let b64 = input.value.trim()
+      // strip all whitespace so 76-column-wrapped (MIME/PEM-style) input decodes
+      let b64 = input.value.replace(/\s+/g, '')
       if (urlSafe.value) b64 = b64.replace(/-/g, '+').replace(/_/g, '/')
       // restore padding
       while (b64.length % 4) b64 += '='

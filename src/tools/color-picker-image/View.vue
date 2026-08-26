@@ -16,6 +16,7 @@ interface PickedColor {
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const hasImage = ref(false)
+const loadError = ref(false)
 const hover = ref<PickedColor | null>(null)
 const recent = ref<PickedColor[]>([])
 
@@ -65,9 +66,16 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 async function onFiles(files: File[]) {
   const file = files[0]
   if (!file) return
+  loadError.value = false
   if (objectUrl) URL.revokeObjectURL(objectUrl)
   objectUrl = URL.createObjectURL(file)
-  const img = await loadImage(objectUrl)
+  let img: HTMLImageElement
+  try {
+    img = await loadImage(objectUrl)
+  } catch {
+    loadError.value = true
+    return
+  }
   const canvas = canvasRef.value
   if (!canvas) return
   canvas.width = img.naturalWidth
@@ -90,11 +98,14 @@ onUnmounted(() => {
 <template>
   <ToolShell>
     <FileDrop
-      v-if="!hasImage"
       accept="image/*"
       :hint="t('tools.color-picker-image.uploadHint')"
+      :class="{ 'mb-4': hasImage }"
       @files="onFiles"
     />
+    <v-alert v-if="loadError" type="error" density="compact" class="mt-2">
+      {{ t('common.error') }}
+    </v-alert>
 
     <div v-show="hasImage">
       <p class="text-medium-emphasis text-body-2 mb-2">

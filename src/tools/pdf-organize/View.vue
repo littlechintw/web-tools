@@ -70,7 +70,8 @@ async function onFiles(files: File[]) {
         thumb: blob ? URL.createObjectURL(blob) : '',
       })
     }
-    await pdf.cleanup()
+    // destroy (not just cleanup) so the worker releases the parsed document
+    await pdf.loadingTask.destroy()
   } catch {
     clearState()
     error.value = t('tools.pdf-organize.loadError')

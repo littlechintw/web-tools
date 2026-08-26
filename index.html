@@ -2,14 +2,9 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <!-- Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4K4TLB79SQ"></script>
-    <script>
-      window.dataLayer = window.dataLayer || []
-      function gtag() { dataLayer.push(arguments) }
-      gtag('js', new Date())
-      gtag('config', 'G-4K4TLB79SQ', { send_page_view: false })
-    </script>
+    <!-- Google Analytics is injected at runtime by src/plugins/analytics.ts,
+         gated on the user's consent setting, so opting out stops gtag.js
+         from loading at all. -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="免費、注重隱私、純前端的線上工具包。所有運算都在你的瀏覽器完成，資料不外傳。" />

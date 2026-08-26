@@ -17,8 +17,9 @@ export function useClipboard(resetMs = 1500) {
         ta.style.opacity = '0'
         document.body.appendChild(ta)
         ta.select()
-        document.execCommand('copy')
+        const ok = document.execCommand('copy')
         document.body.removeChild(ta)
+        if (!ok) return false
       }
       copied.value = true
       clearTimeout(timer)

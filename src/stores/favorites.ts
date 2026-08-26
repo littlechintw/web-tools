@@ -17,7 +17,11 @@ export const useFavoritesStore = defineStore('favorites', () => {
   const ids = ref<string[]>(load())
 
   function persist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids.value))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(ids.value))
+    } catch (e) {
+      console.warn('[favorites] failed to persist', e)
+    }
   }
 
   function isFavorite(id: string) {

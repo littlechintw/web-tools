@@ -66,6 +66,8 @@ async function onFiles(files: File[]) {
   objectUrls.push(url)
   try {
     const img = await fabric.FabricImage.fromURL(url)
+    // the component may have unmounted (and disposed the canvas) during the await
+    if (!canvas) return
     const iw = img.width ?? 1
     const ih = img.height ?? 1
     // Scale the image to fit within the canvas while keeping aspect ratio.

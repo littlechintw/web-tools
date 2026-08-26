@@ -44,6 +44,7 @@ function render() {
       valid.value = false
       return
     }
+    error.value = ''
     let ok = false
     try {
       JsBarcode(el, value.value, {
@@ -68,6 +69,8 @@ function render() {
       if (!error.value) error.value = t('tools.barcode-generate.invalidValue')
     } else {
       error.value = ''
+      // save only after validation, so history never records invalid values
+      save()
     }
   })
 }
@@ -95,7 +98,6 @@ function save() {
 
 watch([format, value, barWidth, height, displayValue], () => {
   render()
-  save()
 })
 
 onMounted(() => {

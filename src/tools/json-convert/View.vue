@@ -33,7 +33,11 @@ function parseInput(text: string, fmt: Format): unknown {
     case 'toml':
       return tomlParse(text)
     case 'csv': {
-      const res = Papa.parse(text.trim(), { header: true, skipEmptyLines: true })
+      const res = Papa.parse(text.trim(), {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: true,
+      })
       if (res.errors.length) throw new Error(res.errors[0].message)
       return res.data
     }
@@ -50,7 +54,17 @@ function emit(obj: unknown, fmt: Format): string {
       return tomlStringify(obj as Record<string, unknown>)
     case 'csv': {
       const rows = Array.isArray(obj) ? obj : [obj]
-      return Papa.unparse(rows as object[])
+      // CSV cells are scalar; serialize nested objects/arrays as JSON instead
+      // of letting them stringify to "[object Object]".
+      const flat = (rows as Record<string, unknown>[]).map((row) => {
+        if (typeof row !== 'object' || row === null) return row
+        const out: Record<string, unknown> = {}
+        for (const [k, v] of Object.entries(row)) {
+          out[k] = typeof v === 'object' && v !== null ? JSON.stringify(v) : v
+        }
+        return out
+      })
+      return Papa.unparse(flat as object[])
     }
   }
 }

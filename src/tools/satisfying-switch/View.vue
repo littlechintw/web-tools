@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
 const isOn = ref(false)
 
 let audioCtx: AudioContext | null = null
+
+onUnmounted(() => {
+  audioCtx?.close().catch(() => {})
+  audioCtx = null
+})
 
 function getCtx(): AudioContext {
   if (!audioCtx) {

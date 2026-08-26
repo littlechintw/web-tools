@@ -28,7 +28,12 @@ export const SUPPORTED_LOCALES: { value: Locale; label: string }[] = Object.keys
   .map((code) => ({ value: code as Locale, label: LOCALE_LABELS[code] ?? code }))
 
 function detectLocale(): Locale {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  let saved: string | null = null
+  try {
+    saved = localStorage.getItem(STORAGE_KEY)
+  } catch {
+    // storage access can throw (blocked cookies, some embedded contexts)
+  }
   if (saved && messages[saved]) return saved as Locale
   const nav = navigator.language.toLowerCase()
   if (nav.startsWith('ja')) return 'ja'
@@ -51,7 +56,11 @@ type LocaleRef = { value: Locale }
 
 export function setLocale(locale: Locale) {
   ;(i18n.global.locale as unknown as LocaleRef).value = locale
-  localStorage.setItem(STORAGE_KEY, locale)
+  try {
+    localStorage.setItem(STORAGE_KEY, locale)
+  } catch {
+    // best-effort persistence
+  }
   document.documentElement.lang = locale === 'zh-TW' ? 'zh-Hant' : locale
 }
 

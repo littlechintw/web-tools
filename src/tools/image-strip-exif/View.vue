@@ -156,6 +156,11 @@ async function clean() {
     canvas.height = img.naturalHeight
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('ctx')
+    if (outputFormat.value === 'image/jpeg') {
+      // JPEG has no alpha; composite transparency over white, not black
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
     ctx.drawImage(img, 0, 0)
     const blob = await canvasToBlob(canvas, outputFormat.value, quality.value)
     revokeCleaned()

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PDFDocument, StandardFonts, degrees, rgb } from '@cantoo/pdf-lib'
+import { PDFDocument, StandardFonts, degrees, rgb, type PDFPage } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
 
@@ -29,6 +29,32 @@ function hexToRgb(hex: string) {
   if (!m) return rgb(0, 0, 0)
   const int = parseInt(m[1], 16)
   return rgb(((int >> 16) & 255) / 255, ((int >> 8) & 255) / 255, (int & 255) / 255)
+}
+
+/** Rasterize text the standard PDF fonts can't encode (e.g. CJK) to a
+ *  transparent PNG, returning the bytes plus its size in PDF points. */
+function textToPng(txt: string, sizePt: number, colorHex: string) {
+  const scale = 2 // 2x raster for crispness at typical zoom levels
+  const canvas = document.createElement('canvas')
+  const fontSpec = `${sizePt * scale}px sans-serif`
+  let ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('canvas')
+  ctx.font = fontSpec
+  const m = ctx.measureText(txt)
+  const ascent = m.actualBoundingBoxAscent || sizePt * scale
+  const descent = m.actualBoundingBoxDescent || sizePt * scale * 0.25
+  canvas.width = Math.max(1, Math.ceil(m.width) + 4)
+  canvas.height = Math.max(1, Math.ceil(ascent + descent) + 4)
+  ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('canvas')
+  ctx.font = fontSpec
+  ctx.fillStyle = /^#[0-9a-f]{6}$/i.test(colorHex.trim()) ? colorHex.trim() : '#000000'
+  ctx.fillText(txt, 2, ascent + 2)
+  const b64 = canvas.toDataURL('image/png').split(',')[1] ?? ''
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return { bytes, w: canvas.width / scale, h: canvas.height / scale }
 }
 
 async function onFiles(files: File[]) {
@@ -59,37 +85,61 @@ async function apply() {
     const col = hexToRgb(color.value)
     const angle = degrees(rotation.value)
 
-    for (const page of doc.getPages()) {
-      const { width, height } = page.getSize()
-      const textWidth = font.widthOfTextAtSize(text.value, fontSize.value)
+    // Helvetica only encodes WinAnsi; for anything else (e.g. CJK watermark
+    // text) fall back to a rasterized image of the text.
+    let textWidth: number
+    let image: Awaited<ReturnType<typeof doc.embedPng>> | null = null
+    let imageH = 0
+    try {
+      textWidth = font.widthOfTextAtSize(text.value, fontSize.value)
+    } catch {
+      const png = textToPng(text.value, fontSize.value, color.value)
+      image = await doc.embedPng(png.bytes)
+      textWidth = png.w
+      imageH = png.h
+    }
 
-      if (layout.value === 'center') {
-        // Center the rotated baseline roughly on the page midpoint.
-        const rad = (rotation.value * Math.PI) / 180
+    const drawMark = (page: PDFPage, x: number, y: number) => {
+      if (image) {
+        page.drawImage(image, {
+          x,
+          y,
+          width: textWidth,
+          height: imageH,
+          opacity: opacity.value,
+          rotate: angle,
+        })
+      } else {
         page.drawText(text.value, {
-          x: width / 2 - (textWidth / 2) * Math.cos(rad),
-          y: height / 2 - (textWidth / 2) * Math.sin(rad),
+          x,
+          y,
           size: fontSize.value,
           font,
           color: col,
           opacity: opacity.value,
           rotate: angle,
         })
+      }
+    }
+
+    for (const page of doc.getPages()) {
+      const { width, height } = page.getSize()
+
+      if (layout.value === 'center') {
+        // Center the rotated baseline roughly on the page midpoint.
+        const rad = (rotation.value * Math.PI) / 180
+        drawMark(
+          page,
+          width / 2 - (textWidth / 2) * Math.cos(rad),
+          height / 2 - (textWidth / 2) * Math.sin(rad),
+        )
       } else {
         // Tile across the page on a regular grid.
         const stepX = Math.max(textWidth + fontSize.value * 2, fontSize.value * 4)
         const stepY = Math.max(fontSize.value * 4, 60)
         for (let y = -stepY; y < height + stepY; y += stepY) {
           for (let x = -stepX; x < width + stepX; x += stepX) {
-            page.drawText(text.value, {
-              x,
-              y,
-              size: fontSize.value,
-              font,
-              color: col,
-              opacity: opacity.value,
-              rotate: angle,
-            })
+            drawMark(page, x, y)
           }
         }
       }

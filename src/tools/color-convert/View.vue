@@ -92,6 +92,7 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
 }
 
 function hslToRgb({ h, s, l }: HSL): RGB {
+  h = ((h % 360) + 360) % 360
   const sn = s / 100
   const ln = l / 100
   const c = (1 - Math.abs(2 * ln - 1)) * sn

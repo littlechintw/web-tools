@@ -10,7 +10,12 @@ const stats = computed(() => {
   const s = input.value
   const chars = [...s].length
   const charsNoSpaces = [...s.replace(/\s/g, '')].length
-  const wordCount = (s.match(/\S+/g) ?? []).length
+  // CJK text has no spaces between words: count each CJK character as a
+  // word, plus each run of remaining non-space characters.
+  const cjkRe = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uac00-\ud7a3]/g
+  const cjkCount = (s.match(cjkRe) ?? []).length
+  const nonCjkWords = (s.replace(cjkRe, ' ').match(/\S+/g) ?? []).length
+  const wordCount = cjkCount + nonCjkWords
   const lines = s === '' ? 0 : s.split(/\r\n|\r|\n/).length
   const paragraphs = s.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).length
   const bytes = new TextEncoder().encode(s).length

@@ -29,7 +29,13 @@ function revokeUrl() {
   }
 }
 
+// Bumped whenever the camera is stopped or restarted, so a decodeFromVideoDevice
+// call that resolves after a stop (the permission prompt spans the await) can
+// tell it's stale and shut its stream down instead of leaking it.
+let camSession = 0
+
 function stopCamera() {
+  camSession++
   if (controls) {
     controls.stop()
     controls = null
@@ -41,9 +47,11 @@ async function startCamera() {
   error.value = ''
   result.value = ''
   if (!videoEl.value) return
+  stopCamera()
+  const session = camSession
   try {
     scanning.value = true
-    controls = await reader.decodeFromVideoDevice(undefined, videoEl.value, (res, err) => {
+    const c = await reader.decodeFromVideoDevice(undefined, videoEl.value, (res, err) => {
       if (res) {
         result.value = res.getText()
         stopCamera()
@@ -51,7 +59,13 @@ async function startCamera() {
       // Per-frame "not found" errors are expected; ignore them.
       void err
     })
+    if (session !== camSession) {
+      c.stop()
+      return
+    }
+    controls = c
   } catch (e) {
+    if (session !== camSession) return
     scanning.value = false
     const name = (e as { name?: string })?.name
     if (name === 'NotAllowedError' || name === 'SecurityError') {

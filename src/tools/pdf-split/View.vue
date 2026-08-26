@@ -121,6 +121,9 @@ async function run() {
         for (const page of copied) out.addPage(page)
         const bytes = await out.save()
         download(bytes, t('tools.pdf-split.outputPart', { n: part }))
+        // stagger downloads so the browser's multiple-download throttle
+        // doesn't silently drop most parts
+        await new Promise((r) => setTimeout(r, 300))
       }
       result.value = t('tools.pdf-split.resultSplit', { count: part })
     }
