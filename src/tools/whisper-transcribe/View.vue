@@ -12,6 +12,13 @@ import {
   LIVE_MAX_INTERVAL_S,
   TRANSFORMERS_CACHE_NAME,
 } from './constants'
+import {
+  getWhisperWorker,
+  setWhisperMessageHandler,
+  setWhisperLoadedModel,
+  terminateWhisperWorker,
+  whisperLoadedModel,
+} from './workerHost'
 import type { ProgressInfo } from '@huggingface/transformers'
 
 const { t } = useI18n()
@@ -231,8 +238,10 @@ function onFilesSelected(files: File[]) {
 
 async function startRecording() {
   // a running file transcription would otherwise keep overwriting the new
-  // recording's transcript via its segment/complete messages
-  if (phase.value !== 'idle') return
+  // recording's transcript via its segment/complete messages (a model load
+  // in progress is fine — live mode just starts once it's ready)
+  if (phase.value === 'transcribing') return
+  liveGeneration++
   micError.value = ''
   errorMessage.value = ''
   resultText.value = ''
@@ -289,8 +298,10 @@ async function finishStop(blob: Blob) {
     liveTimer = null
   }
   const wasLive = transcribeMode.value === 'live'
-  if (wasLive) await liveFinalTick(blob)
+  // Adopt the audio first: the final live pass may still be waiting on a
+  // model download, and playback/regenerate shouldn't wait on it.
   setRecordedAudio(blob, { keepTranscript: wasLive })
+  if (wasLive) await liveFinalTick(blob)
 }
 
 function pauseRecording() {
@@ -371,7 +382,9 @@ const phase = ref<Phase>('idle')
 const modelProgress = ref(0)
 const modelLoadedBytes = ref(0)
 const modelTotalBytes = ref(0)
-const modelLoadedFor = ref<ModelId | null>(null)
+// The worker outlives this component (see workerHost), so pick up a model a
+// previous visit already loaded.
+const modelLoadedFor = ref<ModelId | null>(whisperLoadedModel() as ModelId | null)
 const segmentProgress = ref<{ index: number; total: number } | null>(null)
 const resultText = ref('')
 const resultChunks = ref<TranscriptChunk[]>([])
@@ -413,10 +426,16 @@ function formatMB(bytes: number): string {
 }
 
 function getWorker(): Worker {
-  if (worker) return worker
-  worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
-  worker.onmessage = (e: MessageEvent) => {
-    const msg = e.data
+  if (!worker) {
+    worker = getWhisperWorker()
+    setWhisperMessageHandler(handleWorkerMessage)
+  }
+  return worker
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function handleWorkerMessage(msg: any) {
+  {
     if (msg.type === 'progress') {
       const p = msg.progress as ProgressInfo
       if (p.status === 'progress_total') {
@@ -428,6 +447,7 @@ function getWorker(): Worker {
       // record the model the worker was asked to load, not whatever is
       // currently selected in the UI (the user may have switched mid-load)
       modelLoadedFor.value = modelLoadRequested ?? model.value
+      setWhisperLoadedModel(modelLoadedFor.value)
       modelProgress.value = 100
       phase.value = 'idle'
       void refreshCachedModels()
@@ -461,7 +481,6 @@ function getWorker(): Worker {
       }
     }
   }
-  return worker
 }
 
 async function decodeToMono16k(blob: Blob): Promise<Float32Array> {
@@ -504,17 +523,29 @@ function ensureModelLoaded(onReady: () => void) {
     onReady()
     return
   }
+  onModelReady = onReady
+  // Same model already loading: just wait for its 'ready' — re-posting 'load'
+  // would reset the progress display for nothing.
+  if (phase.value === 'loading-model' && modelLoadRequested === model.value) return
   phase.value = 'loading-model'
   modelProgress.value = 0
   modelLoadedBytes.value = 0
   modelTotalBytes.value = 0
-  onModelReady = onReady
   modelLoadRequested = model.value
   getWorker().postMessage({ type: 'load', model: model.value })
 }
 
+// Preload as soon as live mode (or a different model while in live mode) is
+// chosen, so the model is usually ready by the time recording starts.
+watch([transcribeMode, model], ([mode]) => {
+  if (mode === 'live' && phase.value === 'idle') {
+    ensureModelLoaded(() => {})
+  }
+})
+
 function generateTranscript() {
   if (!recordedBlob.value) return
+  liveGeneration++ // a late live chunk must not append into this fresh pass
   errorMessage.value = ''
   resultText.value = ''
   resultChunks.value = []
@@ -541,6 +572,10 @@ let liveTimer: ReturnType<typeof setTimeout> | null = null
 let liveProcessedSamples = 0
 let liveRequestSeq = 0
 let liveTickInFlight = false
+// Bumped whenever a new recording/transcription starts, so a live chunk that
+// resolves late (e.g. it waited out a model download) can't append stale text
+// into a newer transcript.
+let liveGeneration = 0
 
 function postLiveChunk(
   audio: Float32Array,
@@ -622,8 +657,10 @@ async function liveTick() {
     if (newSeconds < 1) return
 
     const offsetSec = liveProcessedSamples / SAMPLE_RATE
+    const gen = liveGeneration
     const result = await postLiveChunk(newAudio.slice(), language.value, promptText.value, offsetSec)
     const elapsedMs = performance.now() - t0
+    if (gen !== liveGeneration) return
 
     liveProcessedSamples += newAudio.length
     appendLiveResult(result.text, result.chunks)
@@ -649,7 +686,9 @@ async function liveFinalTick(blob: Blob) {
     const remaining = fullAudio.subarray(liveProcessedSamples)
     if (remaining.length / SAMPLE_RATE < 0.3) return
     const offsetSec = liveProcessedSamples / SAMPLE_RATE
+    const gen = liveGeneration
     const result = await postLiveChunk(remaining.slice(), language.value, promptText.value, offsetSec)
+    if (gen !== liveGeneration) return
     liveProcessedSamples = fullAudio.length
     appendLiveResult(result.text, result.chunks)
   } catch {
@@ -775,7 +814,7 @@ async function refreshCachedModels() {
 /** Terminate the worker and settle everything waiting on it, so no promise
  *  hangs and the UI can't get stuck in a busy phase forever. */
 function teardownWorker() {
-  worker?.terminate()
+  terminateWhisperWorker()
   worker = null
   onModelReady = null
   modelLoadRequested = null
@@ -825,7 +864,13 @@ onBeforeUnmount(() => {
   stopLiveVisualizer()
   mediaStream?.getTracks().forEach((tr) => tr.stop())
   if (recordedUrl.value) URL.revokeObjectURL(recordedUrl.value)
-  worker?.terminate()
+  // Detach from the shared worker but keep it (and its loaded model) alive
+  // for the next visit; settle anything still waiting on a reply.
+  setWhisperMessageHandler(null)
+  for (const pending of liveRequestResolvers.values()) {
+    pending.reject(new Error('component unmounted'))
+  }
+  liveRequestResolvers.clear()
 })
 </script>
 
@@ -986,6 +1031,9 @@ onBeforeUnmount(() => {
         <v-alert v-if="liveDisabled" type="warning" variant="tonal" density="compact">
           {{ liveWarning }}
         </v-alert>
+        <div v-else-if="modelBusy" class="text-caption text-medium-emphasis">
+          {{ t('tools.whisper-transcribe.livePendingModel') }}
+        </div>
         <div v-else class="text-caption" :class="liveWarning ? 'text-warning' : 'text-medium-emphasis'">
           {{ liveWarning || t('tools.whisper-transcribe.liveStatus', { seconds: Math.round(liveIntervalSec) }) }}
         </div>

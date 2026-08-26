@@ -948,6 +948,7 @@ export default {
       "transcribeModeAfter": "After recording",
       "transcribeModeLive": "Live, while recording",
       "liveStatus": "Live transcription running (every {seconds}s)",
+      "livePendingModel": "Loading the model — live transcription starts automatically once it's ready (first use downloads it; later loads come from cache).",
       "liveSlowedDown": "Live transcription can't keep up with recording speed — slowed down to every {seconds}s",
       "liveGaveUp": "This device can't keep up with live transcription, so it's been turned off for this recording. Recording continues normally — click \"Generate transcript\" afterward for a full, accurate result.",
       "noAudioYet": "Record or upload an audio file first to generate a transcript.",
@@ -979,9 +980,9 @@ export default {
   },
   "analytics": {
     "consent": {
-      "message": "We use Google Analytics to understand which tools are most useful. If you'd prefer not to be tracked, you can turn it off in Settings.",
-      "dismiss": "Got it",
-      "goToSettings": "Go to Settings"
+      "message": "May we use Google Analytics to record how the tools are used? It only helps us see which tools are popular so we can improve them — none of your input is ever recorded. You can change this anytime in Settings.",
+      "accept": "Allow",
+      "decline": "Decline"
     }
   },
   "settings": {

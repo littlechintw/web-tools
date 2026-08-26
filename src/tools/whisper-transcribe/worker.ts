@@ -32,7 +32,11 @@ function buildOptions(language: string, prompt: string): Record<string, unknown>
   return options
 }
 
-let transcriber: AutomaticSpeechRecognitionPipeline | null = null
+// Memoize the in-flight load: worker messages are handled concurrently (async
+// onmessage), so a second 'load' for the same model must reuse the pending
+// promise instead of restarting the whole pipeline creation (which re-downloads
+// the model), and transcribe requests that arrive mid-load must wait for it.
+let transcriberPromise: Promise<AutomaticSpeechRecognitionPipeline> | null = null
 let loadedModel: string | null = null
 
 async function detectDevice(): Promise<DeviceType> {
@@ -47,27 +51,47 @@ async function detectDevice(): Promise<DeviceType> {
   return 'wasm'
 }
 
-async function loadModel(model: string) {
-  if (transcriber && loadedModel === model) return transcriber
-  transcriber = null
+function loadModel(model: string): Promise<AutomaticSpeechRecognitionPipeline> {
+  if (transcriberPromise && loadedModel === model) return transcriberPromise
   loadedModel = model
-  const device = await detectDevice()
-  // Whisper's merged decoder graph fails session creation when fully int8-quantized
-  // ("missing scale" error from onnxruntime-web's MatMulNBits dequant fusion), so only
-  // the encoder is quantized; the decoder uses fp16 — still far smaller than fp32.
-  transcriber = (await pipeline('automatic-speech-recognition', model, {
-    device,
-    dtype: { encoder_model: 'q8', decoder_model_merged: 'fp16' },
-    progress_callback: (progress: ProgressInfo) => {
-      self.postMessage({ type: 'progress', progress })
-    },
-  })) as AutomaticSpeechRecognitionPipeline
-  return transcriber
+  const promise = (async () => {
+    const device = await detectDevice()
+    // Whisper's merged decoder graph fails session creation when fully int8-quantized
+    // ("missing scale" error from onnxruntime-web's MatMulNBits dequant fusion), so only
+    // the encoder is quantized; the decoder uses fp16 — still far smaller than fp32.
+    return (await pipeline('automatic-speech-recognition', model, {
+      device,
+      dtype: { encoder_model: 'q8', decoder_model_merged: 'fp16' },
+      progress_callback: (progress: ProgressInfo) => {
+        self.postMessage({ type: 'progress', progress })
+      },
+    })) as AutomaticSpeechRecognitionPipeline
+  })()
+  transcriberPromise = promise
+  // A failed load must not poison future retries.
+  promise.catch(() => {
+    if (transcriberPromise === promise) {
+      transcriberPromise = null
+      loadedModel = null
+    }
+  })
+  return promise
+}
+
+/** Resolves once the current model is loaded; waits out an in-flight load. */
+function getTranscriber(): Promise<AutomaticSpeechRecognitionPipeline> {
+  if (!transcriberPromise) throw new Error('model-not-loaded')
+  return transcriberPromise
 }
 
 /** Transcribes in fixed-length segments (instead of one long call) so progress
  *  and partial text can be reported back as each segment finishes. */
-async function transcribeInSegments(audio: Float32Array, language: string, prompt: string) {
+async function transcribeInSegments(
+  transcriber: AutomaticSpeechRecognitionPipeline,
+  audio: Float32Array,
+  language: string,
+  prompt: string,
+) {
   const segmentLength = SEGMENT_SECONDS * SAMPLE_RATE
   const total = Math.max(1, Math.ceil(audio.length / segmentLength))
   let fullText = ''
@@ -76,7 +100,7 @@ async function transcribeInSegments(audio: Float32Array, language: string, promp
   for (let i = 0; i < total; i++) {
     const start = i * segmentLength
     const segment = audio.subarray(start, start + segmentLength)
-    const output = await transcriber!(segment, buildOptions(language, prompt))
+    const output = await transcriber(segment, buildOptions(language, prompt))
     const offsetSec = start / SAMPLE_RATE
     const segmentChunks: TranscriptChunk[] = (output.chunks ?? []).map((c: TranscriptChunk) => ({
       text: c.text,
@@ -108,14 +132,16 @@ self.onmessage = async (event: MessageEvent<InRequest>) => {
     }
 
     if (msg.type === 'transcribe') {
-      if (!transcriber) throw new Error('model-not-loaded')
-      const output = await transcribeInSegments(msg.audio, msg.language, msg.prompt)
+      const transcriber = await getTranscriber()
+      const output = await transcribeInSegments(transcriber, msg.audio, msg.language, msg.prompt)
       self.postMessage({ type: 'complete', output })
       return
     }
 
     if (msg.type === 'transcribe-chunk') {
-      if (!transcriber) throw new Error('model-not-loaded')
+      // Waits for an in-flight model load instead of failing, so live chunks
+      // sent while the model is still downloading aren't lost.
+      const transcriber = await getTranscriber()
       const output = await transcriber(msg.audio, buildOptions(msg.language, msg.prompt))
       const chunks: TranscriptChunk[] = (output.chunks ?? []).map((c: TranscriptChunk) => ({
         text: c.text,

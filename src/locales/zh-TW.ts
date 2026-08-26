@@ -948,6 +948,7 @@ export default {
       "transcribeModeAfter": "事後轉錄",
       "transcribeModeLive": "即時轉錄",
       "liveStatus": "即時轉錄中（間隔 {seconds} 秒）",
+      "livePendingModel": "模型載入中，完成後會自動開始即時轉錄（首次使用需下載，之後從快取載入）",
       "liveSlowedDown": "即時轉錄跟不上錄音速度，已自動降低更新頻率至 {seconds} 秒",
       "liveGaveUp": "裝置運算能力無法負荷即時轉錄，已停止即時辨識。錄音仍會繼續，結束後請點擊「產生逐字稿」取得完整結果。",
       "noAudioYet": "請先錄音或上傳音訊檔案，才能產生逐字稿。",
@@ -979,9 +980,9 @@ export default {
   },
   "analytics": {
     "consent": {
-      "message": "我們使用 Google Analytics 分析工具使用情況，幫助了解哪些功能最受歡迎。如果不希望被追蹤，可以前往設定頁面關閉。",
-      "dismiss": "我知道了",
-      "goToSettings": "前往設定"
+      "message": "可以讓我們使用 Google Analytics 記錄各工具的使用狀況嗎？這只用來評估哪些工具較常被使用、作為改善的依據，不會記錄你輸入的任何內容。之後可隨時在設定頁變更。",
+      "accept": "同意",
+      "decline": "拒絕"
     }
   },
   "settings": {

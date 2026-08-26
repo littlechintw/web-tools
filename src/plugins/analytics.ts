@@ -8,14 +8,16 @@ declare global {
 const GA_ID = 'G-4K4TLB79SQ'
 
 // Read consent directly from localStorage to avoid Pinia dependency at module scope.
+// Opt-in model: nothing is tracked until the user explicitly accepts the
+// first-load consent prompt (analyticsEnabled === true).
 function isAnalyticsEnabled(): boolean {
   try {
     const raw = localStorage.getItem('app.settings.v1')
-    if (!raw) return true // default: enabled (opt-out model)
+    if (!raw) return false
     const parsed = JSON.parse(raw)
-    return parsed.analyticsEnabled !== false
+    return parsed.analyticsEnabled === true
   } catch {
-    return true
+    return false
   }
 }
 

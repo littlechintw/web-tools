@@ -8,6 +8,7 @@ import { allTools, categoryOrder } from '@/tools/registry'
 import { persistTheme } from '@/plugins/vuetify'
 import { SUPPORTED_LOCALES, setLocale } from '@/plugins/i18n'
 import { useSettingsStore } from '@/stores/settings'
+import { trackPageView } from '@/plugins/analytics'
 import type { Locale } from '@/types'
 
 const theme = useTheme()
@@ -40,6 +41,13 @@ function pickLocale(l: Locale) {
 
 const GITHUB_URL = 'https://github.com/littlechintw/web-tools'
 const settings = useSettingsStore()
+
+function acceptAnalytics() {
+  settings.setAnalyticsEnabled(true)
+  // The initial page view fired before consent existed; record the current
+  // page now that tracking is allowed.
+  trackPageView(route.fullPath, document.title)
+}
 
 // Group tools by category for the drawer. Labels via t('categories.<id>').
 const grouped = categoryOrder
@@ -131,7 +139,7 @@ function go(path: string) {
   </v-main>
 
   <v-snackbar
-    :model-value="!settings.consentBannerDismissed"
+    :model-value="settings.analyticsEnabled === null"
     :timeout="-1"
     location="bottom center"
     multi-line
@@ -139,11 +147,11 @@ function go(path: string) {
   >
     {{ t('analytics.consent.message') }}
     <template #actions>
-      <v-btn variant="text" :to="'/settings'" @click="settings.dismissConsentBanner()">
-        {{ t('analytics.consent.goToSettings') }}
+      <v-btn variant="text" @click="settings.setAnalyticsEnabled(false)">
+        {{ t('analytics.consent.decline') }}
       </v-btn>
-      <v-btn color="primary" variant="tonal" @click="settings.dismissConsentBanner()">
-        {{ t('analytics.consent.dismiss') }}
+      <v-btn color="primary" variant="tonal" @click="acceptAnalytics">
+        {{ t('analytics.consent.accept') }}
       </v-btn>
     </template>
   </v-snackbar>

@@ -910,6 +910,7 @@ export default {
       "transcribeModeAfter": "녹음 후 일괄 처리",
       "transcribeModeLive": "녹음 중 실시간",
       "liveStatus": "실시간 받아쓰기 진행 중 ({seconds}초 간격)",
+      "livePendingModel": "모델을 불러오는 중입니다. 완료되면 실시간 받아쓰기가 자동으로 시작됩니다(최초 1회만 다운로드, 이후에는 캐시에서 불러옴).",
       "liveSlowedDown": "실시간 받아쓰기가 녹음 속도를 따라가지 못해 간격을 {seconds}초로 자동 조정했습니다",
       "liveGaveUp": "이 기기의 처리 성능으로는 실시간 받아쓰기를 유지할 수 없어 이번 녹음에서는 중지되었습니다. 녹음은 계속되며, 종료 후 \"받아쓰기 생성\"을 누르면 전체 결과를 정확하게 얻을 수 있습니다.",
       "noAudioYet": "받아쓰기를 생성하려면 먼저 녹음하거나 오디오 파일을 업로드하세요.",
@@ -941,9 +942,9 @@ export default {
   },
   "analytics": {
     "consent": {
-      "message": "Google Analytics를 사용하여 도구 이용 현황을 분석합니다. 추적을 원하지 않으시면 설정 페이지에서 끌 수 있습니다.",
-      "dismiss": "알겠습니다",
-      "goToSettings": "설정으로 이동"
+      "message": "각 도구의 사용 현황을 Google Analytics로 기록해도 될까요? 어떤 도구가 자주 사용되는지 파악해 개선하는 데만 사용되며, 입력하신 내용은 절대 기록되지 않습니다. 설정 페이지에서 언제든 변경할 수 있습니다.",
+      "accept": "동의",
+      "decline": "거부"
     }
   },
   "settings": {

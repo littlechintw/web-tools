@@ -18,7 +18,7 @@ const settings = useSettingsStore()
           </template>
           <template #append>
             <v-switch
-              :model-value="settings.analyticsEnabled"
+              :model-value="settings.analyticsEnabled === true"
               color="primary"
               hide-details
               inset
