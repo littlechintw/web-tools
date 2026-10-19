@@ -1,20 +1,30 @@
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
+import { ref } from 'vue'
 import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
-const STORAGE_KEY = 'app.theme'
+export type ThemeMode = 'light' | 'dark' | 'system'
 
-function initialTheme(): 'light' | 'dark' {
-  let saved: string | null = null
+const STORAGE_KEY = 'app.theme'
+const media = window.matchMedia('(prefers-color-scheme: dark)')
+
+function storedMode(): ThemeMode {
   try {
-    saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved === 'light' || saved === 'dark') return saved
   } catch {
     // storage access can throw (blocked cookies, some embedded contexts)
   }
-  if (saved === 'light' || saved === 'dark') return saved
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return 'system'
 }
+
+function resolve(mode: ThemeMode): 'light' | 'dark' {
+  return mode === 'system' ? (media.matches ? 'dark' : 'light') : mode
+}
+
+/** The user's choice: an explicit theme, or "follow the OS". */
+export const themeMode = ref<ThemeMode>(storedMode())
 
 export const vuetify = createVuetify({
   icons: {
@@ -23,7 +33,7 @@ export const vuetify = createVuetify({
     sets: { mdi },
   },
   theme: {
-    defaultTheme: initialTheme(),
+    defaultTheme: resolve(themeMode.value),
     themes: {
       light: {
         dark: false,
@@ -54,10 +64,18 @@ export const vuetify = createVuetify({
   },
 })
 
-export function persistTheme(theme: string) {
+export function setThemeMode(mode: ThemeMode) {
+  themeMode.value = mode
   try {
-    localStorage.setItem(STORAGE_KEY, theme)
+    if (mode === 'system') localStorage.removeItem(STORAGE_KEY)
+    else localStorage.setItem(STORAGE_KEY, mode)
   } catch {
     // best-effort persistence
   }
+  vuetify.theme.change(resolve(mode))
 }
+
+// Follow OS changes live while in "system" mode.
+media.addEventListener('change', () => {
+  if (themeMode.value === 'system') vuetify.theme.change(resolve('system'))
+})

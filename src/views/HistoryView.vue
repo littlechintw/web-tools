@@ -137,7 +137,7 @@ void toolsByRoute
       <input ref="importInput" type="file" accept="application/json" hidden @change="onImport" />
     </div>
 
-    <v-row class="mb-2" dense>
+    <v-row class="mb-2" density="comfortable">
       <v-col cols="12" sm="7">
         <v-text-field
           v-model="search"

@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
 import { useHistory } from '@/composables/useHistory'
 
 const TOOL_ID = 'date-calc'
 const { t } = useI18n()
-const route = useRoute()
 
 type Mode = 'add' | 'diff'
 interface SavedData {
@@ -31,6 +29,13 @@ function toLocalInput(d: Date): string {
   )
 }
 
+/** The current minute, as a datetime-local value. */
+function nowInput(): string {
+  const d = new Date()
+  d.setSeconds(0, 0)
+  return toLocalInput(d)
+}
+
 const now = new Date()
 now.setSeconds(0, 0)
 
@@ -45,9 +50,16 @@ const weeks = ref(0)
 const days = ref(0)
 const hours = ref(0)
 const minutes = ref(0)
+const amountRefs = [years, months, weeks, days, hours, minutes]
 
 function num(v: number): number {
   return Number.isFinite(v) ? Math.trunc(v) : 0
+}
+
+const hasAmounts = computed(() => amountRefs.some((r) => num(r.value) !== 0))
+
+function resetAmounts() {
+  for (const r of amountRefs) r.value = 0
 }
 
 const resultDate = computed<Date | null>(() => {
@@ -200,12 +212,7 @@ watch(
   () => save(),
 )
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (!h) return
-  const e = history.entries.value.find((x) => x.id === h)
-  if (!e) return
-  const d = e.data
+history.restoreFromRoute((d) => {
   mode.value = d.mode
   baseDate.value = d.baseDate
   op.value = d.op
@@ -236,14 +243,25 @@ onMounted(() => {
         type="datetime-local"
         :label="t('tools.date-calc.baseDate')"
         density="comfortable"
-      />
+      >
+        <template #append-inner>
+          <v-btn size="small" variant="text" color="primary" @click="baseDate = nowInput()">
+            {{ t('tools.date-calc.now') }}
+          </v-btn>
+        </template>
+      </v-text-field>
 
-      <v-btn-toggle v-model="op" mandatory color="primary" density="comfortable" variant="outlined" class="mb-4">
-        <v-btn value="add">{{ t('tools.date-calc.add') }}</v-btn>
-        <v-btn value="subtract">{{ t('tools.date-calc.subtract') }}</v-btn>
-      </v-btn-toggle>
+      <div class="d-flex flex-wrap align-center ga-3 mb-4">
+        <v-btn-toggle v-model="op" mandatory color="primary" density="comfortable" variant="outlined">
+          <v-btn value="add">{{ t('tools.date-calc.add') }}</v-btn>
+          <v-btn value="subtract">{{ t('tools.date-calc.subtract') }}</v-btn>
+        </v-btn-toggle>
+        <v-btn variant="text" prepend-icon="mdi-restore" :disabled="!hasAmounts" @click="resetAmounts">
+          {{ t('tools.date-calc.resetAmounts') }}
+        </v-btn>
+      </div>
 
-      <v-row dense>
+      <v-row density="comfortable">
         <v-col cols="6" sm="4" md="2">
           <v-text-field v-model.number="years" type="number" :label="t('tools.date-calc.years')" density="comfortable" />
         </v-col>
@@ -278,14 +296,20 @@ onMounted(() => {
 
     <!-- Mode B: Interval -->
     <template v-else>
-      <v-row dense>
+      <v-row density="comfortable">
         <v-col cols="12" sm="6">
           <v-text-field
             v-model="startDate"
             type="datetime-local"
             :label="t('tools.date-calc.startDate')"
             density="comfortable"
-          />
+          >
+            <template #append-inner>
+              <v-btn size="small" variant="text" color="primary" @click="startDate = nowInput()">
+                {{ t('tools.date-calc.now') }}
+              </v-btn>
+            </template>
+          </v-text-field>
         </v-col>
         <v-col cols="12" sm="6">
           <v-text-field
@@ -294,17 +318,23 @@ onMounted(() => {
             :label="t('tools.date-calc.endDate')"
             :error-messages="diffError"
             density="comfortable"
-          />
+          >
+            <template #append-inner>
+              <v-btn size="small" variant="text" color="primary" @click="endDate = nowInput()">
+                {{ t('tools.date-calc.now') }}
+              </v-btn>
+            </template>
+          </v-text-field>
         </v-col>
       </v-row>
 
       <template v-if="diff">
-        <v-row dense class="mt-1">
+        <v-row density="comfortable" class="mt-1">
           <v-col v-for="s in diffStats" :key="s.label" cols="6" sm="4">
             <v-card variant="tonal" color="primary">
               <v-card-text class="py-3">
                 <div class="text-caption text-medium-emphasis">{{ s.label }}</div>
-                <div class="text-h6">{{ s.value }}</div>
+                <div class="text-h6 tabular-nums">{{ s.value }}</div>
               </v-card-text>
             </v-card>
           </v-col>

@@ -1,21 +1,32 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { isBoolean, isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { canvasToBlob, extensionForMime, loadImage } from '@/utils/image'
+import { downloadBlob } from '@/utils/download'
+import { formatBytes, stripExtension } from '@/utils/format'
 
+const TOOL_ID = 'image-convert'
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.${TOOL_ID}.${key}`, args ?? {})
 
 type Format = 'image/png' | 'image/jpeg' | 'image/webp'
+const FORMATS = ['image/png', 'image/jpeg', 'image/webp'] as const
 
 const sourceFile = ref<File | null>(null)
 const sourceUrl = ref('')
 const sourceDims = ref<{ w: number; h: number } | null>(null)
+// Decoded once per file; every conversion draws from it instead of
+// re-decoding. Kept out of Vue's reactivity on purpose.
+let sourceImg: HTMLImageElement | null = null
 
-const targetFormat = ref<Format>('image/jpeg')
-const quality = ref(0.85)
-const useCompress = ref(false)
-const maxSizeMB = ref(1)
+// Options are remembered between visits; the file itself never is.
+const targetFormat = useStoredRef<Format>('image-convert.targetFormat', 'image/jpeg', oneOf(FORMATS))
+const quality = useStoredRef('image-convert.quality', 0.85, isNumber)
+const useCompress = useStoredRef('image-convert.useCompress', false, isBoolean)
+const maxSizeMB = useStoredRef('image-convert.maxSizeMB', 1, isNumber)
 
 const busy = ref(false)
 const error = ref('')
@@ -25,62 +36,65 @@ const resultBlob = ref<Blob | null>(null)
 const resultDims = ref<{ w: number; h: number } | null>(null)
 
 const formats = [
-  { title: 'PNG', value: 'image/png' as Format },
-  { title: 'JPEG', value: 'image/jpeg' as Format },
-  { title: 'WEBP', value: 'image/webp' as Format },
+  { title: 'PNG', value: 'image/png' },
+  { title: 'JPEG', value: 'image/jpeg' },
+  { title: 'WEBP', value: 'image/webp' },
 ]
 
 const hasQuality = computed(() => targetFormat.value !== 'image/png')
-const ext = computed(() => targetFormat.value.split('/')[1].replace('jpeg', 'jpg'))
+const ext = computed(() => extensionForMime(targetFormat.value))
+const downloadName = computed(() =>
+  sourceFile.value ? `${stripExtension(sourceFile.value.name)}.${ext.value}` : `converted.${ext.value}`,
+)
+const reduction = computed(() =>
+  sourceFile.value && resultBlob.value && sourceFile.value.size > 0
+    ? Math.round((1 - resultBlob.value.size / sourceFile.value.size) * 100)
+    : 0,
+)
 
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-  return `${(n / 1024 / 1024).toFixed(2)} MB`
-}
+// Conversions are async and can overlap (drop a file, then nudge the quality
+// slider): each run takes a ticket and only the latest one may publish.
+let runId = 0
+let timer: ReturnType<typeof setTimeout> | undefined
 
-function revoke() {
-  if (sourceUrl.value) URL.revokeObjectURL(sourceUrl.value)
+function revokeResult() {
   if (resultUrl.value) URL.revokeObjectURL(resultUrl.value)
+  resultUrl.value = ''
+  resultBlob.value = null
+  resultDims.value = null
 }
 
-function loadImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('load'))
-    img.src = url
-  })
+function revokeSource() {
+  if (sourceUrl.value) URL.revokeObjectURL(sourceUrl.value)
+  sourceUrl.value = ''
+  sourceImg = null
 }
 
 async function onFiles(files: File[]) {
   const file = files[0]
   if (!file) return
+  runId++
+  clearTimeout(timer)
   error.value = ''
-  resultUrl.value && URL.revokeObjectURL(resultUrl.value)
-  resultUrl.value = ''
-  resultBlob.value = null
-  resultDims.value = null
-  if (sourceUrl.value) URL.revokeObjectURL(sourceUrl.value)
+  busy.value = false
+  revokeResult()
+  revokeSource()
   sourceFile.value = file
   sourceUrl.value = URL.createObjectURL(file)
+  const url = sourceUrl.value
   try {
-    const img = await loadImage(sourceUrl.value)
+    const img = await loadImage(url)
+    if (url !== sourceUrl.value) return // another file arrived meanwhile
+    sourceImg = img
     sourceDims.value = { w: img.naturalWidth, h: img.naturalHeight }
   } catch {
-    error.value = t('tools.image-convert.errLoad')
+    if (url !== sourceUrl.value) return
+    error.value = T('errLoad')
     sourceDims.value = null
+    return
   }
-}
-
-function canvasToBlob(canvas: HTMLCanvasElement, type: string, q: number): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error('toBlob'))),
-      type,
-      type === 'image/png' ? undefined : q,
-    )
-  })
+  // Show a result straight away; the button stays as a manual re-run.
+  await convert()
 }
 
 function drawScaled(img: HTMLImageElement, scale: number, background?: string): HTMLCanvasElement {
@@ -130,11 +144,12 @@ async function compressToTarget(
 }
 
 async function convert() {
-  if (!sourceUrl.value) return
+  const img = sourceImg
+  if (!img) return
+  const id = ++runId
   error.value = ''
   busy.value = true
   try {
-    const img = await loadImage(sourceUrl.value)
     const canvas = drawScaled(img, 1, jpegBg(targetFormat.value))
     let blob = await canvasToBlob(canvas, targetFormat.value, quality.value)
 
@@ -145,110 +160,139 @@ async function convert() {
       blob = await compressToTarget(img, targetFormat.value, quality.value, maxMB * 1024 * 1024)
     }
 
-    if (resultUrl.value) URL.revokeObjectURL(resultUrl.value)
+    const url = URL.createObjectURL(blob)
+    let out: HTMLImageElement
+    try {
+      out = await loadImage(url)
+    } catch (e) {
+      URL.revokeObjectURL(url)
+      throw e
+    }
+    if (id !== runId) {
+      URL.revokeObjectURL(url)
+      return
+    }
+    revokeResult()
     resultBlob.value = blob
-    resultUrl.value = URL.createObjectURL(blob)
-    const out = await loadImage(resultUrl.value)
+    resultUrl.value = url
     resultDims.value = { w: out.naturalWidth, h: out.naturalHeight }
   } catch {
-    error.value = t('tools.image-convert.errConvert')
+    if (id === runId) error.value = T('errConvert')
   } finally {
-    busy.value = false
+    if (id === runId) busy.value = false
   }
 }
 
-function download() {
-  if (!resultUrl.value) return
-  const a = document.createElement('a')
-  a.href = resultUrl.value
-  a.download = `converted.${ext.value}`
-  a.click()
+function scheduleConvert() {
+  clearTimeout(timer)
+  timer = setTimeout(() => void convert(), 300)
 }
 
-onUnmounted(revoke)
+// Re-convert as the options change so the preview always matches them.
+watch([targetFormat, quality, useCompress, maxSizeMB], () => {
+  if (sourceImg) scheduleConvert()
+})
+
+function download() {
+  if (resultBlob.value) downloadBlob(resultBlob.value, downloadName.value)
+}
+
+onUnmounted(() => {
+  clearTimeout(timer)
+  runId++
+  revokeResult()
+  revokeSource()
+})
 </script>
 
 <template>
   <ToolShell>
-    <FileDrop accept="image/*" :hint="t('tools.image-convert.uploadHint')" @files="onFiles" />
+    <FileDrop accept="image/*" :hint="T('uploadHint')" @files="onFiles" />
 
-    <v-alert v-if="error" type="error" variant="tonal" class="mt-3">{{ error }}</v-alert>
+    <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-4">{{ error }}</v-alert>
 
     <template v-if="sourceUrl">
-      <v-row class="mt-2" dense>
+      <v-row density="comfortable" class="mt-2" align="center">
         <v-col cols="12" sm="6">
           <v-select
             v-model="targetFormat"
             :items="formats"
-            :label="t('tools.image-convert.targetFormat')"
+            :label="T('targetFormat')"
             hide-details
             density="comfortable"
           />
         </v-col>
-        <v-col cols="12" sm="6" class="d-flex align-center">
-          <v-checkbox
-            v-model="useCompress"
-            :label="t('tools.image-convert.compress')"
-            hide-details
-            density="compact"
-          />
+        <v-col cols="12" sm="6">
+          <v-checkbox v-model="useCompress" :label="T('compress')" hide-details density="compact" />
         </v-col>
       </v-row>
 
-      <div v-if="hasQuality" class="mt-2">
-        <div class="text-body-2 mb-1">
-          {{ t('tools.image-convert.quality') }}: {{ quality.toFixed(2) }}
-        </div>
+      <div v-if="hasQuality" class="mt-3">
+        <div class="text-body-2 mb-1">{{ T('quality') }}: {{ quality.toFixed(2) }}</div>
         <v-slider v-model="quality" :min="0.1" :max="1" :step="0.05" hide-details />
       </div>
 
-      <div v-if="useCompress" class="mt-2" style="max-width: 280px">
+      <div v-if="useCompress" class="mt-3" style="max-width: 280px">
         <v-text-field
           v-model.number="maxSizeMB"
           type="number"
           :min="0.1"
           :step="0.1"
-          :label="t('tools.image-convert.maxSize')"
+          :label="T('maxSize')"
           hide-details
           density="comfortable"
         />
       </div>
 
-      <div class="d-flex ga-2 mt-3">
+      <div class="d-flex ga-2 mt-4">
         <v-btn color="primary" :loading="busy" prepend-icon="mdi-image-sync" @click="convert">
-          {{ t('tools.image-convert.convert') }}
+          {{ T('convert') }}
         </v-btn>
       </div>
 
-      <v-row class="mt-2" dense>
+      <v-row density="comfortable" class="mt-2">
         <v-col cols="12" sm="6">
-          <v-card variant="tonal" class="h-100">
-            <v-card-title class="text-subtitle-2">{{ t('tools.image-convert.original') }}</v-card-title>
+          <v-card variant="tonal" rounded="lg" class="h-100">
+            <v-card-title class="text-subtitle-2">{{ T('original') }}</v-card-title>
             <v-card-text>
               <img :src="sourceUrl" class="preview rounded mb-2" alt="" />
-              <div v-if="sourceDims" class="text-body-2">
-                {{ t('tools.image-convert.dimensions') }}: {{ sourceDims.w }} × {{ sourceDims.h }}
-              </div>
-              <div v-if="sourceFile" class="text-body-2">
-                {{ t('tools.image-convert.fileSize') }}: {{ formatBytes(sourceFile.size) }}
+              <div v-if="sourceDims" class="text-body-2 text-medium-emphasis tabular-nums">
+                {{ T('dimensions') }}: {{ sourceDims.w }} × {{ sourceDims.h }}
               </div>
             </v-card-text>
           </v-card>
         </v-col>
         <v-col cols="12" sm="6">
-          <v-card v-if="resultUrl" variant="tonal" class="h-100">
-            <v-card-title class="text-subtitle-2">{{ t('tools.image-convert.result') }}</v-card-title>
-            <v-card-text>
+          <v-card variant="outlined" rounded="lg" class="h-100">
+            <v-card-title class="text-subtitle-2">{{ T('result') }}</v-card-title>
+            <v-card-text v-if="resultBlob">
               <img :src="resultUrl" class="preview rounded mb-2" alt="" />
-              <div v-if="resultDims" class="text-body-2">
-                {{ t('tools.image-convert.dimensions') }}: {{ resultDims.w }} × {{ resultDims.h }}
+              <div v-if="resultDims" class="text-body-2 text-medium-emphasis tabular-nums">
+                {{ T('dimensions') }}: {{ resultDims.w }} × {{ resultDims.h }}
               </div>
-              <div v-if="resultBlob" class="text-body-2 mb-2">
-                {{ t('tools.image-convert.fileSize') }}: {{ formatBytes(resultBlob.size) }}
+              <div class="d-flex align-center flex-wrap ga-2 mt-1">
+                <span v-if="sourceFile" class="text-body-2 text-medium-emphasis text-decoration-line-through">
+                  {{ formatBytes(sourceFile.size) }}
+                </span>
+                <v-icon icon="mdi-arrow-right" size="16" class="text-medium-emphasis" />
+                <span class="text-subtitle-1 font-weight-bold">{{ formatBytes(resultBlob.size) }}</span>
+                <v-chip
+                  :color="reduction > 0 ? 'success' : reduction < 0 ? 'error' : undefined"
+                  variant="flat"
+                  size="small"
+                  label
+                >
+                  {{ reduction >= 0 ? T('smaller', { percent: reduction }) : T('larger', { percent: -reduction }) }}
+                </v-chip>
               </div>
-              <v-btn color="primary" prepend-icon="mdi-download" @click="download">
-                {{ t('tools.image-convert.download') }}
+              <v-btn class="mt-3" color="primary" prepend-icon="mdi-download" @click="download">
+                {{ T('download') }}
               </v-btn>
+              <div class="text-caption text-medium-emphasis mt-1 break-all">{{ downloadName }}</div>
+            </v-card-text>
+            <v-card-text v-else class="d-flex align-center ga-2 text-body-2 text-medium-emphasis">
+              <v-progress-circular v-if="busy" indeterminate size="18" width="2" />
+              {{ busy ? T('converting') : t('common.noOutput') }}
             </v-card-text>
           </v-card>
         </v-col>

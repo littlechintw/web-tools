@@ -2,19 +2,24 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
-import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
+import OutputPanel from '@/components/OutputPanel.vue'
+import { isBoolean, oneOf, useStoredRef } from '@/composables/useStoredRef'
 
+const TOOL_ID = 'text-sort'
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.${TOOL_ID}.${key}`, args ?? {})
 
 type SortMode = 'none' | 'asc' | 'desc'
 const input = ref('')
-const sortMode = ref<SortMode>('asc')
-const numeric = ref(false)
-const caseInsensitive = ref(false)
-const removeDuplicates = ref(false)
-const reverse = ref(false)
-const trim = ref(true)
-const removeEmpty = ref(true)
+// Options are remembered between visits; the text itself is not.
+const sortMode = useStoredRef<SortMode>('text-sort.sortMode', 'asc', oneOf(['none', 'asc', 'desc']))
+const numeric = useStoredRef('text-sort.numeric', false, isBoolean)
+const caseInsensitive = useStoredRef('text-sort.caseInsensitive', false, isBoolean)
+const removeDuplicates = useStoredRef('text-sort.removeDuplicates', false, isBoolean)
+const reverse = useStoredRef('text-sort.reverse', false, isBoolean)
+const trim = useStoredRef('text-sort.trim', true, isBoolean)
+const removeEmpty = useStoredRef('text-sort.removeEmpty', true, isBoolean)
 
 const linesBefore = computed(() => (input.value === '' ? 0 : input.value.split(/\r\n|\r|\n/).length))
 
@@ -58,27 +63,38 @@ const output = computed(() => {
 })
 
 const linesAfter = computed(() => (output.value === '' ? 0 : output.value.split('\n').length))
+
+function loadExample() {
+  input.value = ['banana', 'Apple', 'cherry', 'apple', '', '10', '2', 'banana'].join('\n')
+}
 </script>
 
 <template>
   <ToolShell>
     <v-textarea
       v-model="input"
-      :label="t('tools.text-sort.inputText')"
+      :label="T('inputText')"
       rows="8"
       auto-grow
       clearable
+      hide-details
       class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="input = $event" />
+      <v-btn variant="text" prepend-icon="mdi-lightbulb-outline" @click="loadExample">
+        {{ t('common.loadExample') }}
+      </v-btn>
+    </div>
 
-    <div class="d-flex flex-wrap align-center ga-4 mt-2">
+    <div class="d-flex flex-wrap align-center ga-4 mt-3">
       <v-select
         v-model="sortMode"
-        :label="t('tools.text-sort.sort')"
+        :label="T('sort')"
         :items="[
-          { title: t('tools.text-sort.none'), value: 'none' },
-          { title: t('tools.text-sort.asc'), value: 'asc' },
-          { title: t('tools.text-sort.desc'), value: 'desc' },
+          { title: T('none'), value: 'none' },
+          { title: T('asc'), value: 'asc' },
+          { title: T('desc'), value: 'desc' },
         ]"
         density="compact"
         hide-details
@@ -87,37 +103,19 @@ const linesAfter = computed(() => (output.value === '' ? 0 : output.value.split(
     </div>
 
     <div class="d-flex flex-wrap ga-x-4">
-      <v-checkbox v-model="numeric" :label="t('tools.text-sort.numeric')" hide-details density="compact" />
-      <v-checkbox v-model="caseInsensitive" :label="t('tools.text-sort.caseInsensitive')" hide-details density="compact" />
-      <v-checkbox v-model="removeDuplicates" :label="t('tools.text-sort.removeDuplicates')" hide-details density="compact" />
-      <v-checkbox v-model="reverse" :label="t('tools.text-sort.reverse')" hide-details density="compact" />
-      <v-checkbox v-model="trim" :label="t('tools.text-sort.trim')" hide-details density="compact" />
-      <v-checkbox v-model="removeEmpty" :label="t('tools.text-sort.removeEmpty')" hide-details density="compact" />
+      <v-checkbox v-model="numeric" :label="T('numeric')" hide-details density="compact" />
+      <v-checkbox v-model="caseInsensitive" :label="T('caseInsensitive')" hide-details density="compact" />
+      <v-checkbox v-model="removeDuplicates" :label="T('removeDuplicates')" hide-details density="compact" />
+      <v-checkbox v-model="reverse" :label="T('reverse')" hide-details density="compact" />
+      <v-checkbox v-model="trim" :label="T('trim')" hide-details density="compact" />
+      <v-checkbox v-model="removeEmpty" :label="T('removeEmpty')" hide-details density="compact" />
     </div>
 
-    <div class="d-flex ga-2 mt-2 mb-1">
-      <v-chip size="small" variant="tonal">{{ t('tools.text-sort.linesBefore', { n: linesBefore }) }}</v-chip>
-      <v-chip size="small" variant="tonal" color="primary">{{ t('tools.text-sort.linesAfter', { n: linesAfter }) }}</v-chip>
+    <div class="d-flex ga-2 mt-2 mb-3">
+      <v-chip size="small" variant="tonal">{{ T('linesBefore', { n: linesBefore }) }}</v-chip>
+      <v-chip size="small" variant="tonal" color="primary">{{ T('linesAfter', { n: linesAfter }) }}</v-chip>
     </div>
 
-    <v-textarea
-      :model-value="output"
-      :label="t('common.output')"
-      rows="8"
-      auto-grow
-      readonly
-      class="code-area"
-    />
-
-    <div class="d-flex ga-2 mt-2">
-      <CopyBtn :text="output" />
-    </div>
+    <OutputPanel :value="output" :rows="8" filename="sorted.txt" />
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-</style>

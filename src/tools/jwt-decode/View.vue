@@ -1,27 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
-import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
+import OutputPanel from '@/components/OutputPanel.vue'
 import { useHistory } from '@/composables/useHistory'
+import { base64ToBytes, bytesToBase64 } from '@/utils/bytes'
 
 const TOOL_ID = 'jwt-decode'
 const { t } = useI18n()
-const route = useRoute()
 
 const history = useHistory<{ token: string }>(TOOL_ID)
 
 const token = ref('')
 const error = ref('')
 
-function base64UrlDecode(seg: string): string {
-  let b64 = seg.replace(/-/g, '+').replace(/_/g, '/')
-  while (b64.length % 4) b64 += '='
-  const bin = atob(b64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return new TextDecoder().decode(bytes)
+function decodeSegment(seg: string): string {
+  return new TextDecoder().decode(base64ToBytes(seg))
 }
 
 interface Decoded {
@@ -40,8 +35,8 @@ const decoded = computed<Decoded | null>(() => {
     return null
   }
   try {
-    const headerObj = JSON.parse(base64UrlDecode(parts[0])) as Record<string, unknown>
-    const payloadObj = JSON.parse(base64UrlDecode(parts[1])) as Record<string, unknown>
+    const headerObj = JSON.parse(decodeSegment(parts[0])) as Record<string, unknown>
+    const payloadObj = JSON.parse(decodeSegment(parts[1])) as Record<string, unknown>
     return {
       header: JSON.stringify(headerObj, null, 2),
       payload: JSON.stringify(payloadObj, null, 2),
@@ -92,6 +87,22 @@ const claimRows = computed<ClaimRow[]>(() => {
   return rows
 })
 
+function loadExample() {
+  const encode = (obj: Record<string, unknown>) =>
+    bytesToBase64(new TextEncoder().encode(JSON.stringify(obj)), true)
+  const now = Math.floor(Date.now() / 1000)
+  const header = encode({ alg: 'HS256', typ: 'JWT' })
+  const payload = encode({
+    iss: 'https://tools.littlechin.tw',
+    sub: '1234567890',
+    name: 'Toolbox demo',
+    iat: now,
+    exp: now + 3600,
+  })
+  // Signatures aren't verified here, so a fixed placeholder segment is fine.
+  token.value = `${header}.${payload}.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c`
+}
+
 function save() {
   const raw = token.value.trim()
   if (!raw || !decoded.value) return
@@ -100,12 +111,8 @@ function save() {
 
 watch(decoded, () => save())
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) token.value = e.data.token
-  }
+history.restoreFromRoute((d) => {
+  token.value = d.token
 })
 </script>
 
@@ -122,21 +129,33 @@ onMounted(() => {
       rows="4"
       auto-grow
       clearable
+      hide-details="auto"
       class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="token = $event" />
+      <v-btn variant="text" prepend-icon="mdi-lightbulb-outline" @click="loadExample">
+        {{ t('common.loadExample') }}
+      </v-btn>
+    </div>
 
     <template v-if="decoded">
-      <div class="d-flex align-center ga-2 mt-4 mb-1">
-        <h2 class="text-subtitle-1 font-weight-bold">{{ t('tools.jwt-decode.header') }}</h2>
-        <CopyBtn :text="decoded.header" icon size="small" />
-      </div>
-      <v-textarea :model-value="decoded.header" rows="4" auto-grow readonly class="code-area" />
+      <OutputPanel
+        class="mt-4"
+        :value="decoded.header"
+        :label="t('tools.jwt-decode.header')"
+        :rows="3"
+        filename="header.json"
+        mime="application/json"
+      />
 
-      <div class="d-flex align-center ga-2 mt-4 mb-1">
-        <h2 class="text-subtitle-1 font-weight-bold">{{ t('tools.jwt-decode.payload') }}</h2>
-        <CopyBtn :text="decoded.payload" icon size="small" />
-      </div>
-      <v-textarea :model-value="decoded.payload" rows="6" auto-grow readonly class="code-area" />
+      <OutputPanel
+        class="mt-4"
+        :value="decoded.payload"
+        :label="t('tools.jwt-decode.payload')"
+        filename="payload.json"
+        mime="application/json"
+      />
 
       <template v-if="claimRows.length">
         <h2 class="text-subtitle-1 font-weight-bold mt-4 mb-2">{{ t('tools.jwt-decode.claims') }}</h2>
@@ -151,7 +170,7 @@ onMounted(() => {
           <tbody>
             <tr v-for="row in claimRows" :key="row.key">
               <td>{{ row.name }}</td>
-              <td class="code-cell">{{ row.value }}</td>
+              <td class="font-mono break-all text-body-2">{{ row.value }}</td>
               <td>
                 <span v-if="row.readable">{{ row.readable }}</span>
                 <v-chip v-if="row.status === 'expired'" color="error" size="x-small" class="ml-2">
@@ -168,15 +187,3 @@ onMounted(() => {
     </template>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-.code-cell {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-  word-break: break-all;
-}
-</style>

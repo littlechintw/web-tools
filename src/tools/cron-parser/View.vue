@@ -5,6 +5,7 @@ import cronstrue from 'cronstrue'
 import { CronExpressionParser } from 'cron-parser'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
 
 const { t, locale } = useI18n()
 
@@ -78,6 +79,10 @@ function applyPreset(value: string) {
   expr.value = value
 }
 
+function isActivePreset(value: string): boolean {
+  return expr.value.trim() === value
+}
+
 watch([expr, locale], parse, { immediate: true })
 </script>
 
@@ -86,33 +91,41 @@ watch([expr, locale], parse, { immediate: true })
     <div class="mb-2">
       <div class="text-body-2 mb-1">{{ t('tools.cron-parser.presets') }}</div>
       <div class="d-flex flex-wrap ga-2">
-        <v-btn
+        <v-chip
           v-for="p in presets"
           :key="p.key"
-          variant="outlined"
+          :variant="isActivePreset(p.value) ? 'tonal' : 'outlined'"
+          :color="isActivePreset(p.value) ? 'primary' : undefined"
           size="small"
           @click="applyPreset(p.value)"
         >
           {{ t('tools.cron-parser.' + p.key) }}
-        </v-btn>
+        </v-chip>
       </div>
     </div>
 
     <v-text-field
       v-model="expr"
       :label="t('tools.cron-parser.expression')"
+      :error-messages="error"
       class="code-area mt-2"
       clearable
-      :error-messages="error"
+      hide-details="auto"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="expr = $event" />
+    </div>
 
     <v-card v-if="description" variant="tonal" class="mt-2">
-      <v-card-text>
-        <div class="text-caption text-medium-emphasis">{{ t('tools.cron-parser.description') }}</div>
-        <div class="text-body-1 mt-1">{{ description }}</div>
-        <div v-if="usedFallback" class="text-caption text-medium-emphasis mt-1">
-          {{ t('tools.cron-parser.englishFallback') }}
+      <v-card-text class="d-flex align-start ga-2">
+        <div class="flex-grow-1">
+          <div class="text-caption text-medium-emphasis">{{ t('tools.cron-parser.humanReadable') }}</div>
+          <div class="text-body-1 mt-1">{{ description }}</div>
+          <div v-if="usedFallback" class="text-caption text-medium-emphasis mt-1">
+            {{ t('tools.cron-parser.englishFallback') }}
+          </div>
         </div>
+        <CopyBtn :text="description" icon size="small" />
       </v-card-text>
     </v-card>
 
@@ -123,9 +136,9 @@ watch([expr, locale], parse, { immediate: true })
       <v-list density="compact" class="rounded-lg border">
         <v-list-item v-for="(d, i) in nextRuns" :key="i">
           <template #prepend>
-            <span class="text-medium-emphasis mr-3">{{ i + 1 }}.</span>
+            <span class="text-medium-emphasis mr-3 tabular-nums">{{ i + 1 }}.</span>
           </template>
-          <v-list-item-title class="mono">{{ d }}</v-list-item-title>
+          <v-list-item-title class="font-mono">{{ d }}</v-list-item-title>
           <template #append>
             <CopyBtn :text="d" icon size="small" />
           </template>
@@ -134,13 +147,3 @@ watch([expr, locale], parse, { immediate: true })
     </template>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(input) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-</style>

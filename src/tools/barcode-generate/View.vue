@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import JsBarcode from 'jsbarcode'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
 import { useHistory } from '@/composables/useHistory'
+import { isBoolean, isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { downloadUrl } from '@/utils/download'
 
 const TOOL_ID = 'barcode-generate'
 const { t } = useI18n()
-const route = useRoute()
+const T = (key: string) => t(`tools.${TOOL_ID}.${key}`)
 
-type Format = 'CODE128' | 'CODE39' | 'EAN13' | 'EAN8' | 'UPC' | 'ITF14' | 'MSI' | 'pharmacode'
+const FORMATS = ['CODE128', 'CODE39', 'EAN13', 'EAN8', 'UPC', 'ITF14', 'MSI', 'pharmacode'] as const
+type Format = (typeof FORMATS)[number]
 
 interface SavedData {
   format: Format
@@ -23,11 +25,12 @@ interface SavedData {
 
 const history = useHistory<SavedData>(TOOL_ID)
 
-const format = ref<Format>('CODE128')
+// Appearance options are remembered between visits; the value is not.
+const format = useStoredRef<Format>('barcode-generate.format', 'CODE128', oneOf(FORMATS))
 const value = ref('1234567890')
-const barWidth = ref(2)
-const height = ref(100)
-const displayValue = ref(true)
+const barWidth = useStoredRef('barcode-generate.barWidth', 2, isNumber)
+const height = useStoredRef('barcode-generate.height', 100, isNumber)
+const displayValue = useStoredRef('barcode-generate.displayValue', true, isBoolean)
 
 const canvasRef = ref<HTMLCanvasElement>()
 const error = ref('')
@@ -66,7 +69,7 @@ function render() {
       // JsBarcode leaves the canvas untouched on invalid input; clear it.
       const c = canvasRef.value
       c?.getContext('2d')?.clearRect(0, 0, c.width, c.height)
-      if (!error.value) error.value = t('tools.barcode-generate.invalidValue')
+      if (!error.value) error.value = T('invalidValue')
     } else {
       error.value = ''
       // save only after validation, so history never records invalid values
@@ -78,11 +81,8 @@ function render() {
 function download() {
   const el = canvasRef.value
   if (!el || !valid.value) return
-  const url = el.toDataURL('image/png')
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `barcode-${Date.now()}.png`
-  a.click()
+  const slug = value.value.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+  downloadUrl(el.toDataURL('image/png'), `barcode-${format.value}${slug ? `-${slug}` : ''}.png`)
 }
 
 function save() {
@@ -100,59 +100,50 @@ watch([format, value, barWidth, height, displayValue], () => {
   render()
 })
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) {
-      const d = e.data
-      format.value = d.format
-      value.value = d.value
-      barWidth.value = d.barWidth
-      height.value = d.height
-      displayValue.value = d.displayValue
-    }
-  }
-  render()
+history.restoreFromRoute((d) => {
+  format.value = d.format
+  value.value = d.value
+  barWidth.value = d.barWidth
+  height.value = d.height
+  displayValue.value = d.displayValue
 })
 
-const formatItems: Format[] = ['CODE128', 'CODE39', 'EAN13', 'EAN8', 'UPC', 'ITF14', 'MSI', 'pharmacode']
+onMounted(() => render())
+
+const formatItems = [...FORMATS]
 </script>
 
 <template>
   <ToolShell>
-    <v-row dense>
+    <v-row density="comfortable">
       <v-col cols="12" sm="5">
-        <v-select
-          v-model="format"
-          :items="formatItems"
-          :label="t('tools.barcode-generate.format')"
-          density="comfortable"
-        />
+        <v-select v-model="format" :items="formatItems" :label="T('format')" density="comfortable" />
       </v-col>
       <v-col cols="12" sm="7">
         <v-text-field
           v-model="value"
-          :label="t('tools.barcode-generate.value')"
+          :label="T('value')"
           :error-messages="error"
-          :hint="t('tools.barcode-generate.valueHint')"
+          :hint="T('valueHint')"
           density="comfortable"
+          class="code-area"
         />
       </v-col>
     </v-row>
 
     <v-divider class="my-3" />
 
-    <div class="text-subtitle-2 mb-2">{{ t('tools.barcode-generate.options') }}</div>
-    <v-row dense align="center">
+    <div class="text-subtitle-2 mb-2">{{ T('options') }}</div>
+    <v-row density="comfortable" align="center">
       <v-col cols="6" sm="4">
         <v-text-field
           v-model.number="barWidth"
           type="number"
           min="1"
           max="6"
-          :label="t('tools.barcode-generate.barWidth')"
+          :label="T('barWidth')"
           density="comfortable"
+          hide-details
         />
       </v-col>
       <v-col cols="6" sm="4">
@@ -161,30 +152,26 @@ const formatItems: Format[] = ['CODE128', 'CODE39', 'EAN13', 'EAN8', 'UPC', 'ITF
           type="number"
           min="10"
           max="300"
-          :label="t('tools.barcode-generate.height')"
+          :label="T('height')"
           density="comfortable"
+          hide-details
         />
       </v-col>
       <v-col cols="12" sm="4">
-        <v-checkbox
-          v-model="displayValue"
-          :label="t('tools.barcode-generate.displayValue')"
-          hide-details
-          density="compact"
-        />
+        <v-checkbox v-model="displayValue" :label="T('displayValue')" hide-details density="compact" />
       </v-col>
     </v-row>
 
     <div class="d-flex justify-center my-4 barcode-wrap">
       <canvas v-show="valid" ref="canvasRef" class="barcode-canvas" />
       <div v-show="!valid" class="text-medium-emphasis pa-8">
-        {{ error || t('tools.barcode-generate.valueHint') }}
+        {{ error || T('valueHint') }}
       </div>
     </div>
 
     <div class="d-flex ga-2 flex-wrap justify-center">
       <v-btn color="primary" prepend-icon="mdi-download" :disabled="!valid" @click="download">
-        {{ t('tools.barcode-generate.downloadPng') }}
+        {{ T('downloadPng') }}
       </v-btn>
       <CopyBtn :text="value" />
     </div>

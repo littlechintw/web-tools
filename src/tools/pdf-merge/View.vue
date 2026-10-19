@@ -1,24 +1,34 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PDFDocument } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { downloadBlob } from '@/utils/download'
+import { formatBytes, stripExtension } from '@/utils/format'
 
 interface PdfItem {
   name: string
+  size: number
   buffer: ArrayBuffer
   pageCount: number
 }
 
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.pdf-merge.${key}`, args ?? {})
 
 const items = ref<PdfItem[]>([])
 const error = ref('')
+const success = ref('')
 const busy = ref(false)
-let lastUrl: string | null = null
 
 const totalPages = computed(() => items.value.reduce((sum, it) => sum + it.pageCount, 0))
+const totalSize = computed(() => items.value.reduce((sum, it) => sum + it.size, 0))
+const canMerge = computed(() => items.value.length >= 2)
+// The merged file is named after the first document in the list.
+const outputName = computed(() =>
+  items.value.length ? `${stripExtension(items.value[0].name)}-merged.pdf` : '',
+)
 
 // Serialize batches so two quick drops append in drop order instead of
 // interleaving their files as each finishes parsing.
@@ -30,13 +40,14 @@ function onFiles(files: File[]) {
 
 async function addFiles(files: File[]) {
   error.value = ''
+  success.value = ''
   for (const file of files) {
     try {
       const buffer = await file.arrayBuffer()
       const doc = await PDFDocument.load(buffer)
-      items.value.push({ name: file.name, buffer, pageCount: doc.getPageCount() })
+      items.value.push({ name: file.name, size: file.size, buffer, pageCount: doc.getPageCount() })
     } catch {
-      error.value = t('tools.pdf-merge.loadError', { name: file.name })
+      error.value = T('loadError', { name: file.name })
     }
   }
 }
@@ -48,27 +59,24 @@ function move(index: number, delta: number) {
   const [moved] = next.splice(index, 1)
   next.splice(target, 0, moved)
   items.value = next
+  success.value = ''
 }
 
 function remove(index: number) {
   items.value.splice(index, 1)
+  success.value = ''
 }
 
 function clearAll() {
   items.value = []
   error.value = ''
-}
-
-function revokeUrl() {
-  if (lastUrl) {
-    URL.revokeObjectURL(lastUrl)
-    lastUrl = null
-  }
+  success.value = ''
 }
 
 async function merge() {
-  if (!items.value.length || busy.value) return
+  if (!canMerge.value || busy.value) return
   error.value = ''
+  success.value = ''
   busy.value = true
   try {
     const out = await PDFDocument.create()
@@ -78,29 +86,24 @@ async function merge() {
       for (const page of copied) out.addPage(page)
     }
     const bytes = await out.save()
-    const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' })
-    revokeUrl()
-    lastUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = lastUrl
-    a.download = t('tools.pdf-merge.outputName')
-    a.click()
+    const name = outputName.value
+    downloadBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), name)
+    success.value = T('merged', { count: items.value.length, name })
   } catch {
-    error.value = t('tools.pdf-merge.mergeError')
+    error.value = T('mergeError')
   } finally {
     busy.value = false
   }
 }
-
-onUnmounted(revokeUrl)
 </script>
 
 <template>
   <ToolShell>
     <FileDrop
-      accept="application/pdf"
+      accept="application/pdf,.pdf"
       :multiple="true"
-      :hint="items.length ? t('tools.pdf-merge.addMore') : t('tools.pdf-merge.dropHint')"
+      :show-selected="false"
+      :hint="items.length ? T('addMore') : T('dropHint')"
       @files="onFiles"
     />
 
@@ -109,16 +112,16 @@ onUnmounted(revokeUrl)
     </v-alert>
 
     <div v-if="!items.length" class="text-medium-emphasis text-body-2 mt-4">
-      {{ t('tools.pdf-merge.empty') }}
+      {{ T('empty') }}
     </div>
 
     <template v-else>
-      <div class="d-flex align-center justify-space-between mt-4 mb-2">
-        <span class="text-body-2 font-weight-medium">
-          {{ t('tools.pdf-merge.totalPages', { count: totalPages }) }}
-        </span>
+      <div class="d-flex flex-wrap align-center ga-2 mt-4 mb-2">
+        <span class="text-body-2 font-weight-medium">{{ T('totalPages', { count: totalPages }) }}</span>
+        <span class="text-body-2 text-medium-emphasis">· {{ T('totalSize', { size: formatBytes(totalSize) }) }}</span>
+        <v-spacer />
         <v-btn variant="text" size="small" color="error" prepend-icon="mdi-delete-sweep" @click="clearAll">
-          {{ t('tools.pdf-merge.clearAll') }}
+          {{ T('clearAll') }}
         </v-btn>
       </div>
 
@@ -130,14 +133,16 @@ onUnmounted(revokeUrl)
             </v-avatar>
           </template>
           <v-list-item-title class="text-truncate">{{ item.name }}</v-list-item-title>
-          <v-list-item-subtitle>{{ item.pageCount }} {{ t('tools.pdf-merge.pages') }}</v-list-item-subtitle>
+          <v-list-item-subtitle>
+            {{ item.pageCount }} {{ T('pages') }} · {{ formatBytes(item.size) }}
+          </v-list-item-subtitle>
           <template #append>
             <v-btn
               icon="mdi-arrow-up"
               variant="text"
               size="small"
               :disabled="i === 0"
-              :title="t('tools.pdf-merge.moveUp')"
+              :title="T('moveUp')"
               @click="move(i, -1)"
             />
             <v-btn
@@ -145,7 +150,7 @@ onUnmounted(revokeUrl)
               variant="text"
               size="small"
               :disabled="i === items.length - 1"
-              :title="t('tools.pdf-merge.moveDown')"
+              :title="T('moveDown')"
               @click="move(i, 1)"
             />
             <v-btn
@@ -153,24 +158,31 @@ onUnmounted(revokeUrl)
               variant="text"
               size="small"
               color="error"
-              :title="t('tools.pdf-merge.remove')"
+              :title="T('remove')"
               @click="remove(i)"
             />
           </template>
         </v-list-item>
       </v-list>
 
-      <v-btn
-        color="primary"
-        size="large"
-        class="mt-4"
-        prepend-icon="mdi-merge"
-        :loading="busy"
-        :disabled="busy"
-        @click="merge"
-      >
-        {{ busy ? t('tools.pdf-merge.merging') : t('tools.pdf-merge.merge') }}
-      </v-btn>
+      <div class="d-flex flex-wrap align-center ga-3 mt-4">
+        <v-btn
+          color="primary"
+          size="large"
+          prepend-icon="mdi-merge"
+          :loading="busy"
+          :disabled="busy || !canMerge"
+          @click="merge"
+        >
+          {{ busy ? T('merging') : T('merge') }}
+        </v-btn>
+        <span v-if="!canMerge" class="text-caption text-medium-emphasis">{{ T('needTwo') }}</span>
+        <span v-else class="text-caption text-medium-emphasis text-truncate">{{ outputName }}</span>
+      </div>
+
+      <v-alert v-if="success" type="success" variant="tonal" density="compact" class="mt-4">
+        {{ success }}
+      </v-alert>
     </template>
   </ToolShell>
 </template>

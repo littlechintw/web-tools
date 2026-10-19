@@ -2,7 +2,9 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import CopyBtn from '@/components/CopyBtn.vue'
 import { maskName } from '@/lib/lottery'
+import { downloadText } from '@/utils/download'
 
 const { t } = useI18n()
 
@@ -187,21 +189,20 @@ function drawAll() {
   displayMasked.value = ''
 }
 
+// ── Export ────────────────────────────────────────────────────────────────────
+/** Draw history in draw order, one "n. prize → name" line each. */
+function resultsText(mode: 'plain' | 'masked'): string {
+  return [...history.value]
+    .reverse()
+    .map((item, i) => `${i + 1}. ${item.prizeName} → ${mode === 'plain' ? item.originalName : item.maskedName}`)
+    .join('\n')
+}
+
+// Copy hands out what is shown on screen (masked when privacy is on).
+const copyText = computed(() => resultsText('masked'))
+
 function exportResults(mode: 'plain' | 'masked') {
-  const lines = [...history.value].reverse().map((item, i) =>
-    mode === 'plain'
-      ? `${i + 1}. ${item.prizeName} → ${item.originalName}`
-      : `${i + 1}. ${item.prizeName} → ${item.maskedName}`,
-  )
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'lottery-results.txt'
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  downloadText(resultsText(mode), mode === 'plain' ? 'lottery-results.txt' : 'lottery-results-masked.txt')
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
@@ -520,6 +521,7 @@ function onMaskCharInput(val: string) {
       </div>
 
       <div v-if="history.length > 0" class="d-flex justify-center ga-2 mb-4 flex-wrap">
+        <CopyBtn :text="copyText" size="small" />
         <v-btn
           variant="tonal"
           color="primary"

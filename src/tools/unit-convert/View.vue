@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
 import { useHistory } from '@/composables/useHistory'
+import { oneOf, useStoredRef } from '@/composables/useStoredRef'
 
 const TOOL_ID = 'unit-convert'
 const { t } = useI18n()
-const route = useRoute()
 
 type CategoryId =
   | 'length'
@@ -111,14 +110,18 @@ const history = useHistory<{ category: CategoryId; from: string; to: string; val
   TOOL_ID,
 )
 
-const category = ref<CategoryId>('length')
-const value = ref('1')
-
 const unitsFor = (cat: CategoryId): string[] =>
   cat === 'temperature' ? TEMP_UNITS : Object.keys(FACTORS[cat])
 
-const fromUnit = ref(unitsFor('length')[0])
-const toUnit = ref(unitsFor('length')[1])
+// Category and units are preferences, remembered between visits. A stored
+// unit is only accepted when it belongs to the stored category.
+const category = useStoredRef<CategoryId>('unit-convert.category', 'length', oneOf(categories))
+const initialUnits = unitsFor(category.value)
+const isInitialUnit = (v: unknown): v is string => typeof v === 'string' && initialUnits.includes(v)
+const fromUnit = useStoredRef('unit-convert.fromUnit', initialUnits[0], isInitialUnit)
+const toUnit = useStoredRef('unit-convert.toUnit', initialUnits[1] ?? initialUnits[0], isInitialUnit)
+
+const value = ref('1')
 
 watch(category, (cat) => {
   const units = unitsFor(cat)
@@ -179,21 +182,15 @@ function swap() {
   toUnit.value = f
 }
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) {
-      category.value = e.data.category
-      value.value = e.data.value
-      // The category watcher resets units on the next flush; restore the
-      // saved units after it has run.
-      void nextTick(() => {
-        fromUnit.value = e.data.from
-        toUnit.value = e.data.to
-      })
-    }
-  }
+history.restoreFromRoute((d) => {
+  category.value = d.category
+  value.value = d.value
+  // The category watcher resets units on the next flush; restore the
+  // saved units after it has run.
+  void nextTick(() => {
+    fromUnit.value = d.from
+    toUnit.value = d.to
+  })
 })
 </script>
 
@@ -215,6 +212,7 @@ onMounted(() => {
         :label="t('tools.unit-convert.value')"
         type="number"
         hide-details
+        class="tabular-nums"
         style="max-width: 200px"
       />
       <v-select
@@ -225,7 +223,7 @@ onMounted(() => {
         hide-details
         style="max-width: 160px"
       />
-      <v-btn icon="mdi-swap-horizontal" variant="text" :title="t('common.swap')" @click="swap" />
+      <v-btn icon="mdi-swap-horizontal" variant="text" :title="t('common.swap')" :aria-label="t('common.swap')" @click="swap" />
       <v-select
         v-model="toUnit"
         :items="units"
@@ -237,18 +235,11 @@ onMounted(() => {
     </div>
 
     <v-card variant="tonal" class="mt-4 pa-4 d-flex align-center justify-space-between ga-3">
-      <div>
+      <div class="overflow-hidden">
         <div class="text-caption text-medium-emphasis">{{ t('tools.unit-convert.result') }}</div>
-        <div class="text-h6 code-text">{{ result }} {{ result ? toUnit : '' }}</div>
+        <div class="text-h6 font-mono tabular-nums break-all">{{ result }} {{ result ? toUnit : '' }}</div>
       </div>
       <CopyBtn :text="result" icon />
     </v-card>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  word-break: break-all;
-}
-</style>

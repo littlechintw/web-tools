@@ -1,0 +1,27 @@
+/* Global utilities shared by every tool. Vuetify's own utility classes cover
+   layout; these add the few things the tools kept redefining locally. */
+
+:root {
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+/* Monospace text fields / textareas: add `code-area` to any v-text-field or
+   v-textarea. Plain `.font-mono` works on any element. */
+.font-mono,
+.code-area textarea,
+.code-area input {
+  font-family: var(--font-mono);
+}
+.code-area textarea,
+.code-area input {
+  font-size: 14px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Long unbroken output (hashes, Base64, URLs) must wrap instead of overflowing. */
+.break-all {
+  word-break: break-all;
+}

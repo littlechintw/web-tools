@@ -2,8 +2,11 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { useAudioContext } from '@/composables/useAudioContext'
+import { isBoolean, useStoredRef } from '@/composables/useStoredRef'
 
 const { t } = useI18n()
+const audio = useAudioContext()
 
 // ---------------------------------------------------------------------------
 // Data model
@@ -23,6 +26,7 @@ const PALETTE = [
 ]
 
 const STORAGE_KEY = 'app.spin-wheel.items'
+const MAX_ITEMS = 20
 
 let nextId = 4
 
@@ -30,12 +34,14 @@ function colorFor(index: number): string {
   return PALETTE[index % PALETTE.length]
 }
 
+/** "Option A", "Option B", … in the current locale (falls back to numbers past Z). */
+function defaultLabel(index: number): string {
+  const letter = index < 26 ? String.fromCharCode(65 + index) : String(index + 1)
+  return t('tools.spin-wheel.defaultLabel', { letter })
+}
+
 function defaultItems(): WheelItem[] {
-  return [
-    { id: 1, label: '選項 A', weight: 1, color: colorFor(0) },
-    { id: 2, label: '選項 B', weight: 1, color: colorFor(1) },
-    { id: 3, label: '選項 C', weight: 1, color: colorFor(2) },
-  ]
+  return [0, 1, 2].map((idx) => ({ id: idx + 1, label: defaultLabel(idx), weight: 1, color: colorFor(idx) }))
 }
 
 function loadItems(): WheelItem[] {
@@ -47,7 +53,7 @@ function loadItems(): WheelItem[] {
     nextId = parsed.length + 1
     return parsed.map((item, idx) => ({
       id: idx + 1,
-      label: String(item.label ?? `選項 ${idx + 1}`),
+      label: String(item.label ?? defaultLabel(idx)),
       weight: Math.max(1, Math.min(100, Number(item.weight) || 1)),
       color: colorFor(idx),
     }))
@@ -57,11 +63,12 @@ function loadItems(): WheelItem[] {
 }
 
 const items = ref<WheelItem[]>(loadItems())
+const muted = useStoredRef('spin-wheel.muted', false, isBoolean)
 
 function addItem() {
-  if (items.value.length >= 20) return
+  if (items.value.length >= MAX_ITEMS) return
   const idx = items.value.length
-  items.value.push({ id: nextId++, label: `選項 ${String.fromCharCode(65 + idx)}`, weight: 1, color: colorFor(idx) })
+  items.value.push({ id: nextId++, label: defaultLabel(idx), weight: 1, color: colorFor(idx) })
 }
 
 function removeItem(id: number) {
@@ -156,6 +163,8 @@ watch(
   items,
   (val) => {
     redraw()
+    // A winner that was removed through the option list is no longer on the wheel.
+    if (winnerId.value !== null && !val.some(i => i.id === winnerId.value)) clearWinner()
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(val.map(i => ({ label: i.label, weight: i.weight }))))
     } catch { /* quota exceeded — ignore */ }
@@ -198,16 +207,23 @@ onMounted(() => {
 const currentAngle = ref(0)
 const spinning = ref(false)
 const winner = ref<string | null>(null)
+/** id of the winning item, so it can be removed from the wheel afterwards */
+const winnerId = ref<number | null>(null)
 let rafId = 0
 
-// Audio
-let audioCtx: AudioContext | null = null
-
-function getAudioCtx(): AudioContext {
-  if (!audioCtx) audioCtx = new AudioContext()
-  return audioCtx
+function clearWinner() {
+  winner.value = null
+  winnerId.value = null
 }
 
+/** Take the last winner off the wheel (prize draws without repeats). */
+function removeWinner() {
+  if (spinning.value || winnerId.value === null) return
+  removeItem(winnerId.value)
+  clearWinner()
+}
+
+// Audio
 function playSpinSound(ctx: AudioContext, duration: number) {
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
@@ -257,7 +273,7 @@ function getSegmentAtAngle(angle: number, wheelItems: WheelItem[]): number {
 function spin() {
   if (spinning.value) return
   spinning.value = true
-  winner.value = null
+  clearWinner()
 
   // Snapshot weights as valid integers — guards against string coercion from v-model
   // (looseToNumber returns "" for empty inputs, causing 0 + "1" + "1" = "011" string concatenation)
@@ -302,12 +318,13 @@ function spin() {
   let lastSegment = getSegmentAtAngle(startA, items.value)
 
   let ac: AudioContext | null = null
-  try {
-    ac = getAudioCtx()
-    if (ac.state === 'suspended') ac.resume()
-    playSpinSound(ac, duration / 1000)
-  } catch {
-    // Audio not available
+  if (!muted.value) {
+    try {
+      ac = audio.get()
+      playSpinSound(ac, duration / 1000)
+    } catch {
+      // Audio not available
+    }
   }
 
   function frame(now: number) {
@@ -331,7 +348,9 @@ function spin() {
       rafId = requestAnimationFrame(frame)
     } else {
       spinning.value = false
-      winner.value = items.value[targetIndex].label
+      const picked = items.value[targetIndex]
+      winner.value = picked.label
+      winnerId.value = picked.id
     }
   }
 
@@ -340,16 +359,23 @@ function spin() {
 
 onUnmounted(() => {
   cancelAnimationFrame(rafId)
-  if (audioCtx) {
-    audioCtx.close()
-    audioCtx = null
-  }
   if (ro) ro.disconnect()
 })
 </script>
 
 <template>
   <ToolShell>
+    <template #actions>
+      <v-btn
+        :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
+        variant="text"
+        :title="muted ? t('tools.spin-wheel.unmute') : t('tools.spin-wheel.mute')"
+        :aria-label="muted ? t('tools.spin-wheel.unmute') : t('tools.spin-wheel.mute')"
+        :aria-pressed="muted"
+        @click="muted = !muted"
+      />
+    </template>
+
     <div class="spin-wheel-layout">
       <!-- Left column: controls -->
       <div class="spin-wheel-controls">
@@ -385,15 +411,14 @@ onUnmounted(() => {
               @blur="clampWeight(item)"
             />
             <v-btn
-              icon
+              icon="mdi-close"
               variant="text"
               size="small"
               :disabled="items.length <= 1 || spinning"
               :title="t('tools.spin-wheel.removeOption')"
+              :aria-label="t('tools.spin-wheel.removeOption')"
               @click="removeItem(item.id)"
-            >
-              <v-icon>mdi-close</v-icon>
-            </v-btn>
+            />
           </div>
         </div>
 
@@ -402,7 +427,7 @@ onUnmounted(() => {
             variant="tonal"
             color="primary"
             prepend-icon="mdi-plus"
-            :disabled="items.length >= 20 || spinning"
+            :disabled="items.length >= MAX_ITEMS || spinning"
             @click="addItem"
           >
             {{ t('tools.spin-wheel.addOption') }}
@@ -432,7 +457,7 @@ onUnmounted(() => {
                 :style="{ width: (item.weight / totalWeight * 100) + '%', background: item.color }"
               />
             </div>
-            <div class="weight-pct text-body-2 text-no-wrap">
+            <div class="weight-pct text-body-2 text-no-wrap tabular-nums">
               {{ Math.round(item.weight / totalWeight * 100) }}%
             </div>
           </div>
@@ -461,16 +486,27 @@ onUnmounted(() => {
             {{ spinning ? t('tools.spin-wheel.spinning') : t('tools.spin-wheel.spin') }}
           </v-btn>
 
-          <v-chip
-            v-if="winner"
-            color="success"
-            size="large"
-            variant="elevated"
-            prepend-icon="mdi-trophy"
-            class="winner-chip"
-          >
-            <span class="font-weight-bold">{{ t('tools.spin-wheel.winner') }}: {{ winner }}</span>
-          </v-chip>
+          <template v-if="winner !== null">
+            <v-chip
+              color="success"
+              size="large"
+              variant="elevated"
+              prepend-icon="mdi-trophy"
+              class="winner-chip"
+              aria-live="polite"
+            >
+              <span class="font-weight-bold">{{ t('tools.spin-wheel.winner') }}: {{ winner }}</span>
+            </v-chip>
+            <v-btn
+              variant="outlined"
+              size="small"
+              prepend-icon="mdi-playlist-remove"
+              :disabled="spinning || items.length <= 1"
+              @click="removeWinner"
+            >
+              {{ t('tools.spin-wheel.removeWinner') }}
+            </v-btn>
+          </template>
         </div>
       </div>
     </div>

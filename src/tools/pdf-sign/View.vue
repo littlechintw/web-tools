@@ -5,6 +5,10 @@ import { PDFDocument } from '@cantoo/pdf-lib'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { isNumber, useStoredRef } from '@/composables/useStoredRef'
+import { downloadBlob } from '@/utils/download'
+import { stripExtension } from '@/utils/format'
+import { loadImage, readFileAsDataUrl } from '@/utils/image'
 import { getDocument } from '@/utils/pdfjs'
 
 type SigMode = 'draw' | 'upload'
@@ -24,6 +28,7 @@ const currentPage = ref(1)
 const loading = ref(false)
 const applying = ref(false)
 const error = ref('')
+const success = ref('')
 
 // Preview canvas and its rendered viewport dimensions (CSS px === canvas px).
 const previewCanvas = ref<HTMLCanvasElement | null>(null)
@@ -35,7 +40,8 @@ const sigMode = ref<SigMode>('draw')
 const padCanvas = ref<HTMLCanvasElement | null>(null)
 const hasDrawing = ref(false)
 const uploadedSig = ref<{ dataUrl: string; w: number; h: number } | null>(null)
-const sizePct = ref(25) // signature width as % of page width
+// Signature width as % of page width; remembered between visits.
+const sizePct = useStoredRef('pdf-sign.sizePct', 25, (v): v is number => isNumber(v) && v >= 5 && v <= 80)
 
 const placement = ref<PlacementPoint | null>(null)
 
@@ -59,6 +65,7 @@ function clearState() {
   currentPage.value = 1
   placement.value = null
   error.value = ''
+  success.value = ''
   previewW.value = 0
   previewH.value = 0
 }
@@ -118,6 +125,7 @@ async function renderPreview() {
 
 watch(currentPage, () => {
   placement.value = null
+  success.value = ''
   queueRender()
 })
 
@@ -137,6 +145,7 @@ function onPreviewClick(e: MouseEvent) {
   const x = ((e.clientX - rect.left) / rect.width) * canvas.width
   const y = ((e.clientY - rect.top) / rect.height) * canvas.height
   placement.value = { x, y }
+  success.value = ''
 }
 
 // Signature display box (in canvas px), centered on the placement point.
@@ -224,26 +233,18 @@ function clearPad() {
 
 /* ---------------- Upload signature ---------------- */
 
-function onSigFiles(files: File[]) {
+async function onSigFiles(files: File[]) {
   const file = files[0]
   if (!file) return
   error.value = ''
-  const reader = new FileReader()
-  reader.onload = () => {
-    const dataUrl = reader.result as string
-    const img = new Image()
-    img.onload = () => {
-      uploadedSig.value = { dataUrl, w: img.width, h: img.height }
-    }
-    img.onerror = () => {
-      error.value = t('tools.pdf-sign.signatureError')
-    }
-    img.src = dataUrl
-  }
-  reader.onerror = () => {
+  success.value = ''
+  try {
+    const dataUrl = await readFileAsDataUrl(file)
+    const img = await loadImage(dataUrl)
+    uploadedSig.value = { dataUrl, w: img.width, h: img.height }
+  } catch {
     error.value = t('tools.pdf-sign.signatureError')
   }
-  reader.readAsDataURL(file)
 }
 
 const hasSignature = computed(() =>
@@ -283,6 +284,7 @@ async function apply() {
     return
   }
   error.value = ''
+  success.value = ''
   applying.value = true
   try {
     const sig = signatureImage()
@@ -307,13 +309,9 @@ async function apply() {
     page.drawImage(png, { x: pdfX, y: pdfY, width: drawW, height: drawH })
 
     const bytes = await doc.save()
-    const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = fileName.value.replace(/\.pdf$/i, '') + '-signed.pdf'
-    a.click()
-    URL.revokeObjectURL(url)
+    const name = `${stripExtension(fileName.value)}-signed.pdf`
+    downloadBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), name)
+    success.value = t('tools.pdf-sign.applied', { name })
   } catch {
     error.value = t('tools.pdf-sign.applyError')
   } finally {
@@ -330,13 +328,17 @@ onBeforeUnmount(() => {
   <ToolShell>
     <FileDrop
       v-if="!rawBytes && !loading"
-      accept="application/pdf"
+      accept="application/pdf,.pdf"
+      :show-selected="false"
       :hint="t('tools.pdf-sign.dropHint')"
       @files="onFiles"
     />
 
     <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-4">
       {{ error }}
+    </v-alert>
+    <v-alert v-if="success" type="success" variant="tonal" density="compact" class="mb-4">
+      {{ success }}
     </v-alert>
 
     <div v-if="loading" class="d-flex flex-column align-center ga-3 py-8">
@@ -438,6 +440,8 @@ onBeforeUnmount(() => {
           <template v-else>
             <FileDrop
               accept="image/png,image/jpeg"
+              :show-selected="false"
+              compact
               :hint="t('tools.pdf-sign.uploadSignatureHint')"
               @files="onSigFiles"
             />

@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import { useHistory } from '@/composables/useHistory'
 
 const TOOL_ID = 'color-convert'
 const { t } = useI18n()
-const route = useRoute()
 const { copy } = useClipboard()
 
 const history = useHistory<{ input: string }>(TOOL_ID)
@@ -119,6 +118,36 @@ function toHex({ r, g, b }: RGB): string {
   return `#${h(r)}${h(g)}${h(b)}`
 }
 
+/** WCAG 2.x relative luminance (0 = black, 1 = white). */
+function luminance({ r, g, b }: RGB): number {
+  const lin = (c: number) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+function contrastRatio(l1: number, l2: number): number {
+  const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1]
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+type WcagLevel = 'levelAaa' | 'levelAa' | 'levelAaLarge' | 'levelFail'
+
+function wcagLevel(ratio: number): WcagLevel {
+  if (ratio >= 7) return 'levelAaa'
+  if (ratio >= 4.5) return 'levelAa'
+  if (ratio >= 3) return 'levelAaLarge'
+  return 'levelFail'
+}
+
+const LEVEL_COLOR: Record<WcagLevel, string> = {
+  levelAaa: 'success',
+  levelAa: 'success',
+  levelAaLarge: 'warning',
+  levelFail: 'error',
+}
+
 const rgb = computed<RGB | null>(() => {
   error.value = ''
   const c = parseColor(input.value)
@@ -144,11 +173,20 @@ const pickerValue = computed({
   },
 })
 
-const palette = computed<string[]>(() => {
+interface Swatch {
+  hex: string
+  /** Black or white, whichever reads better on this swatch. */
+  onColor: string
+}
+
+const palette = computed<Swatch[]>(() => {
   if (!hslObj.value) return []
   const { h, s } = hslObj.value
   const steps = [90, 80, 70, 60, 50, 40, 30, 20, 10]
-  return steps.map((l) => toHex(hslToRgb({ h, s, l })))
+  return steps.map((l) => {
+    const c = hslToRgb({ h, s, l })
+    return { hex: toHex(c), onColor: luminance(c) > 0.179 ? '#000000' : '#ffffff' }
+  })
 })
 
 const rows = computed(() => [
@@ -157,6 +195,33 @@ const rows = computed(() => [
   { label: 'HSL', value: hslStr.value },
 ])
 
+const contrast = computed(() => {
+  if (!rgb.value) return []
+  const lum = luminance(rgb.value)
+  return [
+    { key: 'onWhite', bg: '#ffffff', ratio: contrastRatio(lum, 1) },
+    { key: 'onBlack', bg: '#000000', ratio: contrastRatio(lum, 0) },
+  ].map((c) => ({
+    ...c,
+    label: t(`tools.color-convert.${c.key}`),
+    text: `${c.ratio.toFixed(2)} : 1`,
+    level: wcagLevel(c.ratio),
+  }))
+})
+
+// Click-to-copy feedback for the palette: a check mark on the swatch plus a snackbar.
+const snackbar = ref(false)
+const copiedSwatch = ref('')
+let swatchTimer: ReturnType<typeof setTimeout> | undefined
+
+async function copySwatch(hex: string) {
+  if (!(await copy(hex))) return
+  copiedSwatch.value = hex
+  snackbar.value = true
+  clearTimeout(swatchTimer)
+  swatchTimer = setTimeout(() => (copiedSwatch.value = ''), 1500)
+}
+
 function save() {
   if (!rgb.value) return
   history.save(hexStr.value, { input: input.value })
@@ -164,18 +229,14 @@ function save() {
 
 watch(input, () => save())
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) input.value = e.data.input
-  }
+history.restoreFromRoute((d) => {
+  input.value = d.input
 })
 </script>
 
 <template>
   <ToolShell>
-    <div class="d-flex flex-wrap align-center ga-4 mb-4">
+    <div class="d-flex flex-wrap align-center ga-4">
       <v-text-field
         v-model="input"
         :label="t('tools.color-convert.inputColor')"
@@ -189,9 +250,13 @@ onMounted(() => {
         type="color"
         :value="pickerValue"
         :title="t('tools.color-convert.picker')"
+        :aria-label="t('tools.color-convert.picker')"
         class="native-color"
         @input="pickerValue = ($event.target as HTMLInputElement).value"
       />
+    </div>
+    <div class="d-flex flex-wrap align-center ga-2 mt-2 mb-4">
+      <PasteBtn @paste="input = $event" />
     </div>
 
     <div v-if="rgb" class="d-flex flex-wrap ga-4 align-stretch">
@@ -207,13 +272,33 @@ onMounted(() => {
               <span class="text-caption text-medium-emphasis">{{ row.label }}</span>
             </template>
             <template #subtitle>
-              <span class="code-text text-body-1">{{ row.value }}</span>
+              <span class="font-mono text-body-1">{{ row.value }}</span>
             </template>
             <template #append>
               <CopyBtn :text="row.value" icon />
             </template>
           </v-list-item>
         </v-list>
+      </div>
+    </div>
+
+    <div v-if="contrast.length" class="mt-4">
+      <div class="text-caption text-medium-emphasis mb-2">
+        {{ t('tools.color-convert.contrast') }}
+      </div>
+      <div class="d-flex flex-wrap ga-3">
+        <div v-for="c in contrast" :key="c.key" class="d-flex align-center ga-3 rounded-lg border pa-2 pr-4">
+          <div class="contrast-sample rounded" :style="{ backgroundColor: c.bg, color: hexStr }">Aa</div>
+          <div>
+            <div class="text-caption text-medium-emphasis">{{ c.label }}</div>
+            <div class="d-flex align-center ga-2">
+              <span class="font-mono tabular-nums">{{ c.text }}</span>
+              <v-chip size="x-small" :color="LEVEL_COLOR[c.level]" variant="tonal" label>
+                {{ t('tools.color-convert.' + c.level) }}
+              </v-chip>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -224,25 +309,26 @@ onMounted(() => {
       <div class="d-flex flex-wrap ga-1">
         <button
           v-for="c in palette"
-          :key="c"
+          :key="c.hex"
           type="button"
-          class="swatch rounded"
-          :style="{ backgroundColor: c }"
-          :title="`${c} — ${t('tools.color-convert.clickToCopy')}`"
-          @click="copy(c)"
-        />
+          class="swatch rounded d-flex align-center justify-center"
+          :style="{ backgroundColor: c.hex }"
+          :title="`${c.hex} — ${t('tools.color-convert.clickToCopy')}`"
+          :aria-label="`${c.hex} — ${t('tools.color-convert.clickToCopy')}`"
+          @click="copySwatch(c.hex)"
+        >
+          <v-icon v-if="copiedSwatch === c.hex" icon="mdi-check" size="small" :style="{ color: c.onColor }" />
+        </button>
       </div>
     </div>
+
+    <v-snackbar v-model="snackbar" :timeout="1500" location="bottom">
+      {{ t('common.copied') }}
+    </v-snackbar>
   </ToolShell>
 </template>
 
 <style scoped>
-.code-area :deep(input) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.code-text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
 .native-color {
   width: 48px;
   height: 48px;
@@ -263,5 +349,15 @@ onMounted(() => {
   border: 1px solid rgba(var(--v-border-color), 0.3);
   cursor: pointer;
   padding: 0;
+}
+.contrast-sample {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  border: 1px solid rgba(var(--v-border-color), 0.3);
 }
 </style>

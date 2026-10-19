@@ -3,16 +3,22 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import OutputPanel from '@/components/OutputPanel.vue'
+import { isBoolean, isNumber, useStoredRef } from '@/composables/useStoredRef'
 
 const { t } = useI18n()
 
-const length = ref(16)
-const useUpper = ref(true)
-const useLower = ref(true)
-const useDigits = ref(true)
-const useSymbols = ref(true)
-const excludeAmbiguous = ref(false)
-const count = ref(1)
+const intBetween = (min: number, max: number) => (v: unknown): v is number =>
+  isNumber(v) && Number.isInteger(v) && v >= min && v <= max
+
+// Every option is a preference, remembered between visits.
+const length = useStoredRef('password-generator.length', 16, intBetween(4, 64))
+const useUpper = useStoredRef('password-generator.upper', true, isBoolean)
+const useLower = useStoredRef('password-generator.lower', true, isBoolean)
+const useDigits = useStoredRef('password-generator.digits', true, isBoolean)
+const useSymbols = useStoredRef('password-generator.symbols', true, isBoolean)
+const excludeAmbiguous = useStoredRef('password-generator.excludeAmbiguous', false, isBoolean)
+const count = useStoredRef('password-generator.count', 1, intBetween(1, 20))
 
 const passwords = ref<string[]>([])
 
@@ -90,12 +96,12 @@ onMounted(() => regenerate())
     <div class="mb-2">
       <div class="d-flex justify-space-between">
         <span class="text-body-2">{{ t('tools.password-generator.length') }}</span>
-        <span class="text-body-2 font-weight-bold">{{ length }}</span>
+        <span class="text-body-2 font-weight-bold tabular-nums">{{ length }}</span>
       </div>
       <v-slider v-model="length" :min="4" :max="64" :step="1" hide-details @update:model-value="regenerate" />
     </div>
 
-    <div class="d-flex flex-wrap ga-x-6">
+    <div class="d-flex flex-wrap gc-6">
       <v-checkbox v-model="useUpper" :label="t('tools.password-generator.uppercase')" hide-details density="compact" @update:model-value="regenerate" />
       <v-checkbox v-model="useLower" :label="t('tools.password-generator.lowercase')" hide-details density="compact" @update:model-value="regenerate" />
       <v-checkbox v-model="useDigits" :label="t('tools.password-generator.digits')" hide-details density="compact" @update:model-value="regenerate" />
@@ -129,7 +135,7 @@ onMounted(() => regenerate())
             {{ t('tools.password-generator.strength') }}:
             <strong>{{ t('tools.password-generator.' + strength.key) }}</strong>
           </span>
-          <span class="text-body-2 text-medium-emphasis">
+          <span class="text-body-2 text-medium-emphasis tabular-nums">
             {{ entropyBits }} {{ t('tools.password-generator.bits') }}
           </span>
         </div>
@@ -137,23 +143,19 @@ onMounted(() => regenerate())
       </div>
 
       <div v-for="(pw, i) in passwords" :key="i" class="d-flex align-center ga-2 mt-3">
-        <v-text-field :model-value="pw" readonly hide-details density="compact" class="code-field flex-grow-1" />
+        <v-text-field :model-value="pw" readonly hide-details density="compact" class="code-area flex-grow-1" />
         <CopyBtn :text="pw" icon />
       </div>
 
-      <div v-if="passwords.length > 1" class="mt-3">
-        <CopyBtn :text="allText" />
-      </div>
+      <OutputPanel
+        v-if="passwords.length > 1"
+        class="mt-4"
+        :value="allText"
+        :label="t('tools.password-generator.allPasswords')"
+        :rows="3"
+        filename="passwords.txt"
+        hide-count
+      />
     </template>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-field :deep(input) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 15px;
-}
-.ga-x-6 {
-  column-gap: 24px;
-}
-</style>

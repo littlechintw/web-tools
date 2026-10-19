@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
 import { calcSubnet } from '@/lib/ipSubnet'
 
 const { t } = useI18n()
@@ -32,11 +33,42 @@ const result = computed(() => {
     usableHosts: r.usableHosts.toLocaleString(),
   }
 })
+
+interface Row {
+  key: string
+  label: string
+  value: string
+  copy: boolean
+}
+
+const rows = computed<Row[]>(() => {
+  const r = result.value
+  if (!r) return []
+  const row = (key: string, value: string, copy = true): Row => ({
+    key,
+    label: t(`tools.ip-subnet.${key}`),
+    value,
+    copy,
+  })
+  return [
+    row('network', r.network),
+    row('broadcast', r.broadcast),
+    row('netmask', r.netmask),
+    row('wildcard', r.wildcard),
+    row('firstHost', r.firstHost),
+    row('lastHost', r.lastHost),
+    row('totalHosts', r.totalHosts, false),
+    row('usableHosts', r.usableHosts, false),
+    row('ipClass', r.ipClass, false),
+  ]
+})
+
+const allText = computed(() => rows.value.map((r) => `${r.label}: ${r.value}`).join('\n'))
 </script>
 
 <template>
   <ToolShell>
-    <v-row dense>
+    <v-row density="comfortable">
       <v-col cols="12" sm="8">
         <v-text-field
           v-model="ipInput"
@@ -54,42 +86,33 @@ const result = computed(() => {
           :max="32"
           :label="t('tools.ip-subnet.prefix')"
           prefix="/"
+          class="code-area"
         />
       </v-col>
     </v-row>
+    <div class="d-flex flex-wrap align-center ga-2">
+      <PasteBtn @paste="ipInput = $event" />
+    </div>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mt-2">{{ error }}</v-alert>
 
-    <v-table v-if="result" class="mt-3 rounded-lg border" density="comfortable">
-      <tbody>
-        <tr v-for="(item, idx) in [
-          { key: 'network', val: result.network, copy: true },
-          { key: 'broadcast', val: result.broadcast, copy: true },
-          { key: 'netmask', val: result.netmask, copy: true },
-          { key: 'wildcard', val: result.wildcard, copy: true },
-          { key: 'firstHost', val: result.firstHost, copy: true },
-          { key: 'lastHost', val: result.lastHost, copy: true },
-          { key: 'totalHosts', val: result.totalHosts, copy: false },
-          { key: 'usableHosts', val: result.usableHosts, copy: false },
-          { key: 'ipClass', val: result.ipClass, copy: false },
-        ]" :key="idx">
-          <td class="font-weight-medium">{{ t('tools.ip-subnet.' + item.key) }}</td>
-          <td class="mono">{{ item.val }}</td>
-          <td class="text-right" style="width: 56px">
-            <CopyBtn v-if="item.copy" :text="item.val" icon size="small" />
-          </td>
-        </tr>
-      </tbody>
-    </v-table>
+    <template v-if="rows.length">
+      <v-row density="comfortable" class="mt-2">
+        <v-col v-for="row in rows" :key="row.key" cols="12" md="6">
+          <div class="d-flex align-center ga-2 rounded-lg border px-3 py-2">
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="text-caption text-medium-emphasis">{{ row.label }}</div>
+              <div class="font-mono break-all">{{ row.value }}</div>
+            </div>
+            <CopyBtn v-if="row.copy" :text="row.value" icon size="small" />
+          </div>
+        </v-col>
+      </v-row>
+
+      <div class="d-flex align-center justify-end ga-1 mt-2">
+        <span class="text-caption text-medium-emphasis">{{ t('tools.ip-subnet.copyAll') }}</span>
+        <CopyBtn :text="allText" icon size="small" />
+      </div>
+    </template>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(input) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-</style>

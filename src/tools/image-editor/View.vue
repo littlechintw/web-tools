@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { downloadBlob } from '@/utils/download'
+import { stripExtension } from '@/utils/format'
+import { canvasToBlob, extensionForMime, loadImage } from '@/utils/image'
 
+const TOOL_ID = 'image-editor'
 const { t } = useI18n()
+const T = (key: string) => t(`tools.${TOOL_ID}.${key}`)
 
 type ToolMode = 'none' | 'crop' | 'mosaic' | 'text'
 type ExportFormat = 'image/png' | 'image/jpeg'
 
 const canvasRef = ref<HTMLCanvasElement>()
 const objectUrl = ref('')
+const sourceName = ref('')
 const hasImage = ref(false)
 const error = ref('')
 
@@ -38,9 +45,9 @@ const textContent = ref('')
 const fontSize = ref(32)
 const textColor = ref('#ff0000')
 
-// Export controls.
-const exportFormat = ref<ExportFormat>('image/png')
-const exportQuality = ref(0.92)
+// Export controls (remembered between visits).
+const exportFormat = useStoredRef<ExportFormat>('image-editor.exportFormat', 'image/png', oneOf(['image/png', 'image/jpeg']))
+const exportQuality = useStoredRef('image-editor.exportQuality', 0.92, isNumber)
 
 // Drag selection (in canvas pixel coordinates).
 const selection = ref<{ x: number; y: number; w: number; h: number } | null>(null)
@@ -63,21 +70,13 @@ function revoke() {
   }
 }
 
-function loadImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('load'))
-    img.src = url
-  })
-}
-
 async function onFiles(files: File[]) {
   const file = files[0]
   if (!file) return
   error.value = ''
   revoke()
   objectUrl.value = URL.createObjectURL(file)
+  sourceName.value = file.name
   try {
     const img = await loadImage(objectUrl.value)
     const canvas = canvasRef.value
@@ -86,7 +85,7 @@ async function onFiles(files: File[]) {
     canvas.height = img.naturalHeight
     const ctx = ctx2d()
     if (!ctx) {
-      error.value = t('tools.image-editor.errLoad')
+      error.value = T('errLoad')
       return
     }
     ctx.drawImage(img, 0, 0)
@@ -98,7 +97,7 @@ async function onFiles(files: File[]) {
     undoSnapshot.value = null
     clearSelection()
   } catch {
-    error.value = t('tools.image-editor.errLoad')
+    error.value = T('errLoad')
   }
 }
 
@@ -432,7 +431,7 @@ const cursorClass = computed(() => {
 
 // --- Export ---------------------------------------------------------------
 
-function download() {
+async function download() {
   let canvas = canvasRef.value
   if (!canvas) return
   const isJpeg = exportFormat.value === 'image/jpeg'
@@ -449,19 +448,13 @@ function download() {
       canvas = flat
     }
   }
-  canvas.toBlob(
-    (blob) => {
-      if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `edited.${isJpeg ? 'jpg' : 'png'}`
-      a.click()
-      URL.revokeObjectURL(url)
-    },
-    exportFormat.value,
-    isJpeg ? exportQuality.value : undefined,
-  )
+  try {
+    const blob = await canvasToBlob(canvas, exportFormat.value, exportQuality.value)
+    const base = sourceName.value ? stripExtension(sourceName.value) : 'image'
+    downloadBlob(blob, `${base}-edited.${extensionForMime(exportFormat.value)}`)
+  } catch {
+    error.value = t('common.error')
+  }
 }
 
 const formats = [
@@ -472,28 +465,42 @@ const formats = [
 // Switching tools clears any in-progress selection.
 watch(mode, () => clearSelection())
 
-onUnmounted(revoke)
+// Ctrl/⌘+Z undoes the last operation, unless the user is typing in a field.
+function onKeydown(e: KeyboardEvent) {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return
+  const target = e.target as HTMLElement | null
+  if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
+  if (!canUndo.value) return
+  e.preventDefault()
+  undo()
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  revoke()
+})
 </script>
 
 <template>
   <ToolShell>
-    <FileDrop accept="image/*" :hint="t('tools.image-editor.uploadHint')" @files="onFiles" />
+    <FileDrop accept="image/*" :hint="T('uploadHint')" @files="onFiles" />
 
     <v-alert v-if="error" type="error" variant="tonal" class="mt-3">{{ error }}</v-alert>
 
     <template v-if="hasImage">
       <!-- Mode toolbar -->
       <div class="d-flex flex-wrap align-center ga-2 mt-4">
-        <span class="text-body-2 text-medium-emphasis mr-1">{{ t('tools.image-editor.tools') }}:</span>
+        <span class="text-body-2 text-medium-emphasis mr-1">{{ T('tools') }}:</span>
         <v-btn-toggle v-model="mode" mandatory color="primary" density="comfortable" variant="outlined">
-          <v-btn value="none" prepend-icon="mdi-cursor-default">{{ t('tools.image-editor.toolNone') }}</v-btn>
-          <v-btn value="crop" prepend-icon="mdi-crop">{{ t('tools.image-editor.toolCrop') }}</v-btn>
-          <v-btn value="mosaic" prepend-icon="mdi-blur">{{ t('tools.image-editor.toolMosaic') }}</v-btn>
-          <v-btn value="text" prepend-icon="mdi-format-text">{{ t('tools.image-editor.toolText') }}</v-btn>
+          <v-btn value="none" prepend-icon="mdi-cursor-default">{{ T('toolNone') }}</v-btn>
+          <v-btn value="crop" prepend-icon="mdi-crop">{{ T('toolCrop') }}</v-btn>
+          <v-btn value="mosaic" prepend-icon="mdi-blur">{{ T('toolMosaic') }}</v-btn>
+          <v-btn value="text" prepend-icon="mdi-format-text">{{ T('toolText') }}</v-btn>
         </v-btn-toggle>
         <v-spacer />
-        <v-btn variant="tonal" :disabled="!canUndo" prepend-icon="mdi-undo" @click="undo">
-          {{ t('tools.image-editor.undo') }}
+        <v-btn variant="tonal" :disabled="!canUndo" prepend-icon="mdi-undo" :title="T('undoShortcut')" @click="undo">
+          {{ T('undo') }}
         </v-btn>
       </div>
 
@@ -511,47 +518,47 @@ onUnmounted(revoke)
         </div>
       </div>
       <div class="text-caption text-medium-emphasis mt-1">
-        {{ t('tools.image-editor.dimensions') }}: {{ imgWidth }} × {{ imgHeight }}
+        {{ T('dimensions') }}: {{ imgWidth }} × {{ imgHeight }}
       </div>
 
       <!-- Contextual hints / actions for selection tools -->
       <div v-if="mode === 'crop'" class="mt-2">
-        <div class="text-body-2 mb-2">{{ t('tools.image-editor.cropHint') }}</div>
+        <div class="text-body-2 mb-2">{{ T('cropHint') }}</div>
         <div class="d-flex ga-2">
           <v-btn color="primary" prepend-icon="mdi-crop" :disabled="!selection" @click="applyCrop">
-            {{ t('tools.image-editor.applyCrop') }}
+            {{ T('applyCrop') }}
           </v-btn>
           <v-btn variant="text" :disabled="!selection" @click="clearSelection">
-            {{ t('tools.image-editor.cancelSelect') }}
+            {{ T('cancelSelect') }}
           </v-btn>
         </div>
       </div>
 
       <div v-if="mode === 'mosaic'" class="mt-2">
-        <div class="text-body-2 mb-2">{{ t('tools.image-editor.mosaicHint') }}</div>
+        <div class="text-body-2 mb-2">{{ T('mosaicHint') }}</div>
         <div style="max-width: 360px">
           <div class="text-body-2 mb-1">
-            {{ t('tools.image-editor.blockSize') }}: {{ blockSize }}px
+            {{ T('blockSize') }}: {{ blockSize }}px
           </div>
           <v-slider v-model="blockSize" :min="2" :max="64" :step="1" hide-details class="mb-2" />
         </div>
         <div class="d-flex ga-2">
           <v-btn color="primary" prepend-icon="mdi-blur" :disabled="!selection" @click="applyMosaic">
-            {{ t('tools.image-editor.applyMosaic') }}
+            {{ T('applyMosaic') }}
           </v-btn>
           <v-btn variant="text" :disabled="!selection" @click="clearSelection">
-            {{ t('tools.image-editor.cancelSelect') }}
+            {{ T('cancelSelect') }}
           </v-btn>
         </div>
       </div>
 
       <div v-if="mode === 'text'" class="mt-2">
-        <div class="text-body-2 mb-2">{{ t('tools.image-editor.textHint') }}</div>
-        <v-row dense>
+        <div class="text-body-2 mb-2">{{ T('textHint') }}</div>
+        <v-row density="comfortable">
           <v-col cols="12" sm="6">
             <v-text-field
               v-model="textContent"
-              :label="t('tools.image-editor.textContent')"
+              :label="T('textContent')"
               hide-details
               density="comfortable"
             />
@@ -561,7 +568,7 @@ onUnmounted(revoke)
               v-model.number="fontSize"
               type="number"
               :min="8"
-              :label="t('tools.image-editor.fontSize')"
+              :label="T('fontSize')"
               hide-details
               density="comfortable"
             />
@@ -570,7 +577,7 @@ onUnmounted(revoke)
             <v-text-field
               v-model="textColor"
               type="color"
-              :label="t('tools.image-editor.textColor')"
+              :label="T('textColor')"
               hide-details
               density="comfortable"
             />
@@ -580,34 +587,34 @@ onUnmounted(revoke)
 
       <!-- Transform -->
       <v-card variant="tonal" class="mt-4">
-        <v-card-title class="text-subtitle-2">{{ t('tools.image-editor.transform') }}</v-card-title>
+        <v-card-title class="text-subtitle-2">{{ T('transform') }}</v-card-title>
         <v-card-text class="d-flex flex-wrap ga-2">
           <v-btn variant="outlined" prepend-icon="mdi-rotate-left" @click="rotate('left')">
-            {{ t('tools.image-editor.rotateLeft') }}
+            {{ T('rotateLeft') }}
           </v-btn>
           <v-btn variant="outlined" prepend-icon="mdi-rotate-right" @click="rotate('right')">
-            {{ t('tools.image-editor.rotateRight') }}
+            {{ T('rotateRight') }}
           </v-btn>
           <v-btn variant="outlined" prepend-icon="mdi-flip-horizontal" @click="flip('h')">
-            {{ t('tools.image-editor.flipH') }}
+            {{ T('flipH') }}
           </v-btn>
           <v-btn variant="outlined" prepend-icon="mdi-flip-vertical" @click="flip('v')">
-            {{ t('tools.image-editor.flipV') }}
+            {{ T('flipV') }}
           </v-btn>
         </v-card-text>
       </v-card>
 
       <!-- Resize -->
       <v-card variant="tonal" class="mt-3">
-        <v-card-title class="text-subtitle-2">{{ t('tools.image-editor.resize') }}</v-card-title>
+        <v-card-title class="text-subtitle-2">{{ T('resize') }}</v-card-title>
         <v-card-text>
-          <v-row dense align="center">
+          <v-row density="comfortable" align="center">
             <v-col cols="6" sm="4">
               <v-text-field
                 :model-value="resizeWidth"
                 type="number"
                 :min="1"
-                :label="t('tools.image-editor.width')"
+                :label="T('width')"
                 hide-details
                 density="comfortable"
                 @update:model-value="onResizeWidthChange(Number($event))"
@@ -618,7 +625,7 @@ onUnmounted(revoke)
                 :model-value="resizeHeight"
                 type="number"
                 :min="1"
-                :label="t('tools.image-editor.height')"
+                :label="T('height')"
                 hide-details
                 density="comfortable"
                 @update:model-value="onResizeHeightChange(Number($event))"
@@ -627,48 +634,48 @@ onUnmounted(revoke)
             <v-col cols="12" sm="4" class="d-flex align-center">
               <v-checkbox
                 v-model="lockAspect"
-                :label="t('tools.image-editor.lockAspect')"
+                :label="T('lockAspect')"
                 hide-details
                 density="compact"
               />
             </v-col>
           </v-row>
           <v-btn color="primary" class="mt-2" prepend-icon="mdi-resize" @click="applyResize">
-            {{ t('tools.image-editor.applyResize') }}
+            {{ T('applyResize') }}
           </v-btn>
         </v-card-text>
       </v-card>
 
       <!-- Adjustments -->
       <v-card variant="tonal" class="mt-3">
-        <v-card-title class="text-subtitle-2">{{ t('tools.image-editor.adjustments') }}</v-card-title>
+        <v-card-title class="text-subtitle-2">{{ T('adjustments') }}</v-card-title>
         <v-card-text>
-          <div class="text-body-2 mb-1">{{ t('tools.image-editor.brightness') }}: {{ brightness }}%</div>
+          <div class="text-body-2 mb-1">{{ T('brightness') }}: {{ brightness }}%</div>
           <v-slider v-model="brightness" :min="0" :max="200" :step="1" hide-details class="mb-2" />
-          <div class="text-body-2 mb-1">{{ t('tools.image-editor.contrast') }}: {{ contrast }}%</div>
+          <div class="text-body-2 mb-1">{{ T('contrast') }}: {{ contrast }}%</div>
           <v-slider v-model="contrast" :min="0" :max="200" :step="1" hide-details class="mb-2" />
-          <div class="text-body-2 mb-1">{{ t('tools.image-editor.saturation') }}: {{ saturation }}%</div>
+          <div class="text-body-2 mb-1">{{ T('saturation') }}: {{ saturation }}%</div>
           <v-slider v-model="saturation" :min="0" :max="200" :step="1" hide-details class="mb-2" />
           <div class="d-flex flex-wrap ga-4">
             <v-checkbox
               v-model="grayscale"
-              :label="t('tools.image-editor.grayscale')"
+              :label="T('grayscale')"
               hide-details
               density="compact"
             />
             <v-checkbox
               v-model="invert"
-              :label="t('tools.image-editor.invert')"
+              :label="T('invert')"
               hide-details
               density="compact"
             />
           </div>
           <div class="d-flex ga-2 mt-2">
             <v-btn color="primary" prepend-icon="mdi-auto-fix" @click="applyAdjustments">
-              {{ t('tools.image-editor.applyAdjust') }}
+              {{ T('applyAdjust') }}
             </v-btn>
             <v-btn variant="text" @click="resetAdjustValues">
-              {{ t('tools.image-editor.resetAdjust') }}
+              {{ T('resetAdjust') }}
             </v-btn>
           </div>
         </v-card-text>
@@ -676,34 +683,34 @@ onUnmounted(revoke)
 
       <!-- Export -->
       <v-card variant="tonal" class="mt-3">
-        <v-card-title class="text-subtitle-2">{{ t('tools.image-editor.exportSection') }}</v-card-title>
+        <v-card-title class="text-subtitle-2">{{ T('exportSection') }}</v-card-title>
         <v-card-text>
-          <v-row dense align="center">
+          <v-row density="comfortable" align="center">
             <v-col cols="12" sm="4">
               <v-select
                 v-model="exportFormat"
                 :items="formats"
-                :label="t('tools.image-editor.format')"
+                :label="T('format')"
                 hide-details
                 density="comfortable"
               />
             </v-col>
             <v-col v-if="exportFormat === 'image/jpeg'" cols="12" sm="8">
               <div class="text-body-2 mb-1">
-                {{ t('tools.image-editor.quality') }}: {{ exportQuality.toFixed(2) }}
+                {{ T('quality') }}: {{ exportQuality.toFixed(2) }}
               </div>
               <v-slider v-model="exportQuality" :min="0.1" :max="1" :step="0.01" hide-details />
             </v-col>
           </v-row>
           <v-btn color="primary" class="mt-2" prepend-icon="mdi-download" @click="download">
-            {{ t('tools.image-editor.download') }}
+            {{ T('download') }}
           </v-btn>
         </v-card-text>
       </v-card>
     </template>
 
     <div v-else class="text-body-2 text-medium-emphasis mt-4">
-      {{ t('tools.image-editor.noImage') }}
+      {{ T('noImage') }}
     </div>
   </ToolShell>
 </template>

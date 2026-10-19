@@ -1,25 +1,27 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import QRCode from 'qrcode'
 import type { QRCodeErrorCorrectionLevel } from 'qrcode'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
 import { useHistory } from '@/composables/useHistory'
+import { isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { downloadText, downloadUrl } from '@/utils/download'
 
 const TOOL_ID = 'qrcode-generate'
 const { t } = useI18n()
-const route = useRoute()
+const T = (key: string) => t(`tools.${TOOL_ID}.${key}`)
 
 type ContentType = 'text' | 'wifi' | 'vcard'
+type Encryption = 'WPA' | 'WEP' | 'nopass'
 
 interface SavedData {
   type: ContentType
   text: string
   ssid: string
   password: string
-  encryption: 'WPA' | 'WEP' | 'nopass'
+  encryption: Encryption
   wifiHidden: boolean
   name: string
   phone: string
@@ -37,26 +39,30 @@ const type = ref<ContentType>('text')
 const text = ref('https://example.com')
 const ssid = ref('')
 const password = ref('')
-const encryption = ref<'WPA' | 'WEP' | 'nopass'>('WPA')
+const encryption = ref<Encryption>('WPA')
 const wifiHidden = ref(false)
 const name = ref('')
 const phone = ref('')
 const email = ref('')
 const org = ref('')
 
-const size = ref(256)
-const ecLevel = ref<QRCodeErrorCorrectionLevel>('M')
-const fg = ref('#000000')
-const bg = ref('#ffffff')
+// Appearance options are remembered between visits; the content is not.
+const EC_LEVELS = ['L', 'M', 'Q', 'H'] as const
+const isHexColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)
+const size = useStoredRef('qrcode-generate.size', 256, isNumber)
+const ecLevel = useStoredRef<QRCodeErrorCorrectionLevel>('qrcode-generate.ecLevel', 'M', oneOf(EC_LEVELS))
+const fg = useStoredRef('qrcode-generate.fg', '#000000', isHexColor)
+const bg = useStoredRef('qrcode-generate.bg', '#ffffff', isHexColor)
 
 const canvasRef = ref<HTMLCanvasElement>()
+const error = ref('')
 
 /** Escape WiFi/vCard reserved characters. */
 function escapeWifi(s: string): string {
-  return s.replace(/([\\;,:"])/g, '\\$1')
+  return s.replace(/([\;,:"])/g, '\\$1')
 }
 function escapeVcard(s: string): string {
-  return s.replace(/([\\;,])/g, '\\$1').replace(/\n/g, '\\n')
+  return s.replace(/([\;,])/g, '\\$1').replace(/\n/g, '\\n')
 }
 
 const payload = computed(() => {
@@ -85,7 +91,15 @@ const payload = computed(() => {
   return lines.join('\n')
 })
 
-const error = ref('')
+// The size field can be emptied mid-edit; render with a sane value anyway.
+const sizePx = computed(() => Math.min(1024, Math.max(64, Math.round(Number(size.value) || 256))))
+
+const renderOptions = computed(() => ({
+  width: sizePx.value,
+  errorCorrectionLevel: ecLevel.value,
+  margin: 2,
+  color: { dark: fg.value, light: bg.value },
+}))
 
 async function render() {
   await nextTick()
@@ -94,33 +108,46 @@ async function render() {
   const data = payload.value
   const ctx = el.getContext('2d')
   if (!data) {
-    el.width = size.value
-    el.height = size.value
+    el.width = sizePx.value
+    el.height = sizePx.value
     ctx?.clearRect(0, 0, el.width, el.height)
     error.value = ''
     return
   }
   try {
-    await QRCode.toCanvas(el, data, {
-      width: size.value,
-      errorCorrectionLevel: ecLevel.value,
-      margin: 2,
-      color: { dark: fg.value, light: bg.value },
-    })
+    await QRCode.toCanvas(el, data, renderOptions.value)
     error.value = ''
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   }
 }
 
-function download() {
+/** A filename stem that hints at the content: "qrcode-example-com", "qrcode-wifi-Home". */
+function fileBase(): string {
+  const raw =
+    type.value === 'wifi' ? `wifi-${ssid.value}` : type.value === 'vcard' ? `vcard-${name.value || phone.value}` : text.value
+  const slug = raw
+    .replace(/^https?:\/\//i, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  return slug ? `qrcode-${slug}` : 'qrcode'
+}
+
+function downloadPng() {
   const el = canvasRef.value
   if (!el || !payload.value) return
-  const url = el.toDataURL('image/png')
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `qrcode-${Date.now()}.png`
-  a.click()
+  downloadUrl(el.toDataURL('image/png'), `${fileBase()}.png`)
+}
+
+async function downloadSvg() {
+  if (!payload.value) return
+  try {
+    const svg = await QRCode.toString(payload.value, { ...renderOptions.value, type: 'svg' })
+    downloadText(svg, `${fileBase()}.svg`, 'image/svg+xml;charset=utf-8')
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+  }
 }
 
 function snapshot(): SavedData {
@@ -156,89 +183,79 @@ watch(
   },
 )
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) {
-      const d = e.data
-      type.value = d.type
-      text.value = d.text
-      ssid.value = d.ssid
-      password.value = d.password
-      encryption.value = d.encryption
-      wifiHidden.value = d.wifiHidden
-      name.value = d.name
-      phone.value = d.phone
-      email.value = d.email
-      org.value = d.org
-      size.value = d.size
-      ecLevel.value = d.ecLevel
-      fg.value = d.fg
-      bg.value = d.bg
-    }
-  }
-  render()
+history.restoreFromRoute((d) => {
+  type.value = d.type
+  text.value = d.text
+  ssid.value = d.ssid
+  password.value = d.password
+  encryption.value = d.encryption
+  wifiHidden.value = d.wifiHidden
+  name.value = d.name
+  phone.value = d.phone
+  email.value = d.email
+  org.value = d.org
+  size.value = d.size
+  ecLevel.value = d.ecLevel
+  fg.value = d.fg
+  bg.value = d.bg
 })
 
+onMounted(() => render())
+
 const typeItems = computed(() => [
-  { title: t('tools.qrcode-generate.typeText'), value: 'text' },
-  { title: t('tools.qrcode-generate.typeWifi'), value: 'wifi' },
-  { title: t('tools.qrcode-generate.typeVcard'), value: 'vcard' },
+  { title: T('typeText'), value: 'text' },
+  { title: T('typeWifi'), value: 'wifi' },
+  { title: T('typeVcard'), value: 'vcard' },
 ])
-const ecItems = ['L', 'M', 'Q', 'H']
+// Error-correction level with the share of damage each one can recover from.
+const ecItems = [
+  { title: 'L (7%)', value: 'L' },
+  { title: 'M (15%)', value: 'M' },
+  { title: 'Q (25%)', value: 'Q' },
+  { title: 'H (30%)', value: 'H' },
+]
 const encItems = computed(() => [
   { title: 'WPA/WPA2', value: 'WPA' },
   { title: 'WEP', value: 'WEP' },
-  { title: t('tools.qrcode-generate.encNone'), value: 'nopass' },
+  { title: T('encNone'), value: 'nopass' },
 ])
 </script>
 
 <template>
   <ToolShell>
-    <v-select
-      v-model="type"
-      :items="typeItems"
-      :label="t('tools.qrcode-generate.contentType')"
-      density="comfortable"
-      class="mb-2"
-    />
+    <v-select v-model="type" :items="typeItems" :label="T('contentType')" density="comfortable" class="mb-2" />
 
     <!-- Text / URL -->
     <template v-if="type === 'text'">
-      <v-textarea v-model="text" :label="t('tools.qrcode-generate.text')" rows="3" auto-grow clearable />
+      <v-textarea v-model="text" :label="T('text')" rows="3" auto-grow clearable />
     </template>
 
     <!-- WiFi -->
     <template v-else-if="type === 'wifi'">
-      <v-text-field v-model="ssid" :label="t('tools.qrcode-generate.ssid')" density="comfortable" />
+      <v-text-field v-model="ssid" :label="T('ssid')" density="comfortable" />
       <v-text-field
         v-model="password"
-        :label="t('tools.qrcode-generate.password')"
+        :label="T('password')"
         :disabled="encryption === 'nopass'"
         density="comfortable"
+        autocomplete="off"
       />
-      <v-select
-        v-model="encryption"
-        :items="encItems"
-        :label="t('tools.qrcode-generate.encryption')"
-        density="comfortable"
-      />
-      <v-checkbox v-model="wifiHidden" :label="t('tools.qrcode-generate.wifiHidden')" hide-details density="compact" />
+      <v-select v-model="encryption" :items="encItems" :label="T('encryption')" density="comfortable" />
+      <v-checkbox v-model="wifiHidden" :label="T('wifiHidden')" hide-details density="compact" />
     </template>
 
     <!-- vCard -->
     <template v-else>
-      <v-text-field v-model="name" :label="t('tools.qrcode-generate.name')" density="comfortable" />
-      <v-text-field v-model="phone" :label="t('tools.qrcode-generate.phone')" density="comfortable" />
-      <v-text-field v-model="email" :label="t('tools.qrcode-generate.email')" density="comfortable" />
-      <v-text-field v-model="org" :label="t('tools.qrcode-generate.org')" density="comfortable" />
+      <v-text-field v-model="name" :label="T('name')" density="comfortable" />
+      <v-text-field v-model="phone" :label="T('phone')" density="comfortable" />
+      <v-text-field v-model="email" :label="T('email')" density="comfortable" />
+      <v-text-field v-model="org" :label="T('org')" density="comfortable" />
     </template>
 
     <v-divider class="my-4" />
 
-    <div class="text-subtitle-2 mb-2">{{ t('tools.qrcode-generate.options') }}</div>
-    <v-row dense>
+    <div class="text-subtitle-2 mb-2">{{ T('options') }}</div>
+    <v-row density="comfortable">
       <v-col cols="12" sm="6" md="3">
         <v-text-field
           v-model.number="size"
@@ -246,38 +263,37 @@ const encItems = computed(() => [
           min="64"
           max="1024"
           step="16"
-          :label="t('tools.qrcode-generate.size')"
+          :label="T('size')"
           density="comfortable"
+          hide-details
         />
       </v-col>
       <v-col cols="12" sm="6" md="3">
-        <v-select
-          v-model="ecLevel"
-          :items="ecItems"
-          :label="t('tools.qrcode-generate.ecLevel')"
-          density="comfortable"
-        />
+        <v-select v-model="ecLevel" :items="ecItems" :label="T('ecLevel')" density="comfortable" hide-details />
       </v-col>
       <v-col cols="6" sm="6" md="3">
-        <v-text-field v-model="fg" type="color" :label="t('tools.qrcode-generate.fgColor')" density="comfortable" />
+        <v-text-field v-model="fg" type="color" :label="T('fgColor')" density="comfortable" hide-details />
       </v-col>
       <v-col cols="6" sm="6" md="3">
-        <v-text-field v-model="bg" type="color" :label="t('tools.qrcode-generate.bgColor')" density="comfortable" />
+        <v-text-field v-model="bg" type="color" :label="T('bgColor')" density="comfortable" hide-details />
       </v-col>
     </v-row>
 
-    <v-alert v-if="error" type="error" variant="tonal" class="mt-2" :text="error" />
+    <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-4" :text="error" />
 
     <div class="d-flex flex-column align-center my-4">
       <div v-show="!payload" class="text-medium-emphasis pa-8">
-        {{ t('tools.qrcode-generate.emptyHint') }}
+        {{ T('emptyHint') }}
       </div>
       <canvas v-show="payload" ref="canvasRef" class="qr-canvas" />
     </div>
 
     <div class="d-flex ga-2 flex-wrap justify-center">
-      <v-btn color="primary" prepend-icon="mdi-download" :disabled="!payload" @click="download">
-        {{ t('tools.qrcode-generate.downloadPng') }}
+      <v-btn color="primary" prepend-icon="mdi-download" :disabled="!payload" @click="downloadPng">
+        {{ T('downloadPng') }}
+      </v-btn>
+      <v-btn variant="tonal" prepend-icon="mdi-vector-curve" :disabled="!payload" @click="downloadSvg">
+        {{ T('downloadSvg') }}
       </v-btn>
       <CopyBtn :text="payload" />
     </div>

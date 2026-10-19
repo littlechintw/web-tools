@@ -1,85 +1,104 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import ToolShell from '@/components/ToolShell.vue'
+import { useAudioContext } from '@/composables/useAudioContext'
+import { isBoolean, useStoredRef } from '@/composables/useStoredRef'
+
+const { t } = useI18n()
+const audio = useAudioContext()
 
 const isOn = ref(false)
+const toggleCount = ref(0)
+const muted = useStoredRef('satisfying-switch.muted', false, isBoolean)
 
-let audioCtx: AudioContext | null = null
-
-onUnmounted(() => {
-  audioCtx?.close().catch(() => {})
-  audioCtx = null
-})
-
-function getCtx(): AudioContext {
-  if (!audioCtx) {
-    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    audioCtx = new Ctor()
+function playClick(ctx: AudioContext, on: boolean) {
+  // Two-layer click: sharp transient + body thud
+  const dur = 0.055
+  const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
+  const d = buf.getChannelData(0)
+  const freq = on ? 2400 : 900
+  for (let i = 0; i < d.length; i++) {
+    const time = i / ctx.sampleRate
+    d[i] = Math.sin(2 * Math.PI * freq * time) * Math.exp(-time * 120) * 0.6
+         + (Math.random() * 2 - 1) * Math.exp(-time * 200) * 0.25
   }
-  return audioCtx
-}
-
-function playClick(on: boolean) {
-  try {
-    const ctx = getCtx()
-    // Two-layer click: sharp transient + body thud
-    const dur = 0.055
-    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate)
-    const d = buf.getChannelData(0)
-    for (let i = 0; i < d.length; i++) {
-      const t = i / ctx.sampleRate
-      const freq = on ? 2400 : 900
-      d[i] = Math.sin(2 * Math.PI * freq * t) * Math.exp(-t * 120) * 0.6
-             + (Math.random() * 2 - 1) * Math.exp(-t * 200) * 0.25
-    }
-    const src = ctx.createBufferSource()
-    src.buffer = buf
-    const gain = ctx.createGain()
-    gain.gain.value = 1
-    src.connect(gain)
-    gain.connect(ctx.destination)
-    src.start()
-  } catch { /* silent */ }
+  const src = ctx.createBufferSource()
+  src.buffer = buf
+  const gain = ctx.createGain()
+  gain.gain.value = 1
+  src.connect(gain)
+  gain.connect(ctx.destination)
+  src.start()
 }
 
 function toggle() {
   isOn.value = !isOn.value
-  playClick(isOn.value)
+  toggleCount.value++
+  if (!muted.value) audio.play((ctx) => playClick(ctx, isOn.value))
+}
+
+function resetCount() {
+  toggleCount.value = 0
 }
 </script>
 
 <template>
-  <div class="scene">
-    <div class="panel" :class="{ 'panel--on': isOn }">
+  <ToolShell>
+    <template #actions>
+      <v-btn
+        :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
+        variant="text"
+        :title="muted ? t('tools.satisfying-switch.unmute') : t('tools.satisfying-switch.mute')"
+        :aria-label="muted ? t('tools.satisfying-switch.unmute') : t('tools.satisfying-switch.mute')"
+        :aria-pressed="muted"
+        @click="muted = !muted"
+      />
+    </template>
 
-      <!-- Status LED strip -->
-      <div class="led-row">
-        <div class="led" :class="{ 'led--on': isOn }" />
-        <span class="led-label">{{ isOn ? 'ON' : 'OFF' }}</span>
-      </div>
+    <div class="scene">
+      <div class="panel" :class="{ 'panel--on': isOn }">
 
-      <!-- The switch -->
-      <button
-        class="switch-btn"
-        :class="{ 'switch-btn--on': isOn }"
-        :aria-pressed="isOn"
-        aria-label="toggle switch"
-        @click="toggle"
-      >
-        <!-- Housing groove -->
-        <div class="switch-track">
-          <!-- Lever knob -->
-          <div class="switch-knob" />
+        <!-- Status LED strip -->
+        <div class="led-row">
+          <div class="led" :class="{ 'led--on': isOn }" />
+          <span class="led-label">{{ isOn ? t('tools.satisfying-switch.on') : t('tools.satisfying-switch.off') }}</span>
         </div>
-      </button>
 
-      <!-- ON / OFF markers -->
-      <div class="markers">
-        <span :class="{ 'marker--active': isOn }">ON</span>
-        <span :class="{ 'marker--active': !isOn }">OFF</span>
+        <!-- The switch -->
+        <button
+          class="switch-btn"
+          :class="{ 'switch-btn--on': isOn }"
+          :aria-pressed="isOn"
+          :aria-label="t('tools.satisfying-switch.toggleSwitch')"
+          @click="toggle"
+        >
+          <!-- Housing groove -->
+          <div class="switch-track">
+            <!-- Lever knob -->
+            <div class="switch-knob" />
+          </div>
+        </button>
+
+        <!-- ON / OFF markers -->
+        <div class="markers">
+          <span :class="{ 'marker--active': isOn }">{{ t('tools.satisfying-switch.on') }}</span>
+          <span :class="{ 'marker--active': !isOn }">{{ t('tools.satisfying-switch.off') }}</span>
+        </div>
+
       </div>
-
     </div>
-  </div>
+
+    <!-- Toggle counter -->
+    <div class="d-flex align-center justify-center flex-wrap ga-2">
+      <v-chip color="primary" variant="tonal" size="large" class="tabular-nums" aria-live="polite">
+        {{ t('tools.satisfying-switch.toggleCount', { n: toggleCount.toLocaleString() }) }}
+      </v-chip>
+      <v-btn size="small" variant="text" :disabled="toggleCount === 0" @click="resetCount">
+        {{ t('common.reset') }}
+      </v-btn>
+    </div>
+  </ToolShell>
 </template>
 
 <style scoped>

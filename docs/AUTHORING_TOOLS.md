@@ -65,20 +65,64 @@ values. It is auto-discovered (glob); optionally add a display label in
 ## View.vue
 
 - Wrap everything in `<ToolShell>` — it renders the title/description header
-  (from `tools.<id>.title/description`) automatically. Import from `@/components/ToolShell.vue`.
-- Use `<CopyBtn :text="..." />` from `@/components/CopyBtn.vue` for copy buttons.
-- Use `<FileDrop @files="..." accept="image/*" />` from `@/components/FileDrop.vue`
-  for file inputs (emits `File[]`).
-- For history use `useHistory<T>('<id>')` from `@/composables/useHistory`:
-  - `history.save(label, data)` to record an entry.
-  - `history.entries.value` reactive list for this tool.
-  - On mount, restore from `route.query.h` (entry id) — see the base64 example.
+  (from `tools.<id>.title/description`) plus the favourite star automatically.
+  Import from `@/components/ToolShell.vue`. Optional `max-width` prop and an
+  `#actions` slot for header buttons.
 - Use `useI18n()` from `vue-i18n`; tool strings are `t('tools.<id>.key')`,
-  shared strings are `t('common.*')` (copy, copied, clear, input, output,
-  result, download, save, saveToHistory, cancel, confirm, close, swap, example,
-  error, reset, loading, selectFile, dropHere).
+  shared strings are `t('common.*')` (copy, copied, clear, paste, pasteFailed,
+  input, output, result, download, upload, save, cancel, confirm, close, swap,
+  example, loadExample, error, reset, loading, selectFile, dropHere, pasteHint,
+  fileTypeError, charCount, noOutput).
 
-See `src/tools/base64/` as the canonical reference.
+### Shared components (`src/components/`)
+
+| Component | Use it for |
+| --- | --- |
+| `OutputPanel` | Every read-only text result. Header with label, character count, copy and (with `filename`) download button; monospace body; `error` prop for parse errors. |
+| `CopyBtn` | Copy buttons (`icon` for icon-only). Disabled automatically while `text` is empty. |
+| `PasteBtn` | "Paste from clipboard" next to the main input. Emits `paste(text)`; hides itself when the clipboard API is unavailable. |
+| `FileDrop` | File input. Validates `accept`, shows the chosen file chips (`:show-selected="false"` if the tool lists files itself), accepts files pasted with Ctrl/Cmd+V, emits `files` / `rejected`. |
+
+### Composables (`src/composables/`)
+
+- `useHistory<T>('<id>')` — `history.save(label, data)`, `history.entries`,
+  and `history.restoreFromRoute((data) => …)` to reopen an entry from
+  `/tool?h=<id>` (call it during setup).
+- `useStoredRef(key, default, guard?)` — a localStorage-backed ref so the
+  user's *options* (format, indent, quality, flags…) are remembered between
+  visits. Key convention: `'<tool-id>.<option>'`. Guards: `oneOf([...])`,
+  `isNumber`, `isBoolean`. Never persist the main input or file contents.
+- `useAudioContext()` — lazily created, resumed and auto-closed AudioContext
+  for tools that make sounds (`audio.play((ctx) => …)`).
+- `useClipboard()` — `copy(text)` with a transient `copied` flag, `read()`.
+
+### Utilities (`src/utils/`)
+
+- `download.ts` — `downloadBlob`, `downloadText`, `downloadBytes`,
+  `downloadUrl`, `downloadSequentially` (staggered multi-file). Never build
+  `<a download>` by hand.
+- `format.ts` — `formatBytes`, `stripExtension` (derive output names from the
+  input file name: `stripExtension(file.name) + '-compressed.pdf'`).
+- `image.ts` — `loadImage`, `canvasToBlob`, `readFileAsDataUrl`, `extensionForMime`.
+- `bytes.ts` — `bytesToHex`, `bytesToBase64`, `base64ToBytes`, `dataUrlToBytes`.
+- `md5`, `nanoid`, `uaParser`, `pdfjs` (configured pdf.js `getDocument`).
+
+### Styling
+
+Global classes from `src/styles/main.css`: `code-area` (monospace
+v-text-field / v-textarea), `font-mono`, `tabular-nums`, `break-all`. Do not
+re-declare monospace fonts in scoped CSS. Vuetify 4: use
+`<v-row density="comfortable">` (not `dense`) and `ga-*` for gaps.
+
+### UX checklist for a new tool
+
+1. Text input → `PasteBtn` + a "load example" button when an example helps.
+2. Text output → `OutputPanel` with a sensible `filename`.
+3. Encode/decode style tools → a swap button (output → input, flip mode).
+4. Options the user would set every time → `useStoredRef`.
+5. Files → `FileDrop`; output filenames derived from the input name.
+6. Long operations → progress indicator and a disabled/loading primary button.
+7. Errors → inline `v-alert` / `error` props with an i18n message, never raw exceptions only.
 
 ## Rules
 

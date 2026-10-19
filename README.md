@@ -7,7 +7,9 @@ browser — no backend, no tracking, your data never leaves your device.
 
 ## ✨ 特色
 
-- 🧰 **30+ 個工具**，首頁可搜尋、分類、加入最愛
+- 🧰 **50+ 個工具**，首頁可搜尋、分類、加入最愛，並顯示最近使用
+- ⌨️ **⌘K / Ctrl+K 指令面板**：任何頁面都能快速搜尋並切換工具
+- 💾 **記住你的選項**：各工具的格式、品質、旗標等設定會保存在本機，下次打開就是上次的設定
 - 🔒 **隱私優先**：無後端、無追蹤，運算全在瀏覽器
 - 🕘 **歷史紀錄系統**：工具使用紀錄自動存於 LocalStorage，並有集中的管理頁可查看 / 編輯 / 刪除 / 匯入匯出
 - 🌗 深色 / 淺色主題
@@ -62,14 +64,15 @@ pnpm typecheck  # 只跑型別檢查
 
 ```
 src/
-  components/   共用元件 (ToolShell, CopyBtn, FileDrop)
-  composables/  useHistory / useClipboard / useLocalized
+  components/   共用元件 (ToolShell, OutputPanel, FileDrop, CopyBtn, PasteBtn, CommandPalette)
+  composables/  useHistory / useStoredRef / useClipboard / useAudioContext
   layouts/      AppLayout（側邊欄、搜尋、主題、語言）
   locales/      每種語言一個檔（shell + 分類 + 所有工具字串），自動載入
   plugins/      vuetify / i18n 設定
-  stores/       history / favorites (Pinia, 持久化於 LocalStorage)
+  stores/       history / favorites / recents / settings (Pinia, 持久化於 LocalStorage)
   tools/        每個工具一個資料夾 + registry.ts（自動探索）
-  utils/        自寫零相依工具 (md5, nanoid, uaParser)
+  utils/        自寫零相依工具 (md5, nanoid, uaParser, download, image, bytes, format)
+  lib/          純邏輯模組（含單元測試）：pdfCompress, toolSearch, numberBase…
   views/        HomeView / HistoryView / NotFoundView
 ```
 

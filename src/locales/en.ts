@@ -14,7 +14,9 @@ export default {
     "theme": "Toggle theme",
     "language": "Language",
     "github": "Source",
-    "toggleNav": "Toggle sidebar"
+    "toggleNav": "Toggle sidebar",
+    "search": "Search tools",
+    "filterTools": "Filter tools…"
   },
   "home": {
     "searchPlaceholder": "Search tools… (name, keyword)",
@@ -23,7 +25,9 @@ export default {
     "toolCount": "{count} tools",
     "favorites": "Favorites",
     "addFavorite": "Add to favorites",
-    "removeFavorite": "Remove from favorites"
+    "removeFavorite": "Remove from favorites",
+    "recent": "Recently used",
+    "clearRecent": "Clear"
   },
   "history": {
     "title": "History Manager",
@@ -71,7 +75,13 @@ export default {
     "selectFile": "Select file",
     "dropHere": "Drop a file here, or click to select",
     "loading": "Processing…",
-    "reset": "Reset"
+    "reset": "Reset",
+    "pasteFailed": "Couldn't read the clipboard",
+    "fileTypeError": "Unsupported file type: {names}",
+    "pasteHint": "You can also paste with Ctrl+V / ⌘V",
+    "charCount": "{n} chars",
+    "noOutput": "The result will appear here",
+    "loadExample": "Load example"
   },
   "notFound": {
     "title": "Page not found",
@@ -112,7 +122,10 @@ export default {
       "urlSafe": "URL-safe (- _ instead of + /)",
       "inputText": "Input text",
       "inputBase64": "Input Base64",
-      "decodeError": "Cannot decode: not a valid Base64 string"
+      "decodeError": "Cannot decode: not a valid Base64 string",
+      "swapHint": "Move the result into the input and switch mode",
+      "notText": "The decoded data isn't text ({size}) — probably an image or archive.",
+      "downloadBinary": "Download as file"
     },
     "bcrypt": {
       "title": "Bcrypt Hash / Verify",
@@ -128,12 +141,13 @@ export default {
       "verify": "Verify",
       "match": "Match",
       "noMatch": "No match",
-      "computing": "Computing…"
+      "roundsHint": "Each extra round doubles the hashing time; 10–12 is typical."
     },
     "case-convert": {
       "title": "Case / Naming Convert",
       "description": "Convert text into many naming and case styles at once.",
-      "inputText": "Input text"
+      "inputText": "Input text",
+      "emptyHint": "Type or paste some text to see it in every naming style."
     },
     "color-convert": {
       "title": "Color Converter",
@@ -143,7 +157,14 @@ export default {
       "picker": "Color picker",
       "preview": "Preview",
       "tintsShades": "Tints & shades (light → dark)",
-      "clickToCopy": "Click to copy"
+      "clickToCopy": "Click to copy",
+      "contrast": "Contrast (WCAG)",
+      "onWhite": "On white",
+      "onBlack": "On black",
+      "levelAaa": "AAA",
+      "levelAa": "AA",
+      "levelAaLarge": "AA (large text)",
+      "levelFail": "Fail"
     },
     "color-picker-image": {
       "title": "Image Color Picker",
@@ -153,7 +174,9 @@ export default {
       "clickHint": "Move over the image to preview, click to save a color.",
       "recent": "Picked colors",
       "empty": "No colors picked yet. Click the image to add one.",
-      "clear": "Clear history"
+      "clear": "Clear history",
+      "zoomFit": "Fit to width",
+      "zoomActual": "Actual size"
     },
     "countdown": {
       "title": "Countdown Timer",
@@ -173,11 +196,13 @@ export default {
       "pause": "Pause",
       "resume": "Resume",
       "reset": "Reset",
-      "finished": "Countdown finished"
+      "finished": "Countdown finished",
+      "quickPick": "Quick pick",
+      "minutesShort": "{n} min"
     },
     "cron-parser": {
       "title": "Cron Expression Parser",
-      "description": "Description",
+      "description": "Explain a cron expression in plain words and list its next run times, with common schedule presets.",
       "expression": "Cron expression",
       "nextRuns": "Next runs",
       "presets": "Common presets",
@@ -187,7 +212,8 @@ export default {
       "weekly": "Weekly",
       "monthly": "Monthly",
       "englishFallback": "(Chinese locale unavailable, showing English)",
-      "errInvalid": "Invalid cron expression."
+      "errInvalid": "Invalid cron expression.",
+      "humanReadable": "Description"
     },
     "date-calc": {
       "title": "Date Calculator",
@@ -195,7 +221,6 @@ export default {
       "modeAdd": "Add / Subtract",
       "modeDiff": "Interval",
       "baseDate": "Base date & time",
-      "operation": "Operation",
       "add": "Add",
       "subtract": "Subtract",
       "years": "Years",
@@ -215,7 +240,8 @@ export default {
       "totalHours": "Total hours",
       "totalMinutes": "Total minutes",
       "humanized": "Humanized",
-      "copyResult": "Copy result"
+      "now": "Now",
+      "resetAmounts": "Reset amounts"
     },
     "hash": {
       "title": "Hash Generator",
@@ -224,8 +250,8 @@ export default {
       "file": "File",
       "inputText": "Input text",
       "uppercase": "Uppercase output",
-      "selectedFile": "Selected file",
-      "computing": "Computing…"
+      "computing": "Computing…",
+      "copyAll": "Copy all"
     },
     "hmac": {
       "title": "HMAC Generator",
@@ -235,7 +261,9 @@ export default {
       "algorithm": "Algorithm",
       "hex": "Hex",
       "base64": "Base64",
-      "computing": "Computing…"
+      "computing": "Computing…",
+      "showSecret": "Show secret",
+      "hideSecret": "Hide secret"
     },
     "image-base64": {
       "title": "Image ↔ Base64",
@@ -250,7 +278,8 @@ export default {
       "pasteHint": "Paste a data URI (data:image/...;base64,...)",
       "preview": "Preview",
       "download": "Download",
-      "errInvalid": "Not a valid image data URI."
+      "errInvalid": "Not a valid image data URI.",
+      "dimensions": "Dimensions"
     },
     "image-convert": {
       "title": "Image Convert / Compress",
@@ -268,7 +297,9 @@ export default {
       "fileSize": "File size",
       "download": "Download",
       "errLoad": "Could not load the image.",
-      "errConvert": "Conversion failed."
+      "errConvert": "Conversion failed.",
+      "smaller": "{percent}% smaller",
+      "larger": "{percent}% larger"
     },
     "image-editor": {
       "title": "Image Editor",
@@ -316,7 +347,8 @@ export default {
       "quality": "JPEG quality",
       "download": "Download",
       "dimensions": "Size",
-      "noImage": "No image loaded yet."
+      "noImage": "No image loaded yet.",
+      "undoShortcut": "Undo (Ctrl/⌘ + Z)"
     },
     "image-editor-pro": {
       "title": "Image Editor (Layers / Fabric)",
@@ -366,7 +398,9 @@ export default {
       "fileSize": "File size",
       "dimensions": "Size",
       "download": "Download cleaned image",
-      "sizeDelta": "Size change"
+      "sizeDelta": "Size change",
+      "smaller": "{percent}% smaller",
+      "larger": "{percent}% larger"
     },
     "image-to-pdf": {
       "title": "Images to PDF",
@@ -387,7 +421,8 @@ export default {
       "generate": "Generate PDF",
       "generating": "Generating…",
       "download": "Download PDF",
-      "imageCount": "{count} image(s)"
+      "imageCount": "{count} image(s)",
+      "generated": "{count} page(s) · {size}"
     },
     "ip-subnet": {
       "title": "IP Subnet Calculator",
@@ -405,7 +440,8 @@ export default {
       "totalHosts": "Total addresses",
       "usableHosts": "Usable hosts",
       "ipClass": "IP class",
-      "errInvalid": "Invalid IPv4 address or CIDR prefix (0–32)."
+      "errInvalid": "Invalid IPv4 address or CIDR prefix (0–32).",
+      "copyAll": "Copy all"
     },
     "json-convert": {
       "title": "JSON / YAML / TOML / CSV Convert",
@@ -415,7 +451,8 @@ export default {
       "inputData": "Input data",
       "parseError": "Parse error",
       "convertError": "Convert error",
-      "csvNote": "CSV expects an array of objects (with a header row)."
+      "csvNote": "CSV expects an array of objects (with a header row).",
+      "swapHint": "Swap the formats and move the result into the input"
     },
     "json-format": {
       "title": "JSON Format / Validate",
@@ -430,7 +467,7 @@ export default {
       "indentTab": "Tab",
       "valid": "Valid JSON",
       "parseError": "Parse error: {msg}",
-      "download": "Download .json"
+      "errorAt": "Line {line}, column {column}"
     },
     "jwt-decode": {
       "title": "JWT Decoder",
@@ -472,7 +509,12 @@ export default {
       "title": "Markdown Preview",
       "description": "Render Markdown live with sanitized HTML output.",
       "inputMd": "Input Markdown",
-      "preview": "Preview"
+      "preview": "Preview",
+      "copyHtml": "Copy HTML",
+      "downloadMd": "Download .md",
+      "downloadHtml": "Download .html",
+      "layoutSplit": "Editor and preview side by side",
+      "layoutPreview": "Preview only"
     },
     "number-base": {
       "title": "Number Base Converter",
@@ -500,14 +542,14 @@ export default {
       "count": "Count",
       "regenerate": "Regenerate",
       "strength": "Strength",
-      "entropy": "Entropy",
       "bits": "bits",
       "veryWeak": "Very weak",
       "weak": "Weak",
       "fair": "Fair",
       "strong": "Strong",
       "veryStrong": "Very strong",
-      "noCharset": "Select at least one character type"
+      "noCharset": "Select at least one character type",
+      "allPasswords": "All passwords"
     },
     "pdf-merge": {
       "title": "Merge PDF",
@@ -525,14 +567,16 @@ export default {
       "merging": "Merging…",
       "loadError": "Could not read \"{name}\" — it may not be a valid PDF or is encrypted.",
       "mergeError": "Merge failed. Please check that the files are valid.",
-      "outputName": "merged.pdf"
+      "outputName": "merged.pdf",
+      "needTwo": "Add at least two PDFs to merge.",
+      "totalSize": "Total size: {size}",
+      "merged": "Merged {count} files into {name}."
     },
     "pdf-organize": {
       "title": "PDF Page Organizer",
       "description": "Upload a PDF, then reorder, rotate, and delete pages to produce a new PDF. Everything runs in your browser.",
       "dropHint": "Drag or click to upload a PDF file",
       "loading": "Loading PDF…",
-      "rendering": "Generating thumbnails…",
       "pageLabel": "Page {n}",
       "rotate": "Rotate 90°",
       "delete": "Delete",
@@ -545,7 +589,9 @@ export default {
       "applying": "Generating PDF…",
       "noPagesLeft": "At least one page must remain.",
       "loadError": "Could not read this PDF file.",
-      "applyError": "An error occurred while generating the PDF."
+      "applyError": "An error occurred while generating the PDF.",
+      "keptCount": "{count} kept",
+      "deletedCount": "{count} deleted"
     },
     "pdf-sign": {
       "title": "PDF Sign",
@@ -568,7 +614,8 @@ export default {
       "reset": "Reset",
       "loadError": "Could not read this PDF file.",
       "signatureError": "Could not read this signature image.",
-      "applyError": "An error occurred while generating the PDF."
+      "applyError": "An error occurred while generating the PDF.",
+      "applied": "Signed PDF saved as {name}."
     },
     "pdf-split": {
       "title": "Split / Extract PDF",
@@ -592,10 +639,10 @@ export default {
       "rangeReversed": "Start page cannot be greater than end page: \"{part}\".",
       "everyInvalid": "Please enter an integer greater than 0.",
       "processError": "Processing failed. Please check your settings.",
-      "outputRange": "extracted.pdf",
-      "outputPart": "part-{n}.pdf",
       "resultExtract": "Extracted {count} page(s).",
-      "resultSplit": "Split into {count} file(s); downloads started."
+      "resultSplit": "Split into {count} file(s); downloads started.",
+      "willExtract": "{count} page(s) will be extracted.",
+      "willSplit": "Will produce {count} file(s)."
     },
     "pdf-to-image": {
       "title": "PDF to Images",
@@ -608,7 +655,12 @@ export default {
       "downloadPage": "Download this page",
       "downloadAll": "Download all",
       "pageCount": "{count} page(s)",
-      "noPdf": "No PDF loaded yet"
+      "noPdf": "No PDF loaded yet",
+      "format": "Output format",
+      "jpegQuality": "JPEG quality",
+      "renderingPage": "Rendering page {n} / {total}…",
+      "notPdf": "Please choose a PDF file",
+      "renderError": "Rendering failed: {msg}"
     },
     "pdf-watermark": {
       "title": "PDF Watermark",
@@ -626,7 +678,60 @@ export default {
       "applying": "Applying…",
       "download": "Download PDF",
       "pageCount": "{count} page(s)",
-      "noPdf": "No PDF loaded yet"
+      "noPdf": "No PDF loaded yet",
+      "applied": "Watermarked PDF saved as {name}.",
+      "notPdf": "Please choose a PDF file",
+      "loadError": "Could not read this PDF: {msg}"
+    },
+    "pdf-compress": {
+      "title": "PDF Compress",
+      "description": "Shrink a PDF in your browser: recompress and downscale embedded images, strip redundant data, or set a target file size, and see the before/after size at a glance.",
+      "dropHint": "Drop a PDF here or click to upload",
+      "noPdf": "No PDF loaded yet",
+      "notPdf": "Please choose a PDF file",
+      "loadFailed": "Could not read this PDF: {msg}",
+      "encrypted": "This PDF is password protected. Enter the open password.",
+      "password": "Password",
+      "unlock": "Unlock",
+      "wrongPassword": "Wrong password, please try again",
+      "encryptedNote": "This PDF was password protected; the compressed file will no longer be encrypted.",
+      "pages": "{count} page(s)",
+      "imageInfo": "Contains {count} image(s) ({size}); {candidates} can be recompressed ({candidateSize}).",
+      "noImages": "This PDF has no recompressible images, so the normal mode can only tidy up its structure. For a big reduction, use “Convert pages to images”.",
+      "mode": "Method",
+      "modePreset": "Pick a level",
+      "modeTarget": "Set a target size",
+      "presetLight": "Light",
+      "presetMedium": "Medium",
+      "presetStrong": "Strong",
+      "imageDetail": "Image quality {quality}% · longest edge ≤ {edge}px",
+      "rasterDetail": "Pages as images at {dpi} DPI · quality {quality}%",
+      "rasterize": "Convert pages to images (extreme)",
+      "rasterizeHint": "Renders every page to a JPEG and rebuilds the PDF. Highest compression, but text can no longer be selected or searched and vector graphics become bitmaps.",
+      "rasterFallback": "If the target can't be met, allow converting pages to images",
+      "stripMeta": "Remove metadata and app-private data",
+      "stripMetaHint": "Drops XMP metadata, page thumbnails and Illustrator / Photoshop editing data. Does not affect how the PDF looks.",
+      "target": "Target size",
+      "targetHint": "Several settings are tried automatically to find the best quality that fits the target.",
+      "invalidTarget": "Please enter a valid target size",
+      "estimateAll": "Estimate all levels",
+      "compress": "Compress",
+      "compressing": "Compressing…",
+      "progressImages": "Processing image {done} / {total}",
+      "progressPages": "Rendering page {done} / {total}",
+      "progressSaving": "Saving…",
+      "progressAttempt": "Attempt {n} ({detail})",
+      "resultTitle": "Result",
+      "reduced": "{percent}% smaller",
+      "increased": "{percent}% larger",
+      "resultLarger": "The result is not smaller, which means this PDF is already quite lean. Try a stronger level or “Convert pages to images”.",
+      "targetMet": "Target met (≤ {target})",
+      "targetMissed": "Could not get below {target}; the smallest achievable is {size}.",
+      "targetMissedHint": "Enable “allow converting pages to images” for a much higher compression ratio.",
+      "usedSettings": "Settings used: {detail}",
+      "stats": "{images} image(s) recompressed · {objects} redundant object(s) removed",
+      "download": "Download compressed PDF",
+      "about": "≈ {size}"
     },
     "qr-scan": {
       "title": "QR Code / Barcode Scanner",
@@ -667,7 +772,8 @@ export default {
       "bgColor": "Background",
       "downloadPng": "Download PNG",
       "emptyHint": "Enter content to generate a QR code",
-      "encNone": "None"
+      "encNone": "None",
+      "downloadSvg": "Download SVG"
     },
     "regex-tester": {
       "title": "Regex Tester",
@@ -682,7 +788,15 @@ export default {
       "groups": "Capture groups",
       "group": "Group {n}",
       "namedGroup": "Group \"{name}\"",
-      "invalidRegex": "Invalid regex: {msg}"
+      "invalidRegex": "Invalid regex: {msg}",
+      "presets": "Common patterns",
+      "presetEmail": "Email address",
+      "presetUrl": "URL",
+      "presetIpv4": "IPv4 address",
+      "presetDate": "Date (YYYY-MM-DD)",
+      "presetNumber": "Number",
+      "presetHexColor": "Hex color",
+      "presetCjk": "Chinese characters"
     },
     "stopwatch": {
       "title": "Stopwatch",
@@ -695,7 +809,9 @@ export default {
       "lapNo": "Lap",
       "lapTime": "Lap time",
       "split": "Split",
-      "total": "Total"
+      "total": "Total",
+      "shortcutsHint": "Keyboard: Space = start / pause, L = lap, R = reset",
+      "lapsTitle": "Laps ({count})"
     },
     "text-diff": {
       "title": "Text Diff",
@@ -706,7 +822,10 @@ export default {
       "wordMode": "Word diff",
       "additions": "{n} added",
       "deletions": "{n} removed",
-      "noDiff": "The two texts are identical."
+      "noDiff": "The two texts are identical.",
+      "ignoreCase": "Ignore case",
+      "ignoreWhitespace": "Ignore whitespace",
+      "swapHint": "Swap the original and changed texts"
     },
     "text-sort": {
       "title": "Text Sort / Dedupe",
@@ -736,7 +855,10 @@ export default {
       "paragraphs": "Paragraphs",
       "bytes": "UTF-8 bytes",
       "readingTime": "Reading time",
-      "minutes": "{n} min"
+      "minutes": "{n} min",
+      "emptyTitle": "Nothing to count yet",
+      "emptyHint": "Type or paste text above to see characters, words, lines and the most frequent words.",
+      "topWords": "Most frequent words"
     },
     "timestamp": {
       "title": "Timestamp Converter",
@@ -757,15 +879,14 @@ export default {
       "invalidDate": "Cannot parse date",
       "seconds": "s",
       "millis": "ms",
-      "ago": "ago",
-      "fromNow": "from now",
       "justNow": "just now",
       "second": "second",
       "minute": "minute",
       "hour": "hour",
       "day": "day",
       "month": "month",
-      "year": "year"
+      "year": "year",
+      "useNow": "Use now"
     },
     "unit-convert": {
       "title": "Unit Converter",
@@ -795,7 +916,8 @@ export default {
       "scope": "Scope",
       "inputText": "Input text",
       "inputEncoded": "Input encoded string",
-      "decodeError": "Cannot decode: contains invalid percent-encoding sequences"
+      "decodeError": "Cannot decode: contains invalid percent-encoding sequences",
+      "swapHint": "Move the result into the input and switch mode"
     },
     "user-agent": {
       "title": "User-Agent Parser",
@@ -805,12 +927,9 @@ export default {
       "field": "Field",
       "value": "Value",
       "browser": "Browser",
-      "version": "Version",
       "engine": "Engine",
       "os": "OS",
       "device": "Device",
-      "vendor": "Vendor",
-      "model": "Model",
       "type": "Type",
       "cpu": "CPU architecture",
       "unknown": "Unknown"
@@ -824,8 +943,7 @@ export default {
       "uppercase": "Uppercase",
       "removeHyphens": "Remove hyphens",
       "nanoidSize": "NanoID size",
-      "regenerate": "Regenerate",
-      "copyAll": "Copy all"
+      "regenerate": "Regenerate"
     },
     "bubble-wrap": {
       "title": "Bubble Wrap",
@@ -833,7 +951,10 @@ export default {
       "popped": "Popped",
       "total": "Total",
       "reset": "Reset",
-      "popAll": "Pop All"
+      "popAll": "Pop All",
+      "bubble": "Bubble {n}",
+      "mute": "Mute",
+      "unmute": "Unmute"
     },
     "jiaobei": {
       "title": "Moon Blocks",
@@ -853,11 +974,12 @@ export default {
     "satisfying-switch": {
       "title": "Satisfying Switches",
       "description": "Flip every switch and enjoy that satisfying click!",
-      "onCount": "{on} / {total} on",
-      "allOn": "All On",
-      "allOff": "All Off",
-      "random": "Random",
-      "labels": ["Lights","AC","TV","Stereo","Fan","Dishwasher","Washer","Dryer","Microwave","Oven","Fridge","Water Heater","Coffee","Vacuum","Robot Vac","Dehumidifier","Air Filter","Camera","Router","Computer","Printer","Projector","Music","Night Light"]
+      "toggleSwitch": "Toggle switch",
+      "toggleCount": "Toggles: {n}",
+      "on": "ON",
+      "off": "OFF",
+      "mute": "Mute",
+      "unmute": "Unmute"
     },
     "joss-paper": {
       "title": "Burn Joss Paper",
@@ -867,7 +989,8 @@ export default {
       "burned": "Burned",
       "sheets": "sheets",
       "sound": "Sound",
-      "mute": "Mute"
+      "mute": "Mute",
+      "hint": "Tap or hold to burn"
     },
     "wooden-fish": {
       "title": "Wooden Fish",
@@ -875,7 +998,10 @@ export default {
       "merit": "Merit",
       "session": "Session",
       "total": "Total",
-      "reset": "Reset total"
+      "reset": "Reset total",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "confirmReset": "Reset the total merit to zero? This can't be undone."
     },
     "lottery": {
       "title": "Lottery",
@@ -911,8 +1037,7 @@ export default {
       "allDrawn": "All prizes drawn!",
       "drawAll": "Draw All",
       "exportMasked": "Export (Masked)",
-      "exportPlain": "Export (Plain)",
-      "poolEmpty": "Not enough participants"
+      "exportPlain": "Export (Plain)"
     },
     "spin-wheel": {
       "title": "Spin Wheel",
@@ -926,9 +1051,12 @@ export default {
       "weightDistribution": "Weight distribution",
       "spin": "Spin!",
       "spinning": "Spinning…",
-      "result": "Result",
       "winner": "Winner",
-      "removeOption": "Remove"
+      "removeOption": "Remove",
+      "defaultLabel": "Option {letter}",
+      "removeWinner": "Remove winner from wheel",
+      "mute": "Mute",
+      "unmute": "Unmute"
     },
     "whisper-transcribe": {
       "title": "Whisper Transcription",
@@ -990,6 +1118,29 @@ export default {
     "analytics": {
       "title": "Usage Analytics",
       "description": "Allow anonymous usage data to be sent via Google Analytics. This helps us understand which tools are most popular. No personally identifiable information is collected."
-    }
+    },
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "themeSystem": "Follow system",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language",
+    "privacy": "Privacy",
+    "data": "Local data",
+    "dataDescription": "History, favorites, recent tools and remembered tool options live only in this browser and are never uploaded.",
+    "historyCount": "{count} history entries",
+    "favoritesCount": "{count} favorites",
+    "recentsCount": "{count} recent tools",
+    "manageHistory": "Manage history",
+    "clearAll": "Clear all local data",
+    "clearAllConfirm": "Clear all local data? History, favorites, recent tools and tool options will be deleted. This cannot be undone.",
+    "cleared": "Local data cleared",
+    "shortcuts": "Keyboard shortcuts",
+    "shortcutSearch": "Open tool search"
+  },
+  "palette": {
+    "placeholder": "Type a tool name or keyword…",
+    "results": "Results",
+    "hint": "↑↓ select · Enter open · Esc close · press ⌘K / Ctrl+K or / on any page"
   }
 }

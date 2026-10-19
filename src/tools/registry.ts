@@ -59,6 +59,7 @@ const POPULARITY: string[] = [
   'image-convert',
   'pdf-merge',
   'pdf-split',
+  'pdf-compress',
   'image-to-pdf',
   'pdf-to-image',
   'pdf-sign',

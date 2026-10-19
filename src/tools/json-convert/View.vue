@@ -1,26 +1,33 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import { load as yamlLoad, dump as yamlDump } from 'js-yaml'
 import { parse as tomlParse, stringify as tomlStringify } from 'smol-toml'
 import Papa from 'papaparse'
 import ToolShell from '@/components/ToolShell.vue'
-import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
+import OutputPanel from '@/components/OutputPanel.vue'
 import { useHistory } from '@/composables/useHistory'
+import { oneOf, useStoredRef } from '@/composables/useStoredRef'
 
 const TOOL_ID = 'json-convert'
 const { t } = useI18n()
-const route = useRoute()
+const T = (key: string) => t(`tools.${TOOL_ID}.${key}`)
 
-type Format = 'json' | 'yaml' | 'toml' | 'csv'
-const FORMATS: Format[] = ['json', 'yaml', 'toml', 'csv']
+const FORMATS = ['json', 'yaml', 'toml', 'csv'] as const
+type Format = (typeof FORMATS)[number]
 const FORMAT_ITEMS = FORMATS.map((f) => ({ title: f.toUpperCase(), value: f }))
+const MIME: Record<Format, string> = {
+  json: 'application/json;charset=utf-8',
+  yaml: 'application/yaml;charset=utf-8',
+  toml: 'application/toml;charset=utf-8',
+  csv: 'text/csv;charset=utf-8',
+}
 
 const history = useHistory<{ source: Format; target: Format; input: string }>(TOOL_ID)
 
-const source = ref<Format>('json')
-const target = ref<Format>('yaml')
+const source = useStoredRef<Format>('json-convert.source', 'json', oneOf(FORMATS))
+const target = useStoredRef<Format>('json-convert.target', 'yaml', oneOf(FORMATS))
 const input = ref('')
 const error = ref('')
 
@@ -76,16 +83,36 @@ const output = computed(() => {
   try {
     obj = parseInput(input.value, source.value)
   } catch (e) {
-    error.value = `${t('tools.json-convert.parseError')}: ${(e as Error).message}`
+    error.value = `${T('parseError')}: ${(e as Error).message}`
     return ''
   }
   try {
     return emit(obj, target.value)
   } catch (e) {
-    error.value = `${t('tools.json-convert.convertError')}: ${(e as Error).message}`
+    error.value = `${T('convertError')}: ${(e as Error).message}`
     return ''
   }
 })
+
+const filename = computed(() => `data.${target.value}`)
+
+/** Flip the direction; a valid result becomes the new input. */
+function swap() {
+  const next = output.value
+  const s = source.value
+  source.value = target.value
+  target.value = s
+  if (next) input.value = next
+}
+
+function loadExample() {
+  source.value = 'json'
+  input.value = JSON.stringify(
+    { name: 'Widget', price: 9.99, inStock: true, tags: ['red', 'small'], dimensions: { width: 10, height: 4 } },
+    null,
+    2,
+  )
+}
 
 function save() {
   if (!input.value.trim()) return
@@ -95,16 +122,10 @@ function save() {
 
 watch([input, source, target], () => save())
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) {
-      source.value = e.data.source
-      target.value = e.data.target
-      input.value = e.data.input
-    }
-  }
+history.restoreFromRoute((d) => {
+  source.value = d.source
+  target.value = d.target
+  input.value = d.input
 })
 </script>
 
@@ -114,16 +135,22 @@ onMounted(() => {
       <v-select
         v-model="source"
         :items="FORMAT_ITEMS"
-        :label="t('tools.json-convert.sourceFormat')"
+        :label="T('sourceFormat')"
         density="compact"
         hide-details
         style="max-width: 200px"
       />
-      <v-icon icon="mdi-arrow-right" />
+      <v-btn
+        icon="mdi-swap-horizontal"
+        variant="text"
+        :title="T('swapHint')"
+        :aria-label="t('common.swap')"
+        @click="swap"
+      />
       <v-select
         v-model="target"
         :items="FORMAT_ITEMS"
-        :label="t('tools.json-convert.targetFormat')"
+        :label="T('targetFormat')"
         density="compact"
         hide-details
         style="max-width: 200px"
@@ -132,36 +159,24 @@ onMounted(() => {
 
     <v-textarea
       v-model="input"
-      :label="t('tools.json-convert.inputData')"
+      :label="T('inputData')"
       rows="8"
       auto-grow
       clearable
+      hide-details
       class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="input = $event" />
+      <v-btn variant="text" prepend-icon="mdi-lightbulb-outline" @click="loadExample">
+        {{ t('common.loadExample') }}
+      </v-btn>
+    </div>
 
-    <p v-if="target === 'csv' || source === 'csv'" class="text-caption text-medium-emphasis mt-1">
-      {{ t('tools.json-convert.csvNote') }}
+    <p v-if="target === 'csv' || source === 'csv'" class="text-caption text-medium-emphasis mt-2 mb-0">
+      {{ T('csvNote') }}
     </p>
 
-    <v-textarea
-      :model-value="output"
-      :label="t('common.output')"
-      :error-messages="error"
-      rows="8"
-      auto-grow
-      readonly
-      class="code-area mt-2"
-    />
-
-    <div class="d-flex ga-2 mt-2">
-      <CopyBtn :text="output" />
-    </div>
+    <OutputPanel class="mt-4" :value="output" :error="error" :rows="8" :filename="filename" :mime="MIME[target]" />
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-</style>

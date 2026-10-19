@@ -2,20 +2,72 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
+import { useStoredRef } from '@/composables/useStoredRef'
 
+const TOOL_ID = 'regex-tester'
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.${TOOL_ID}.${key}`, args ?? {})
+
+const FLAG_KEYS = ['g', 'i', 'm', 's', 'u', 'y'] as const
+type Flag = (typeof FLAG_KEYS)[number]
+type FlagState = Record<Flag, boolean>
+const DEFAULT_FLAGS: FlagState = { g: true, i: false, m: false, s: false, u: false, y: false }
+const isFlagState = (v: unknown): v is FlagState =>
+  typeof v === 'object' && v !== null && FLAG_KEYS.every((k) => typeof (v as Record<string, unknown>)[k] === 'boolean')
 
 const pattern = ref('')
 const testString = ref('')
-const flagState = ref<Record<string, boolean>>({
-  g: true,
-  i: false,
-  m: false,
-  s: false,
-  u: false,
-  y: false,
-})
-const FLAG_KEYS = ['g', 'i', 'm', 's', 'u', 'y'] as const
+const flagState = useStoredRef<FlagState>('regex-tester.flags', { ...DEFAULT_FLAGS }, isFlagState)
+
+/** Ready-made patterns; `key` is the i18n key of the label. */
+interface Preset {
+  key: string
+  pattern: string
+  sample: string
+}
+const PRESETS: Preset[] = [
+  {
+    key: 'presetEmail',
+    pattern: String.raw`[\w.+-]+@[\w-]+(?:\.[\w-]+)+`,
+    sample: 'Contact alice@example.com or bob.smith+news@mail.co.uk (not: foo@bar)',
+  },
+  {
+    key: 'presetUrl',
+    pattern: String.raw`https?://[^\s/$.?#][^\s]*`,
+    sample: 'Docs: https://example.com/path?q=1#top and http://test.org (but not ftp://files.example.com)',
+  },
+  {
+    key: 'presetIpv4',
+    pattern: String.raw`\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b`,
+    sample: 'Hosts: 192.168.1.1, 10.0.0.255 and 8.8.8.8 (256.1.1.1 is invalid)',
+  },
+  {
+    key: 'presetDate',
+    pattern: String.raw`\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])\b`,
+    sample: 'Released 2024-03-15, due 2025-12-31; 2024-13-01 is not a date',
+  },
+  {
+    key: 'presetNumber',
+    pattern: String.raw`-?\d+(?:\.\d+)?`,
+    sample: 'Total: 42 items at 3.99 each, delta -0.5, SKU A1B2',
+  },
+  {
+    key: 'presetHexColor',
+    pattern: String.raw`#(?:[0-9a-fA-F]{3}){1,2}\b`,
+    sample: 'Palette: #fff, #1E90FF, #00ff00 and #abcd (invalid)',
+  },
+  {
+    key: 'presetCjk',
+    pattern: String.raw`[一-鿿]+`,
+    sample: 'Hello 世界! Taipei 台北 101, コーヒー 커피, 繁體中文',
+  },
+]
+
+function applyPreset(p: Preset) {
+  pattern.value = p.pattern
+  testString.value = p.sample
+}
 
 const MAX_MATCHES = 10000
 
@@ -45,7 +97,7 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
   try {
     re = new RegExp(pattern.value, flags)
   } catch (e) {
-    error.value = t('tools.regex-tester.invalidRegex', { msg: (e as Error).message })
+    error.value = T('invalidRegex', { msg: (e as Error).message })
     return empty
   }
 
@@ -65,14 +117,11 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
 
     const groups: { label: string; value: string }[] = []
     for (let i = 1; i < m.length; i++) {
-      groups.push({ label: t('tools.regex-tester.group', { n: i }), value: m[i] ?? '' })
+      groups.push({ label: T('group', { n: i }), value: m[i] ?? '' })
     }
     if (m.groups) {
       for (const [name, value] of Object.entries(m.groups)) {
-        groups.push({
-          label: t('tools.regex-tester.namedGroup', { name }),
-          value: value ?? '',
-        })
+        groups.push({ label: T('namedGroup', { name }), value: value ?? '' })
       }
     }
     matches.push({ index: idx, full: m[0], groups })
@@ -95,14 +144,15 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
   <ToolShell>
     <v-text-field
       v-model="pattern"
-      :label="t('tools.regex-tester.pattern')"
+      :label="T('pattern')"
       prepend-inner-icon="mdi-slash-forward"
       clearable
-      class="mono-field"
+      hide-details
+      class="code-area"
     />
 
-    <div class="d-flex flex-wrap align-center ga-1 mb-2">
-      <span class="text-medium-emphasis mr-2">{{ t('tools.regex-tester.flags') }}:</span>
+    <div class="d-flex flex-wrap align-center ga-1 mt-2 mb-2">
+      <span class="text-medium-emphasis mr-2">{{ T('flags') }}:</span>
       <v-checkbox
         v-for="f in FLAG_KEYS"
         :key="f"
@@ -112,16 +162,35 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
         density="compact"
         class="mr-1"
       />
+      <v-spacer />
+      <v-menu>
+        <template #activator="{ props: menuProps }">
+          <v-btn v-bind="menuProps" variant="text" prepend-icon="mdi-regex" append-icon="mdi-menu-down">
+            {{ T('presets') }}
+          </v-btn>
+        </template>
+        <v-list density="compact">
+          <v-list-item v-for="p in PRESETS" :key="p.key" :title="T(p.key)" @click="applyPreset(p)">
+            <template #subtitle>
+              <span class="font-mono text-caption break-all">{{ p.pattern }}</span>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-menu>
     </div>
 
     <v-textarea
       v-model="testString"
-      :label="t('tools.regex-tester.testString')"
+      :label="T('testString')"
       rows="6"
       auto-grow
       clearable
-      class="mono-field"
+      hide-details
+      class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="testString = $event" />
+    </div>
 
     <v-alert
       v-if="error"
@@ -134,12 +203,12 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
 
     <template v-else>
       <div class="d-flex align-center ga-2 mt-3 mb-2">
-        <v-chip color="primary" variant="tonal" size="small">
-          {{ t('tools.regex-tester.matchCount', { n: result.matches.length }) }}
+        <v-chip :color="result.matches.length ? 'primary' : undefined" variant="tonal" size="small">
+          {{ T('matchCount', { n: result.matches.length }) }}
         </v-chip>
       </div>
 
-      <v-sheet v-if="result.segments.length" class="hl pa-3 rounded-lg mb-3" border>
+      <v-sheet v-if="result.segments.length" class="hl font-mono pa-3 rounded-lg mb-3" border>
         <span
           v-for="(seg, i) in result.segments"
           :key="i"
@@ -148,20 +217,20 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
       </v-sheet>
 
       <div v-if="!result.matches.length && pattern && testString" class="text-medium-emphasis">
-        {{ t('tools.regex-tester.noMatch') }}
+        {{ T('noMatch') }}
       </div>
 
       <v-expansion-panels v-if="result.matches.length" multiple variant="accordion">
         <v-expansion-panel v-for="(mm, i) in result.matches" :key="i">
           <v-expansion-panel-title>
-            <span class="mono">{{ t('tools.regex-tester.match', { n: i + 1 }) }}</span>
-            <span class="text-medium-emphasis ml-2">
-              {{ t('tools.regex-tester.indexAt', { i: mm.index }) }} · {{ mm.full }}
+            <span class="font-mono">{{ T('match', { n: i + 1 }) }}</span>
+            <span class="text-medium-emphasis ml-2 break-all">
+              {{ T('indexAt', { i: mm.index }) }} · {{ mm.full }}
             </span>
           </v-expansion-panel-title>
           <v-expansion-panel-text v-if="mm.groups.length">
-            <div class="text-caption text-medium-emphasis mb-1">{{ t('tools.regex-tester.groups') }}</div>
-            <div v-for="(g, gi) in mm.groups" :key="gi" class="mono">
+            <div class="text-caption text-medium-emphasis mb-1">{{ T('groups') }}</div>
+            <div v-for="(g, gi) in mm.groups" :key="gi" class="font-mono break-all">
               {{ g.label }}: {{ g.value }}
             </div>
           </v-expansion-panel-text>
@@ -172,18 +241,7 @@ const result = computed<{ matches: MatchInfo[]; segments: Segment[] }>(() => {
 </template>
 
 <style scoped>
-.mono-field :deep(input),
-.mono-field :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-  word-break: break-all;
-}
 .hl {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 14px;
   white-space: pre-wrap;
   word-break: break-word;

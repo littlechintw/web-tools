@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
-import CopyBtn from '@/components/CopyBtn.vue'
+import OutputPanel from '@/components/OutputPanel.vue'
+import { isBoolean, isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
 
+const TOOL_ID = 'lorem-ipsum'
 const { t } = useI18n()
+const T = (key: string) => t(`tools.${TOOL_ID}.${key}`)
 
 const WORDS = [
   'lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit',
@@ -19,9 +22,9 @@ const WORDS = [
 const CLASSIC = 'Lorem ipsum dolor sit amet'
 
 type Mode = 'paragraphs' | 'sentences' | 'words'
-const mode = ref<Mode>('paragraphs')
-const count = ref(3)
-const startClassic = ref(true)
+const mode = useStoredRef<Mode>('lorem-ipsum.mode', 'paragraphs', oneOf(['paragraphs', 'sentences', 'words']))
+const count = useStoredRef('lorem-ipsum.count', 3, isNumber)
+const startClassic = useStoredRef('lorem-ipsum.startClassic', true, isBoolean)
 const output = ref('')
 
 const rand = (n: number) => Math.floor(Math.random() * n)
@@ -73,20 +76,23 @@ function generate() {
   output.value = arr.join('\n\n')
 }
 
+// Every option change produces fresh text right away; the button re-rolls
+// with the same options.
+watch([mode, count, startClassic], () => generate())
 generate()
 </script>
 
 <template>
   <ToolShell>
     <div class="d-flex flex-wrap align-center ga-4 mb-2">
-      <v-btn-toggle v-model="mode" mandatory color="primary" density="comfortable" variant="outlined">
-        <v-btn value="paragraphs">{{ t('tools.lorem-ipsum.paragraphs') }}</v-btn>
-        <v-btn value="sentences">{{ t('tools.lorem-ipsum.sentences') }}</v-btn>
-        <v-btn value="words">{{ t('tools.lorem-ipsum.words') }}</v-btn>
+      <v-btn-toggle v-model="mode" mandatory color="primary" density="comfortable" variant="outlined" divided>
+        <v-btn value="paragraphs">{{ T('paragraphs') }}</v-btn>
+        <v-btn value="sentences">{{ T('sentences') }}</v-btn>
+        <v-btn value="words">{{ T('words') }}</v-btn>
       </v-btn-toggle>
       <v-text-field
         v-model.number="count"
-        :label="t('tools.lorem-ipsum.count')"
+        :label="T('count')"
         type="number"
         min="1"
         max="1000"
@@ -94,30 +100,13 @@ generate()
         hide-details
         style="max-width: 120px"
       />
+      <v-checkbox v-model="startClassic" :label="T('startClassic')" hide-details density="compact" />
     </div>
-
-    <v-checkbox
-      v-model="startClassic"
-      :label="t('tools.lorem-ipsum.startClassic')"
-      hide-details
-      density="compact"
-    />
 
     <v-btn color="primary" variant="flat" class="mt-2" prepend-icon="mdi-refresh" @click="generate">
-      {{ t('tools.lorem-ipsum.generate') }}
+      {{ T('generate') }}
     </v-btn>
 
-    <v-textarea
-      :model-value="output"
-      :label="t('common.output')"
-      rows="10"
-      auto-grow
-      readonly
-      class="mt-3"
-    />
-
-    <div class="d-flex ga-2 mt-2">
-      <CopyBtn :text="output" />
-    </div>
+    <OutputPanel class="mt-4" :value="output" :rows="10" :mono="false" filename="lorem.txt" />
   </ToolShell>
 </template>

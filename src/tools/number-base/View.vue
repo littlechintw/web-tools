@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
 import { useHistory } from '@/composables/useHistory'
+import { isNumber, useStoredRef } from '@/composables/useStoredRef'
 import { parseToBigInt, bigIntToBase } from '@/lib/numberBase'
 
 const TOOL_ID = 'number-base'
 const { t } = useI18n()
-const route = useRoute()
 
 const history = useHistory<{ input: string; sourceBase: number; customBase: number }>(TOOL_ID)
 
+const isBase = (v: unknown): v is number => isNumber(v) && Number.isInteger(v) && v >= 2 && v <= 36
+
 const input = ref('')
 const sourceBase = ref(10)
-const customBase = ref(36)
+// The custom base is a preference, remembered between visits.
+const customBase = useStoredRef('number-base.customBase', 36, isBase)
 const error = ref('')
 
 const baseItems = computed(() => [
@@ -78,16 +81,10 @@ function save() {
 
 watch([input, sourceBase, customBase], () => save())
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) {
-      input.value = e.data.input
-      sourceBase.value = e.data.sourceBase
-      customBase.value = e.data.customBase
-    }
-  }
+history.restoreFromRoute((d) => {
+  input.value = d.input
+  sourceBase.value = d.sourceBase
+  customBase.value = d.customBase
 })
 </script>
 
@@ -117,8 +114,12 @@ onMounted(() => {
       :label="t('tools.number-base.value')"
       :error-messages="error"
       clearable
+      hide-details="auto"
       class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="input = $event" />
+    </div>
 
     <v-list v-if="rows.length" class="mt-2" bg-color="transparent">
       <v-list-item v-for="row in rows" :key="row.label" class="px-0">
@@ -126,7 +127,7 @@ onMounted(() => {
           <span class="text-caption text-medium-emphasis">{{ row.label }}</span>
         </template>
         <template #subtitle>
-          <span class="code-text text-body-1">{{ row.value }}</span>
+          <span class="font-mono break-all text-body-1">{{ row.value }}</span>
         </template>
         <template #append>
           <CopyBtn :text="row.value" icon />
@@ -135,13 +136,3 @@ onMounted(() => {
     </v-list>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(input) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.code-text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  word-break: break-all;
-}
-</style>

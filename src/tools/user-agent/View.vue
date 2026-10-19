@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { UAParser } from '@/utils/uaParser'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
 
 const { t } = useI18n()
 
@@ -46,11 +47,14 @@ function useCurrent() {
       rows="3"
       auto-grow
       clearable
+      hide-details
       class="code-area"
     />
-    <div class="d-flex flex-wrap ga-2 mt-1">
-      <CopyBtn :text="ua" />
-      <v-btn variant="outlined" prepend-icon="mdi-refresh" @click="useCurrent">
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="ua = $event" />
+      <CopyBtn :text="ua" variant="text" />
+      <v-spacer />
+      <v-btn variant="text" prepend-icon="mdi-refresh" @click="useCurrent">
         {{ t('tools.user-agent.useCurrent') }}
       </v-btn>
     </div>
@@ -71,10 +75,3 @@ function useCurrent() {
     </v-table>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 13px;
-}
-</style>

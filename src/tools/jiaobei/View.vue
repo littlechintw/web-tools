@@ -2,8 +2,10 @@
 import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { useAudioContext } from '@/composables/useAudioContext'
 
 const { t } = useI18n()
+const audio = useAudioContext()
 
 type ResultType = 'shengbei' | 'xiaobei' | 'yinbei'
 
@@ -19,26 +21,19 @@ const history = ref<HistoryItem[]>([])
 const showFlying = ref(false)
 let nextId = 0
 
-let audioCtx: AudioContext | null = null
-
-function knockSound() {
-  try {
-    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    if (!audioCtx) audioCtx = new Ctor()
-    const ctx = audioCtx
-    for (const dt of [0, 0.1]) {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain); gain.connect(ctx.destination)
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(480, ctx.currentTime + dt)
-      osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + dt + 0.18)
-      gain.gain.setValueAtTime(0.55, ctx.currentTime + dt)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dt + 0.3)
-      osc.start(ctx.currentTime + dt)
-      osc.stop(ctx.currentTime + dt + 0.3)
-    }
-  } catch { /* silent */ }
+function knockSound(ctx: AudioContext) {
+  for (const dt of [0, 0.1]) {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(480, ctx.currentTime + dt)
+    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + dt + 0.18)
+    gain.gain.setValueAtTime(0.55, ctx.currentTime + dt)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dt + 0.3)
+    osc.start(ctx.currentTime + dt)
+    osc.stop(ctx.currentTime + dt + 0.3)
+  }
 }
 
 function determineResult(c1: boolean, c2: boolean): ResultType {
@@ -74,9 +69,13 @@ function throwCups() {
       currentResult.value = result
       history.value.unshift({ id: nextId++, type: result.type })
       if (history.value.length > 5) history.value.pop()
-      knockSound()
+      audio.play(knockSound)
     }, 120))
   }, 750))
+}
+
+function clearHistory() {
+  history.value = []
 }
 
 const resultConfig: Record<ResultType, { color: string; icon: string }> = {
@@ -88,8 +87,6 @@ const resultConfig: Record<ResultType, { color: string; icon: string }> = {
 onUnmounted(() => {
   for (const id of throwTimeouts) clearTimeout(id)
   throwTimeouts = []
-  audioCtx?.close().catch(() => {})
-  audioCtx = null
 })
 </script>
 
@@ -134,7 +131,7 @@ onUnmounted(() => {
       </v-btn>
 
       <Transition name="result-fade">
-        <div v-if="currentResult" class="result-block">
+        <div v-if="currentResult" class="result-block" aria-live="polite">
           <v-chip
             :color="resultConfig[currentResult.type].color"
             size="x-large"
@@ -151,7 +148,18 @@ onUnmounted(() => {
       </Transition>
 
       <div v-if="history.length" class="history-block mt-4">
-        <div class="text-caption text-medium-emphasis mb-2">{{ t('tools.jiaobei.history') }}</div>
+        <div class="d-flex align-center ga-1 mb-2">
+          <span class="text-caption text-medium-emphasis">{{ t('tools.jiaobei.history') }}</span>
+          <v-btn
+            size="x-small"
+            variant="text"
+            prepend-icon="mdi-close"
+            :disabled="throwing"
+            @click="clearHistory"
+          >
+            {{ t('common.clear') }}
+          </v-btn>
+        </div>
         <div class="history-icons">
           <v-tooltip
             v-for="item in history"

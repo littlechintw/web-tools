@@ -14,7 +14,9 @@ export default {
     "theme": "切換深淺色",
     "language": "語言",
     "github": "原始碼",
-    "toggleNav": "切換側邊欄"
+    "toggleNav": "切換側邊欄",
+    "search": "搜尋工具",
+    "filterTools": "篩選工具…"
   },
   "home": {
     "searchPlaceholder": "搜尋工具…（名稱、關鍵字）",
@@ -23,7 +25,9 @@ export default {
     "toolCount": "{count} 個工具",
     "favorites": "我的最愛",
     "addFavorite": "加入最愛",
-    "removeFavorite": "移除最愛"
+    "removeFavorite": "移除最愛",
+    "recent": "最近使用",
+    "clearRecent": "清除"
   },
   "history": {
     "title": "歷史紀錄管理",
@@ -71,7 +75,13 @@ export default {
     "selectFile": "選擇檔案",
     "dropHere": "把檔案拖曳到這裡，或點擊選擇",
     "loading": "處理中…",
-    "reset": "重設"
+    "reset": "重設",
+    "pasteFailed": "無法讀取剪貼簿",
+    "fileTypeError": "不支援的檔案類型：{names}",
+    "pasteHint": "也可以直接按 Ctrl+V / ⌘V 貼上",
+    "charCount": "{n} 字元",
+    "noOutput": "結果會顯示在這裡",
+    "loadExample": "載入範例"
   },
   "notFound": {
     "title": "找不到頁面",
@@ -112,7 +122,10 @@ export default {
       "urlSafe": "URL-safe（- _ 取代 + /）",
       "inputText": "輸入文字",
       "inputBase64": "輸入 Base64",
-      "decodeError": "無法解碼：不是有效的 Base64 字串"
+      "decodeError": "無法解碼：不是有效的 Base64 字串",
+      "swapHint": "把結果放回輸入框並切換模式",
+      "notText": "解碼結果不是文字（{size}），可能是圖片或壓縮檔。",
+      "downloadBinary": "下載為檔案"
     },
     "bcrypt": {
       "title": "Bcrypt 雜湊 / 驗證",
@@ -128,12 +141,13 @@ export default {
       "verify": "驗證",
       "match": "相符",
       "noMatch": "不相符",
-      "computing": "計算中…"
+      "roundsHint": "每增加 1 回合,計算時間約增加一倍;一般使用 10–12。"
     },
     "case-convert": {
       "title": "大小寫 / 命名轉換",
       "description": "一次轉換成多種命名與大小寫格式。",
-      "inputText": "輸入文字"
+      "inputText": "輸入文字",
+      "emptyHint": "輸入或貼上文字，即可一次看到所有命名風格。"
     },
     "color-convert": {
       "title": "顏色轉換器",
@@ -143,7 +157,14 @@ export default {
       "picker": "色彩選擇器",
       "preview": "預覽",
       "tintsShades": "色階（亮 → 暗）",
-      "clickToCopy": "點擊複製"
+      "clickToCopy": "點擊複製",
+      "contrast": "對比度 (WCAG)",
+      "onWhite": "白底",
+      "onBlack": "黑底",
+      "levelAaa": "AAA",
+      "levelAa": "AA",
+      "levelAaLarge": "AA(大字)",
+      "levelFail": "不合格"
     },
     "color-picker-image": {
       "title": "圖片取色器",
@@ -153,7 +174,9 @@ export default {
       "clickHint": "在圖片上移動可預覽，點擊即可保存顏色。",
       "recent": "取色紀錄",
       "empty": "尚無取色紀錄，點擊圖片即可加入。",
-      "clear": "清除紀錄"
+      "clear": "清除紀錄",
+      "zoomFit": "符合寬度",
+      "zoomActual": "原始大小"
     },
     "countdown": {
       "title": "倒數計時器",
@@ -173,11 +196,13 @@ export default {
       "pause": "暫停",
       "resume": "繼續",
       "reset": "重設",
-      "finished": "倒數結束"
+      "finished": "倒數結束",
+      "quickPick": "快速設定",
+      "minutesShort": "{n} 分鐘"
     },
     "cron-parser": {
       "title": "Cron 表達式解析",
-      "description": "說明",
+      "description": "解析 Cron 表達式為白話說明，並列出接下來的執行時間，附常用排程範本。",
       "expression": "Cron 表達式",
       "nextRuns": "接下來的執行時間",
       "presets": "常用範本",
@@ -187,7 +212,8 @@ export default {
       "weekly": "每週",
       "monthly": "每月",
       "englishFallback": "（找不到中文語系，以英文顯示）",
-      "errInvalid": "無效的 Cron 表達式。"
+      "errInvalid": "無效的 Cron 表達式。",
+      "humanReadable": "說明"
     },
     "date-calc": {
       "title": "日期加減器",
@@ -195,7 +221,6 @@ export default {
       "modeAdd": "加減",
       "modeDiff": "間隔",
       "baseDate": "基準日期時間",
-      "operation": "運算",
       "add": "加上",
       "subtract": "減去",
       "years": "年",
@@ -215,7 +240,8 @@ export default {
       "totalHours": "總小時數",
       "totalMinutes": "總分鐘數",
       "humanized": "人類可讀",
-      "copyResult": "複製結果"
+      "now": "現在",
+      "resetAmounts": "清除數值"
     },
     "hash": {
       "title": "雜湊產生器",
@@ -224,8 +250,8 @@ export default {
       "file": "檔案",
       "inputText": "輸入文字",
       "uppercase": "大寫輸出",
-      "selectedFile": "已選檔案",
-      "computing": "計算中…"
+      "computing": "計算中…",
+      "copyAll": "全部複製"
     },
     "hmac": {
       "title": "HMAC 產生器",
@@ -235,7 +261,9 @@ export default {
       "algorithm": "演算法",
       "hex": "十六進位 (Hex)",
       "base64": "Base64",
-      "computing": "計算中…"
+      "computing": "計算中…",
+      "showSecret": "顯示金鑰",
+      "hideSecret": "隱藏金鑰"
     },
     "image-base64": {
       "title": "圖片 ↔ Base64",
@@ -250,7 +278,8 @@ export default {
       "pasteHint": "貼上 data URI（data:image/...;base64,...）",
       "preview": "預覽",
       "download": "下載",
-      "errInvalid": "不是有效的圖片 Data URI。"
+      "errInvalid": "不是有效的圖片 Data URI。",
+      "dimensions": "尺寸"
     },
     "image-convert": {
       "title": "圖片格式轉換 / 壓縮",
@@ -268,7 +297,9 @@ export default {
       "fileSize": "檔案大小",
       "download": "下載",
       "errLoad": "無法載入圖片。",
-      "errConvert": "轉換失敗。"
+      "errConvert": "轉換失敗。",
+      "smaller": "縮小 {percent}%",
+      "larger": "增加 {percent}%"
     },
     "image-editor": {
       "title": "圖片編輯器",
@@ -316,7 +347,8 @@ export default {
       "quality": "JPEG 品質",
       "download": "下載",
       "dimensions": "尺寸",
-      "noImage": "尚未載入圖片。"
+      "noImage": "尚未載入圖片。",
+      "undoShortcut": "復原（Ctrl/⌘ + Z）"
     },
     "image-editor-pro": {
       "title": "圖片編輯器（圖層 / Fabric）",
@@ -366,7 +398,9 @@ export default {
       "fileSize": "檔案大小",
       "dimensions": "尺寸",
       "download": "下載清理後的圖片",
-      "sizeDelta": "大小變化"
+      "sizeDelta": "大小變化",
+      "smaller": "縮小 {percent}%",
+      "larger": "增加 {percent}%"
     },
     "image-to-pdf": {
       "title": "圖片轉 PDF",
@@ -387,7 +421,8 @@ export default {
       "generate": "產生 PDF",
       "generating": "產生中…",
       "download": "下載 PDF",
-      "imageCount": "{count} 張圖片"
+      "imageCount": "{count} 張圖片",
+      "generated": "{count} 頁 · {size}"
     },
     "ip-subnet": {
       "title": "IP 子網路計算器",
@@ -405,7 +440,8 @@ export default {
       "totalHosts": "總位址數",
       "usableHosts": "可用主機數",
       "ipClass": "IP 等級",
-      "errInvalid": "無效的 IPv4 位址或 CIDR 前綴（0–32）。"
+      "errInvalid": "無效的 IPv4 位址或 CIDR 前綴（0–32）。",
+      "copyAll": "全部複製"
     },
     "json-convert": {
       "title": "JSON / YAML / TOML / CSV 互轉",
@@ -415,7 +451,8 @@ export default {
       "inputData": "輸入資料",
       "parseError": "解析失敗",
       "convertError": "轉換失敗",
-      "csvNote": "CSV 需要物件陣列（含表頭）。"
+      "csvNote": "CSV 需要物件陣列（含表頭）。",
+      "swapHint": "交換來源與目標格式，並將結果移到輸入欄"
     },
     "json-format": {
       "title": "JSON 格式化 / 驗證",
@@ -430,7 +467,7 @@ export default {
       "indentTab": "Tab",
       "valid": "JSON 有效",
       "parseError": "解析錯誤：{msg}",
-      "download": "下載 .json"
+      "errorAt": "第 {line} 行，第 {column} 欄"
     },
     "jwt-decode": {
       "title": "JWT 解碼器",
@@ -472,7 +509,12 @@ export default {
       "title": "Markdown 預覽",
       "description": "即時渲染 Markdown 並安全淨化輸出 HTML。",
       "inputMd": "輸入 Markdown",
-      "preview": "預覽"
+      "preview": "預覽",
+      "copyHtml": "複製 HTML",
+      "downloadMd": "下載 .md",
+      "downloadHtml": "下載 .html",
+      "layoutSplit": "編輯器與預覽並排",
+      "layoutPreview": "僅顯示預覽"
     },
     "number-base": {
       "title": "進制轉換",
@@ -500,14 +542,14 @@ export default {
       "count": "產生數量",
       "regenerate": "重新產生",
       "strength": "強度",
-      "entropy": "熵",
       "bits": "位元",
       "veryWeak": "非常弱",
       "weak": "弱",
       "fair": "普通",
       "strong": "強",
       "veryStrong": "非常強",
-      "noCharset": "請至少選擇一種字元類型"
+      "noCharset": "請至少選擇一種字元類型",
+      "allPasswords": "全部密碼"
     },
     "pdf-merge": {
       "title": "合併 PDF",
@@ -525,14 +567,16 @@ export default {
       "merging": "合併中…",
       "loadError": "無法讀取「{name}」，可能不是有效的 PDF 或已加密。",
       "mergeError": "合併失敗，請確認檔案是否有效。",
-      "outputName": "merged.pdf"
+      "outputName": "merged.pdf",
+      "needTwo": "至少加入兩個 PDF 才能合併。",
+      "totalSize": "總大小：{size}",
+      "merged": "已將 {count} 個檔案合併為 {name}。"
     },
     "pdf-organize": {
       "title": "PDF 頁面管理",
       "description": "上傳 PDF，重新排序、旋轉與刪除頁面，輸出新的 PDF。全程在瀏覽器中處理。",
       "dropHint": "拖曳或點擊上傳 PDF 檔案",
       "loading": "正在載入 PDF…",
-      "rendering": "正在產生縮圖…",
       "pageLabel": "第 {n} 頁",
       "rotate": "旋轉 90°",
       "delete": "刪除",
@@ -545,7 +589,9 @@ export default {
       "applying": "正在產生 PDF…",
       "noPagesLeft": "至少需保留一頁。",
       "loadError": "無法讀取此 PDF 檔案。",
-      "applyError": "產生 PDF 時發生錯誤。"
+      "applyError": "產生 PDF 時發生錯誤。",
+      "keptCount": "保留 {count} 頁",
+      "deletedCount": "刪除 {count} 頁"
     },
     "pdf-sign": {
       "title": "PDF 電子簽名",
@@ -568,7 +614,8 @@ export default {
       "reset": "重設",
       "loadError": "無法讀取此 PDF 檔案。",
       "signatureError": "無法讀取此簽名圖片。",
-      "applyError": "產生 PDF 時發生錯誤。"
+      "applyError": "產生 PDF 時發生錯誤。",
+      "applied": "已下載簽名後的 PDF：{name}。"
     },
     "pdf-split": {
       "title": "PDF 分割 / 取頁",
@@ -592,10 +639,10 @@ export default {
       "rangeReversed": "起始頁不可大於結束頁：「{part}」。",
       "everyInvalid": "請輸入大於 0 的整數。",
       "processError": "處理失敗，請確認設定是否正確。",
-      "outputRange": "extracted.pdf",
-      "outputPart": "part-{n}.pdf",
       "resultExtract": "已取出 {count} 頁。",
-      "resultSplit": "已分割為 {count} 個檔案並開始下載。"
+      "resultSplit": "已分割為 {count} 個檔案並開始下載。",
+      "willExtract": "將取出 {count} 頁。",
+      "willSplit": "將產生 {count} 個檔案。"
     },
     "pdf-to-image": {
       "title": "PDF 轉圖片",
@@ -608,7 +655,12 @@ export default {
       "downloadPage": "下載此頁",
       "downloadAll": "下載全部",
       "pageCount": "共 {count} 頁",
-      "noPdf": "尚未載入 PDF"
+      "noPdf": "尚未載入 PDF",
+      "format": "輸出格式",
+      "jpegQuality": "JPEG 品質",
+      "renderingPage": "正在轉換第 {n} / {total} 頁…",
+      "notPdf": "請選擇 PDF 檔案",
+      "renderError": "轉換失敗：{msg}"
     },
     "pdf-watermark": {
       "title": "PDF 浮水印",
@@ -626,7 +678,60 @@ export default {
       "applying": "套用中…",
       "download": "下載 PDF",
       "pageCount": "共 {count} 頁",
-      "noPdf": "尚未載入 PDF"
+      "noPdf": "尚未載入 PDF",
+      "applied": "已下載加上浮水印的 PDF：{name}。",
+      "notPdf": "請選擇 PDF 檔案",
+      "loadError": "無法讀取此 PDF：{msg}"
+    },
+    "pdf-compress": {
+      "title": "PDF 壓縮",
+      "description": "在瀏覽器內壓縮 PDF：重新壓縮並縮小內嵌圖片、清除冗餘資料，或直接指定目標檔案大小，壓縮前後的大小一目了然。",
+      "dropHint": "拖曳 PDF 到此或點擊上傳",
+      "noPdf": "尚未載入 PDF",
+      "notPdf": "請選擇 PDF 檔案",
+      "loadFailed": "無法讀取此 PDF：{msg}",
+      "encrypted": "此 PDF 受密碼保護，請輸入開啟密碼",
+      "password": "密碼",
+      "unlock": "解鎖",
+      "wrongPassword": "密碼錯誤，請再試一次",
+      "encryptedNote": "此 PDF 原本受密碼保護，壓縮後的檔案將不再加密。",
+      "pages": "{count} 頁",
+      "imageInfo": "內含 {count} 張圖片（{size}），其中 {candidates} 張可重新壓縮（{candidateSize}）。",
+      "noImages": "此 PDF 沒有可重新壓縮的圖片，一般模式只能精簡結構；若需大幅縮小，請改用「轉成圖片」模式。",
+      "mode": "壓縮方式",
+      "modePreset": "選擇等級",
+      "modeTarget": "指定目標大小",
+      "presetLight": "輕度",
+      "presetMedium": "中度",
+      "presetStrong": "強力",
+      "imageDetail": "圖片品質 {quality}%・最長邊 ≤ {edge}px",
+      "rasterDetail": "整頁轉圖 {dpi} DPI・品質 {quality}%",
+      "rasterize": "轉成圖片（極限壓縮）",
+      "rasterizeHint": "把每一頁渲染成 JPEG 後重新組成 PDF，壓縮率最高，但文字將無法選取與搜尋，向量圖形也會變成點陣。",
+      "rasterFallback": "若無法達到目標，允許轉成圖片",
+      "stripMeta": "清除中繼資料與應用程式私有資料",
+      "stripMetaHint": "移除 XMP 中繼資料、頁面縮圖、Illustrator / Photoshop 編輯資料等，不影響顯示內容。",
+      "target": "目標大小",
+      "targetHint": "會自動嘗試多組設定，找出符合目標且品質最好的結果。",
+      "invalidTarget": "請輸入有效的目標大小",
+      "estimateAll": "試算所有等級",
+      "compress": "開始壓縮",
+      "compressing": "壓縮中…",
+      "progressImages": "處理圖片 {done} / {total}",
+      "progressPages": "渲染頁面 {done} / {total}",
+      "progressSaving": "儲存中…",
+      "progressAttempt": "第 {n} 次嘗試（{detail}）",
+      "resultTitle": "壓縮結果",
+      "reduced": "減少 {percent}%",
+      "increased": "增加 {percent}%",
+      "resultLarger": "壓縮後沒有變小，表示這份 PDF 已相當精簡。可試試更高的等級或「轉成圖片」模式。",
+      "targetMet": "已符合目標（≤ {target}）",
+      "targetMissed": "無法壓到 {target} 以下，最小可達 {size}。",
+      "targetMissedHint": "勾選「若無法達到目標，允許轉成圖片」可取得更高的壓縮率。",
+      "usedSettings": "使用設定：{detail}",
+      "stats": "重新壓縮 {images} 張圖片・移除 {objects} 個冗餘物件",
+      "download": "下載壓縮後的 PDF",
+      "about": "約 {size}"
     },
     "qr-scan": {
       "title": "QR Code / 條碼掃描",
@@ -667,7 +772,8 @@ export default {
       "bgColor": "背景色",
       "downloadPng": "下載 PNG",
       "emptyHint": "請輸入內容以產生 QR Code",
-      "encNone": "無"
+      "encNone": "無",
+      "downloadSvg": "下載 SVG"
     },
     "regex-tester": {
       "title": "正則表達式測試",
@@ -682,7 +788,15 @@ export default {
       "groups": "擷取群組",
       "group": "群組 {n}",
       "namedGroup": "群組「{name}」",
-      "invalidRegex": "無效的正則表達式：{msg}"
+      "invalidRegex": "無效的正則表達式：{msg}",
+      "presets": "常用模式",
+      "presetEmail": "電子郵件",
+      "presetUrl": "網址 (URL)",
+      "presetIpv4": "IPv4 位址",
+      "presetDate": "日期 (YYYY-MM-DD)",
+      "presetNumber": "數字",
+      "presetHexColor": "十六進位色碼",
+      "presetCjk": "中文字元"
     },
     "stopwatch": {
       "title": "碼錶",
@@ -695,7 +809,9 @@ export default {
       "lapNo": "分段",
       "lapTime": "分段時間",
       "split": "間隔",
-      "total": "總計"
+      "total": "總計",
+      "shortcutsHint": "鍵盤快速鍵：空白鍵 開始／暫停、L 計圈、R 重設",
+      "lapsTitle": "計圈（{count}）"
     },
     "text-diff": {
       "title": "文字比對 (Diff)",
@@ -706,7 +822,10 @@ export default {
       "wordMode": "逐字比對",
       "additions": "新增 {n}",
       "deletions": "刪除 {n}",
-      "noDiff": "兩段文字相同。"
+      "noDiff": "兩段文字相同。",
+      "ignoreCase": "忽略大小寫",
+      "ignoreWhitespace": "忽略空白",
+      "swapHint": "交換原始文字與變更後文字"
     },
     "text-sort": {
       "title": "文字排序 / 去重",
@@ -736,7 +855,10 @@ export default {
       "paragraphs": "段落數",
       "bytes": "UTF-8 位元組",
       "readingTime": "閱讀時間",
-      "minutes": "{n} 分鐘"
+      "minutes": "{n} 分鐘",
+      "emptyTitle": "尚無內容可統計",
+      "emptyHint": "在上方輸入或貼上文字，即可查看字元、單字、行數與最常出現的字詞。",
+      "topWords": "最常出現的字詞"
     },
     "timestamp": {
       "title": "時間戳轉換",
@@ -757,15 +879,14 @@ export default {
       "invalidDate": "無法解析日期",
       "seconds": "秒",
       "millis": "毫秒",
-      "ago": "前",
-      "fromNow": "後",
       "justNow": "剛剛",
       "second": "秒",
       "minute": "分鐘",
       "hour": "小時",
       "day": "天",
       "month": "個月",
-      "year": "年"
+      "year": "年",
+      "useNow": "使用現在時間"
     },
     "unit-convert": {
       "title": "單位換算",
@@ -795,7 +916,8 @@ export default {
       "scope": "範圍",
       "inputText": "輸入文字",
       "inputEncoded": "輸入編碼字串",
-      "decodeError": "無法解碼：包含無效的百分比編碼序列"
+      "decodeError": "無法解碼：包含無效的百分比編碼序列",
+      "swapHint": "將結果移到輸入欄並切換模式"
     },
     "user-agent": {
       "title": "User-Agent 解析",
@@ -805,12 +927,9 @@ export default {
       "field": "項目",
       "value": "數值",
       "browser": "瀏覽器",
-      "version": "版本",
       "engine": "引擎",
       "os": "作業系統",
       "device": "裝置",
-      "vendor": "廠商",
-      "model": "型號",
       "type": "類型",
       "cpu": "CPU 架構",
       "unknown": "未知"
@@ -824,8 +943,7 @@ export default {
       "uppercase": "大寫",
       "removeHyphens": "移除連字號",
       "nanoidSize": "NanoID 長度",
-      "regenerate": "重新產生",
-      "copyAll": "全部複製"
+      "regenerate": "重新產生"
     },
     "bubble-wrap": {
       "title": "泡泡紙",
@@ -833,7 +951,10 @@ export default {
       "popped": "已戳爆",
       "total": "全部",
       "reset": "重置泡泡紙",
-      "popAll": "全部戳爆"
+      "popAll": "全部戳爆",
+      "bubble": "泡泡 {n}",
+      "mute": "靜音",
+      "unmute": "取消靜音"
     },
     "jiaobei": {
       "title": "擲筊",
@@ -858,16 +979,18 @@ export default {
       "burned": "已燒",
       "sheets": "張",
       "sound": "聲音",
-      "mute": "靜音"
+      "mute": "靜音",
+      "hint": "點擊或長按即可燒金紙"
     },
     "satisfying-switch": {
       "title": "滿足開關",
       "description": "按下每一個開關，享受喀嚓的滿足感！",
-      "onCount": "{on} / {total} 開啟",
-      "allOn": "全開",
-      "allOff": "全關",
-      "random": "隨機",
-      "labels": ["燈光","冷氣","電視","音響","風扇","洗碗機","洗衣機","烘乾機","微波爐","烤箱","冰箱","熱水器","咖啡機","吸塵器","掃地機","除濕機","空氣清淨機","監視器","路由器","電腦","印表機","投影機","音樂","夜燈"]
+      "toggleSwitch": "切換開關",
+      "toggleCount": "切換次數：{n}",
+      "on": "ON",
+      "off": "OFF",
+      "mute": "靜音",
+      "unmute": "取消靜音"
     },
     "wooden-fish": {
       "title": "木魚",
@@ -875,7 +998,10 @@ export default {
       "merit": "功德",
       "session": "本次",
       "total": "累計",
-      "reset": "重置累計"
+      "reset": "重置累計",
+      "mute": "靜音",
+      "unmute": "取消靜音",
+      "confirmReset": "確定要將累計功德歸零嗎？此操作無法復原。"
     },
     "lottery": {
       "title": "抽獎工具",
@@ -911,8 +1037,7 @@ export default {
       "allDrawn": "所有獎項已抽完！",
       "drawAll": "全部抽完",
       "exportMasked": "匯出（打碼）",
-      "exportPlain": "匯出（明文）",
-      "poolEmpty": "名單人數不足"
+      "exportPlain": "匯出（明文）"
     },
     "spin-wheel": {
       "title": "轉盤",
@@ -926,9 +1051,12 @@ export default {
       "weightDistribution": "權重分布",
       "spin": "旋轉！",
       "spinning": "旋轉中…",
-      "result": "結果",
       "winner": "結果",
-      "removeOption": "刪除"
+      "removeOption": "刪除",
+      "defaultLabel": "選項 {letter}",
+      "removeWinner": "從轉盤移除此結果",
+      "mute": "靜音",
+      "unmute": "取消靜音"
     },
     "whisper-transcribe": {
       "title": "Whisper 語音逐字稿",
@@ -990,6 +1118,29 @@ export default {
     "analytics": {
       "title": "使用分析",
       "description": "允許傳送匿名使用資料（透過 Google Analytics），幫助我們了解哪些工具最受歡迎。不包含任何個人識別資訊。"
-    }
+    },
+    "appearance": "外觀",
+    "theme": "主題",
+    "themeSystem": "跟隨系統",
+    "themeLight": "淺色",
+    "themeDark": "深色",
+    "language": "語言",
+    "privacy": "隱私",
+    "data": "本機資料",
+    "dataDescription": "歷史紀錄、最愛、最近使用與各工具記住的選項都只存在這台裝置的瀏覽器裡，不會上傳。",
+    "historyCount": "{count} 筆歷史紀錄",
+    "favoritesCount": "{count} 個最愛",
+    "recentsCount": "{count} 個最近使用",
+    "manageHistory": "管理歷史紀錄",
+    "clearAll": "清除所有本機資料",
+    "clearAllConfirm": "確定要清除所有本機資料嗎？歷史紀錄、最愛、最近使用與工具選項都會被刪除，此動作無法復原。",
+    "cleared": "已清除本機資料",
+    "shortcuts": "快速鍵",
+    "shortcutSearch": "開啟工具搜尋"
+  },
+  "palette": {
+    "placeholder": "輸入工具名稱或關鍵字…",
+    "results": "搜尋結果",
+    "hint": "↑↓ 選擇 · Enter 開啟 · Esc 關閉 · 任何頁面按 ⌘K / Ctrl+K 或 / 都能叫出"
   }
 }

@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ToolShell from '@/components/ToolShell.vue'
+import { useAudioContext } from '@/composables/useAudioContext'
+import { isBoolean, useStoredRef } from '@/composables/useStoredRef'
 
 const { t } = useI18n()
+const audio = useAudioContext()
 
+// The "pop all" loop keeps awaiting after navigation; stop it on unmount.
 let unmounted = false
 onUnmounted(() => {
   unmounted = true
-  audioCtx?.close().catch(() => {})
-  audioCtx = null
 })
 
 // ---- config ----
@@ -21,23 +24,12 @@ const bubbleSizes = Array.from({ length: TOTAL }, () => 30 + Math.floor(Math.ran
 
 // ---- state ----
 const bubbles = ref<boolean[]>(Array(TOTAL).fill(false))
+const muted = useStoredRef('bubble-wrap.muted', false, isBoolean)
 
 const poppedCount = computed(() => bubbles.value.filter(Boolean).length)
 const allPopped = computed(() => poppedCount.value === TOTAL)
 
 // ---- audio ----
-let audioCtx: AudioContext | null = null
-
-function getAudioCtx(): AudioContext {
-  if (!audioCtx) {
-    const Ctor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    audioCtx = new Ctor()
-  }
-  return audioCtx
-}
-
 function playPop(ctx: AudioContext, size: number) {
   // Larger bubbles = deeper, longer pop
   const freq = 1400 - size * 16
@@ -62,15 +54,15 @@ function playPop(ctx: AudioContext, size: number) {
   src.start()
 }
 
+function pop(index: number) {
+  bubbles.value[index] = true
+  if (!muted.value) audio.play((ctx) => playPop(ctx, bubbleSizes[index]))
+}
+
 // ---- pop a single bubble ----
 function popBubble(index: number) {
   if (bubbles.value[index]) return
-  bubbles.value[index] = true
-  try {
-    playPop(getAudioCtx(), bubbleSizes[index])
-  } catch {
-    /* audio unavailable */
-  }
+  pop(index)
 }
 
 // ---- pop all in random order ----
@@ -80,7 +72,6 @@ async function popAll() {
   if (poppingAll.value) return
   poppingAll.value = true
   try {
-    const ctx = getAudioCtx()
     // Fisher-Yates shuffle of un-popped indices
     const indices = Array.from({ length: TOTAL }, (_, i) => i).filter((i) => !bubbles.value[i])
     for (let i = indices.length - 1; i > 0; i--) {
@@ -89,12 +80,7 @@ async function popAll() {
     }
     for (const i of indices) {
       if (unmounted) break
-      bubbles.value[i] = true
-      try {
-        playPop(ctx, bubbleSizes[i])
-      } catch {
-        /* audio unavailable */
-      }
+      pop(i)
       await new Promise<void>((r) => setTimeout(r, 28))
     }
   } finally {
@@ -109,15 +95,26 @@ function reset() {
 </script>
 
 <template>
-  <v-container class="pa-4" style="max-width: 860px">
+  <ToolShell :max-width="900">
+    <template #actions>
+      <v-btn
+        :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
+        variant="text"
+        :title="muted ? t('tools.bubble-wrap.unmute') : t('tools.bubble-wrap.mute')"
+        :aria-label="muted ? t('tools.bubble-wrap.unmute') : t('tools.bubble-wrap.mute')"
+        :aria-pressed="muted"
+        @click="muted = !muted"
+      />
+    </template>
+
     <!-- counter row -->
-    <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-4">
-      <div class="text-body-1">
+    <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-4">
+      <div class="text-body-1 tabular-nums">
         <span class="font-weight-bold text-primary">{{ poppedCount }}</span>
         <span class="text-medium-emphasis"> / {{ TOTAL }} {{ t('tools.bubble-wrap.total') }}</span>
         <v-chip v-if="allPopped" color="success" size="small" class="ml-2" variant="flat">🎉</v-chip>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex ga-2">
         <v-btn
           size="small"
           variant="tonal"
@@ -147,14 +144,14 @@ function reset() {
             class="bubble"
             :class="{ 'bubble--popped': popped }"
             :style="{ width: bubbleSizes[i] + 'px', height: bubbleSizes[i] + 'px' }"
-            :aria-label="popped ? t('tools.bubble-wrap.popped') : 'bubble ' + (i + 1)"
+            :aria-label="popped ? t('tools.bubble-wrap.popped') : t('tools.bubble-wrap.bubble', { n: i + 1 })"
             :aria-pressed="popped"
             @click="popBubble(i)"
           />
         </div>
       </div>
     </div>
-  </v-container>
+  </ToolShell>
 </template>
 
 <style scoped>
@@ -192,6 +189,12 @@ function reset() {
     2px 2px 6px rgba(0, 0, 0, 0.15);
   transition: transform 0.08s ease;
   -webkit-tap-highlight-color: transparent;
+}
+
+.bubble:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(var(--v-theme-primary), 0.5),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .bubble:hover:not(.bubble--popped) {

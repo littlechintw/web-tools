@@ -37,5 +37,10 @@ export const useFavoritesStore = defineStore('favorites', () => {
     persist()
   }
 
-  return { ids, isFavorite, toggle }
+  function clear() {
+    ids.value = []
+    persist()
+  }
+
+  return { ids, isFavorite, toggle, clear }
 })

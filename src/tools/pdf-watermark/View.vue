@@ -4,24 +4,33 @@ import { useI18n } from 'vue-i18n'
 import { PDFDocument, StandardFonts, degrees, rgb, type PDFPage } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { downloadBlob } from '@/utils/download'
+import { stripExtension } from '@/utils/format'
 
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.pdf-watermark.${key}`, args ?? {})
 
-type Layout = 'tile' | 'center'
+const LAYOUTS = ['tile', 'center'] as const
+type Layout = (typeof LAYOUTS)[number]
+
+const isHexColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)
 
 const pdfBytes = ref<Uint8Array | null>(null)
 const fileName = ref('')
 const pageCount = ref(0)
 
+// The text is data and is never persisted; the look is remembered.
 const text = ref('CONFIDENTIAL')
-const fontSize = ref(48)
-const color = ref('#ff0000')
-const opacity = ref(0.3)
-const rotation = ref(45)
-const layout = ref<Layout>('tile')
+const fontSize = useStoredRef('pdf-watermark.fontSize', 48, (v): v is number => isNumber(v) && v >= 1)
+const color = useStoredRef('pdf-watermark.color', '#ff0000', isHexColor)
+const opacity = useStoredRef('pdf-watermark.opacity', 0.3, (v): v is number => isNumber(v) && v >= 0 && v <= 1)
+const rotation = useStoredRef('pdf-watermark.rotation', 45, (v): v is number => isNumber(v) && v >= -180 && v <= 180)
+const layout = useStoredRef<Layout>('pdf-watermark.layout', 'tile', oneOf(LAYOUTS))
 
 const busy = ref(false)
 const error = ref('')
+const success = ref('')
 
 /** Convert a #rrggbb string to pdf-lib rgb (0-1 components). */
 function hexToRgb(hex: string) {
@@ -59,18 +68,20 @@ function textToPng(txt: string, sizePt: number, colorHex: string) {
 
 async function onFiles(files: File[]) {
   const file = files[0]
-  if (!file || file.type !== 'application/pdf') {
-    error.value = 'Not a PDF file'
+  if (!file) return
+  if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+    error.value = T('notPdf')
     return
   }
   error.value = ''
-  fileName.value = file.name.replace(/\.pdf$/i, '')
+  success.value = ''
+  fileName.value = stripExtension(file.name)
   pdfBytes.value = new Uint8Array(await file.arrayBuffer())
   try {
     const doc = await PDFDocument.load(pdfBytes.value.slice())
     pageCount.value = doc.getPageCount()
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = T('loadError', { msg: (e as Error).message })
     pdfBytes.value = null
   }
 }
@@ -79,6 +90,7 @@ async function apply() {
   if (!pdfBytes.value || !text.value) return
   busy.value = true
   error.value = ''
+  success.value = ''
   try {
     const doc = await PDFDocument.load(pdfBytes.value.slice())
     const font = await doc.embedFont(StandardFonts.Helvetica)
@@ -146,13 +158,9 @@ async function apply() {
     }
 
     const bytes = await doc.save()
-    const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${fileName.value || 'watermarked'}-watermarked.pdf`
-    a.click()
-    URL.revokeObjectURL(url)
+    const name = `${fileName.value || 'watermarked'}-watermarked.pdf`
+    downloadBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), name)
+    success.value = T('applied', { name })
   } catch (e) {
     error.value = (e as Error).message
   } finally {
@@ -163,10 +171,13 @@ async function apply() {
 
 <template>
   <ToolShell>
-    <FileDrop accept="application/pdf" :hint="t('tools.pdf-watermark.dropHint')" @files="onFiles" />
+    <FileDrop accept="application/pdf,.pdf" :hint="t('tools.pdf-watermark.dropHint')" @files="onFiles" />
 
     <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-4">
       {{ error }}
+    </v-alert>
+    <v-alert v-if="success" type="success" variant="tonal" density="compact" class="mt-4">
+      {{ success }}
     </v-alert>
 
     <p v-if="!pdfBytes" class="text-medium-emphasis text-body-2 mt-4">
@@ -186,7 +197,7 @@ async function apply() {
         hide-details
       />
 
-      <v-row class="mt-2" dense>
+      <v-row class="mt-2" density="comfortable">
         <v-col cols="12" sm="6">
           <v-text-field
             v-model.number="fontSize"
@@ -227,8 +238,7 @@ async function apply() {
           {{ t('tools.pdf-watermark.layout') }}
         </label>
         <v-btn-toggle v-model="layout" mandatory color="primary" density="comfortable" variant="outlined">
-          <v-btn value="tile">{{ t('tools.pdf-watermark.tile') }}</v-btn>
-          <v-btn value="center">{{ t('tools.pdf-watermark.center') }}</v-btn>
+          <v-btn v-for="l in LAYOUTS" :key="l" :value="l">{{ t(`tools.pdf-watermark.${l}`) }}</v-btn>
         </v-btn-toggle>
       </div>
 

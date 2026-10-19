@@ -1,26 +1,37 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
-import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
+import OutputPanel from '@/components/OutputPanel.vue'
 import { useHistory } from '@/composables/useHistory'
+import { oneOf, useStoredRef } from '@/composables/useStoredRef'
 
 const TOOL_ID = 'json-format'
 const { t } = useI18n()
-const route = useRoute()
-const history = useHistory<{ input: string; indent: IndentKey }>(TOOL_ID)
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.${TOOL_ID}.${key}`, args ?? {})
 
 type IndentKey = '2' | '4' | 'tab'
+const history = useHistory<{ input: string; indent: IndentKey }>(TOOL_ID)
+
 const input = ref('')
-const indent = ref<IndentKey>('2')
+const indent = useStoredRef<IndentKey>('json-format.indent', '2', oneOf(['2', '4', 'tab']))
 const output = ref('')
 const error = ref('')
+/** "Line x, column y" of the parse error, when the engine's message says where it happened. */
+const errorPos = ref('')
 const valid = ref(false)
 
+// Minify / Sort keys produce a result that auto-format must not overwrite
+// until the input itself changes again.
+type Manual = 'minify' | 'sort' | null
+let manual: Manual = null
+
+const AUTO_FORMAT_DELAY = 250
+let timer: ReturnType<typeof setTimeout> | undefined
+
 function indentStr(): string | number {
-  if (indent.value === 'tab') return '\t'
-  return Number(indent.value)
+  return indent.value === 'tab' ? '\t' : Number(indent.value)
 }
 
 function sortRecursive(value: unknown): unknown {
@@ -34,50 +45,63 @@ function sortRecursive(value: unknown): unknown {
   return value
 }
 
-function parse(): unknown | undefined {
+function locateError(message: string, text: string): string {
+  // Firefox and recent V8 spell out the line/column; older V8 only gives an offset.
+  const lc = /line (\d+),? column (\d+)/i.exec(message)
+  if (lc) return T('errorAt', { line: Number(lc[1]), column: Number(lc[2]) })
+  const pos = /position (\d+)/i.exec(message)
+  if (!pos) return ''
+  const lines = text.slice(0, Number(pos[1])).split('\n')
+  return T('errorAt', { line: lines.length, column: lines[lines.length - 1].length + 1 })
+}
+
+function parse(): { ok: true; data: unknown } | { ok: false } {
   error.value = ''
+  errorPos.value = ''
   valid.value = false
   if (!input.value.trim()) {
     output.value = ''
-    return undefined
+    return { ok: false }
   }
   try {
-    const data = JSON.parse(input.value)
+    const data: unknown = JSON.parse(input.value)
     valid.value = true
-    return data
+    return { ok: true, data }
   } catch (e) {
-    error.value = t('tools.json-format.parseError', { msg: (e as Error).message })
-    return undefined
+    const msg = (e as Error).message
+    error.value = T('parseError', { msg })
+    errorPos.value = locateError(msg, input.value)
+    return { ok: false }
   }
 }
 
 function format() {
-  const data = parse()
-  if (data === undefined && !valid.value) return
-  output.value = JSON.stringify(data, null, indentStr())
+  manual = null
+  const r = parse()
+  if (r.ok) output.value = JSON.stringify(r.data, null, indentStr())
 }
 
 function minify() {
-  const data = parse()
-  if (data === undefined && !valid.value) return
-  output.value = JSON.stringify(data)
+  const r = parse()
+  if (!r.ok) return
+  manual = 'minify'
+  output.value = JSON.stringify(r.data)
 }
 
 function sortKeys() {
-  const data = parse()
-  if (data === undefined && !valid.value) return
-  output.value = JSON.stringify(sortRecursive(data), null, indentStr())
+  const r = parse()
+  if (!r.ok) return
+  manual = 'sort'
+  output.value = JSON.stringify(sortRecursive(r.data), null, indentStr())
 }
 
-function download() {
-  if (!output.value) return
-  const blob = new Blob([output.value], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'data.json'
-  a.click()
-  URL.revokeObjectURL(url)
+function scheduleAutoFormat() {
+  clearTimeout(timer)
+  timer = setTimeout(format, AUTO_FORMAT_DELAY)
+}
+
+function loadExample() {
+  input.value = '{"name":"Widget","tags":["red","small"],"price":9.99,"stock":{"warehouse":12,"retail":3},"active":true}'
 }
 
 function save() {
@@ -85,22 +109,23 @@ function save() {
   history.save(input.value.slice(0, 40), { input: input.value, indent: indent.value })
 }
 
-// live validation only (no output mutation)
 watch(input, () => {
-  parse()
+  manual = null
+  scheduleAutoFormat()
+  save()
 })
 
-watch(input, () => save())
+watch(indent, () => {
+  if (manual === 'minify') return // no whitespace to re-indent
+  if (manual === 'sort') sortKeys()
+  else format()
+})
 
-onMounted(() => {
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) {
-      input.value = e.data.input
-      indent.value = e.data.indent
-    }
-  }
+onBeforeUnmount(() => clearTimeout(timer))
+
+history.restoreFromRoute((d) => {
+  input.value = d.input
+  indent.value = d.indent
 })
 </script>
 
@@ -108,69 +133,47 @@ onMounted(() => {
   <ToolShell>
     <v-textarea
       v-model="input"
-      :label="t('tools.json-format.inputJson')"
+      :label="T('inputJson')"
+      :error="!!error"
       rows="8"
       auto-grow
       clearable
+      hide-details
       class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="input = $event" />
+      <v-btn variant="text" prepend-icon="mdi-lightbulb-outline" @click="loadExample">
+        {{ t('common.loadExample') }}
+      </v-btn>
+    </div>
 
-    <div class="d-flex flex-wrap align-center ga-3 mt-2">
+    <div class="d-flex flex-wrap align-center ga-3 mt-3">
       <v-select
         v-model="indent"
-        :label="t('tools.json-format.indent')"
+        :label="T('indent')"
         :items="[
-          { title: t('tools.json-format.indent2'), value: '2' },
-          { title: t('tools.json-format.indent4'), value: '4' },
-          { title: t('tools.json-format.indentTab'), value: 'tab' },
+          { title: T('indent2'), value: '2' },
+          { title: T('indent4'), value: '4' },
+          { title: T('indentTab'), value: 'tab' },
         ]"
         density="compact"
         hide-details
         style="max-width: 160px"
       />
-      <v-btn color="primary" variant="flat" @click="format">{{ t('tools.json-format.format') }}</v-btn>
-      <v-btn color="primary" variant="tonal" @click="minify">{{ t('tools.json-format.minify') }}</v-btn>
-      <v-btn color="primary" variant="tonal" @click="sortKeys">{{ t('tools.json-format.sortKeys') }}</v-btn>
+      <v-btn color="primary" variant="flat" :disabled="!input.trim()" @click="format">{{ T('format') }}</v-btn>
+      <v-btn color="primary" variant="tonal" :disabled="!input.trim()" @click="minify">{{ T('minify') }}</v-btn>
+      <v-btn color="primary" variant="tonal" :disabled="!input.trim()" @click="sortKeys">{{ T('sortKeys') }}</v-btn>
+      <v-chip v-if="valid" color="success" variant="tonal" size="small" prepend-icon="mdi-check-circle-outline">
+        {{ T('valid') }}
+      </v-chip>
     </div>
 
-    <v-alert
-      v-if="error"
-      type="error"
-      variant="tonal"
-      density="compact"
-      class="mt-3"
-      :text="error"
-    />
-    <v-alert
-      v-else-if="valid"
-      type="success"
-      variant="tonal"
-      density="compact"
-      class="mt-3"
-      :text="t('tools.json-format.valid')"
-    />
+    <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-3">
+      <div>{{ error }}</div>
+      <div v-if="errorPos" class="text-caption mt-1">{{ errorPos }}</div>
+    </v-alert>
 
-    <v-textarea
-      :model-value="output"
-      :label="t('common.output')"
-      rows="8"
-      auto-grow
-      readonly
-      class="code-area mt-3"
-    />
-
-    <div class="d-flex ga-2 mt-2">
-      <CopyBtn :text="output" />
-      <v-btn variant="tonal" prepend-icon="mdi-download" :disabled="!output" @click="download">
-        {{ t('tools.json-format.download') }}
-      </v-btn>
-    </div>
+    <OutputPanel class="mt-4" :value="output" :rows="8" filename="data.json" mime="application/json;charset=utf-8" />
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-</style>

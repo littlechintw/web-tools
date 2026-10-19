@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { useAudioContext } from '@/composables/useAudioContext'
+import { isBoolean, useStoredRef } from '@/composables/useStoredRef'
 
 const { t } = useI18n()
+const audio = useAudioContext()
 
 // ── Merit state ──────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'app.wooden-fish.merit'
 
 const sessionMerit = ref(0)
 const totalMerit = ref(loadTotalMerit())
+const muted = useStoredRef('wooden-fish.muted', false, isBoolean)
+const confirmReset = ref(false)
 
 function loadTotalMerit(): number {
   try {
@@ -17,6 +22,14 @@ function loadTotalMerit(): number {
     return Number.isFinite(n) ? n : 0
   } catch {
     return 0
+  }
+}
+
+function saveTotalMerit() {
+  try {
+    localStorage.setItem(STORAGE_KEY, String(totalMerit.value))
+  } catch {
+    // Storage blocked: the total simply isn't remembered.
   }
 }
 
@@ -47,68 +60,68 @@ function strike() {
   }, 150)
 }
 
-// ── Web Audio API (lazy init) ────────────────────────────────────────────────
-let audioCtx: AudioContext | null = null
-
-function playKnock() {
-  try {
-    const Ctor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    if (!audioCtx) audioCtx = new Ctor()
-    const ctx = audioCtx
-
-    const times = [0, 0.004]
-    for (const dt of times) {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(dt === 0 ? 600 : 900, ctx.currentTime + dt)
-      osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + dt + 0.3)
-      gain.gain.setValueAtTime(0.4, ctx.currentTime + dt)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dt + 0.35)
-      osc.start(ctx.currentTime + dt)
-      osc.stop(ctx.currentTime + dt + 0.4)
-    }
-  } catch {
-    /* audio not available */
+// ── Web Audio ────────────────────────────────────────────────────────────────
+function playKnock(ctx: AudioContext) {
+  const times = [0, 0.004]
+  for (const dt of times) {
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(dt === 0 ? 600 : 900, ctx.currentTime + dt)
+    osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + dt + 0.3)
+    gain.gain.setValueAtTime(0.4, ctx.currentTime + dt)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dt + 0.35)
+    osc.start(ctx.currentTime + dt)
+    osc.stop(ctx.currentTime + dt + 0.4)
   }
 }
 
 // ── Click handler ────────────────────────────────────────────────────────────
-function onFishClick(event: MouseEvent) {
+function onFishClick(event: MouseEvent | KeyboardEvent) {
   sessionMerit.value++
   totalMerit.value++
-  localStorage.setItem(STORAGE_KEY, String(totalMerit.value))
+  saveTotalMerit()
 
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
   // Spawn the +1 near the click position, relative to the fish center
-  const xOffset = event.clientX - rect.left - rect.width / 2
+  // (keyboard activation lands it in the middle).
+  let xOffset = 0
+  if (event instanceof MouseEvent) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    xOffset = event.clientX - rect.left - rect.width / 2
+  }
   spawnParticle(xOffset)
 
   strike()
-  playKnock()
+  if (!muted.value) audio.play(playKnock)
 }
 
 function resetMerit() {
   totalMerit.value = 0
   sessionMerit.value = 0
-  localStorage.removeItem(STORAGE_KEY)
-}
-
-onUnmounted(() => {
-  if (audioCtx) {
-    audioCtx.close().catch(() => {})
-    audioCtx = null
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // ignore
   }
-})
+  confirmReset.value = false
+}
 </script>
 
 <template>
   <ToolShell>
+    <template #actions>
+      <v-btn
+        :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
+        variant="text"
+        :title="muted ? t('tools.wooden-fish.unmute') : t('tools.wooden-fish.mute')"
+        :aria-label="muted ? t('tools.wooden-fish.unmute') : t('tools.wooden-fish.mute')"
+        :aria-pressed="muted"
+        @click="muted = !muted"
+      />
+    </template>
+
     <div class="wooden-fish-wrap">
       <!-- Fish -->
       <div class="fish-stage">
@@ -119,8 +132,8 @@ onUnmounted(() => {
           tabindex="0"
           :aria-label="t('tools.wooden-fish.merit')"
           @click="onFishClick"
-          @keydown.enter="onFishClick($event as unknown as MouseEvent)"
-          @keydown.space.prevent="onFishClick($event as unknown as MouseEvent)"
+          @keydown.enter="onFishClick"
+          @keydown.space.prevent="onFishClick"
         >
           <div class="eye" />
         </div>
@@ -131,13 +144,14 @@ onUnmounted(() => {
           :key="p.id"
           class="particle"
           :style="{ '--x': `${p.x}px` }"
+          aria-hidden="true"
         >
           +1
         </div>
       </div>
 
       <!-- Merit counters -->
-      <div class="merit-counters mt-6">
+      <div class="merit-counters mt-6 tabular-nums">
         <v-chip color="primary" variant="tonal" size="large" class="mr-3">
           {{ t('tools.wooden-fish.session') }}：{{ sessionMerit.toLocaleString() }}
         </v-chip>
@@ -148,11 +162,29 @@ onUnmounted(() => {
 
       <!-- Reset -->
       <div class="mt-4">
-        <v-btn variant="outlined" size="small" color="error" @click="resetMerit">
+        <v-btn
+          variant="outlined"
+          size="small"
+          color="error"
+          :disabled="totalMerit === 0 && sessionMerit === 0"
+          @click="confirmReset = true"
+        >
           {{ t('tools.wooden-fish.reset') }}
         </v-btn>
       </div>
     </div>
+
+    <v-dialog v-model="confirmReset" max-width="420">
+      <v-card>
+        <v-card-title>{{ t('tools.wooden-fish.reset') }}</v-card-title>
+        <v-card-text>{{ t('tools.wooden-fish.confirmReset') }}</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="confirmReset = false">{{ t('common.cancel') }}</v-btn>
+          <v-btn color="error" @click="resetMerit">{{ t('common.confirm') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </ToolShell>
 </template>
 

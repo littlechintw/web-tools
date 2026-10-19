@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 
-/** Copy text to clipboard with a transient "copied" flag for UI feedback. */
+/** Copy text to clipboard with a transient "copied" flag for UI feedback,
+ *  plus a guarded read for paste buttons. */
 export function useClipboard(resetMs = 1500) {
   const copied = ref(false)
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -30,5 +31,15 @@ export function useClipboard(resetMs = 1500) {
     }
   }
 
-  return { copied, copy }
+  /** Read clipboard text; null when unsupported or the user denied access. */
+  async function read(): Promise<string | null> {
+    try {
+      if (!navigator.clipboard?.readText) return null
+      return await navigator.clipboard.readText()
+    } catch {
+      return null
+    }
+  }
+
+  return { copied, copy, read, canRead: typeof navigator !== 'undefined' && !!navigator.clipboard?.readText }
 }

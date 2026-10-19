@@ -14,7 +14,9 @@ export default {
     "theme": "テーマ切り替え",
     "language": "言語",
     "github": "ソース",
-    "toggleNav": "サイドバー切り替え"
+    "toggleNav": "サイドバー切り替え",
+    "search": "ツールを検索",
+    "filterTools": "ツールを絞り込む…"
   },
   "home": {
     "searchPlaceholder": "ツールを検索…（名前・キーワード）",
@@ -23,7 +25,9 @@ export default {
     "toolCount": "{count} 個のツール",
     "favorites": "お気に入り",
     "addFavorite": "お気に入りに追加",
-    "removeFavorite": "お気に入りから削除"
+    "removeFavorite": "お気に入りから削除",
+    "recent": "最近使ったツール",
+    "clearRecent": "クリア"
   },
   "history": {
     "title": "履歴の管理",
@@ -71,7 +75,13 @@ export default {
     "selectFile": "ファイルを選択",
     "dropHere": "ここにファイルをドロップ、またはクリックして選択",
     "loading": "処理中…",
-    "reset": "リセット"
+    "reset": "リセット",
+    "pasteFailed": "クリップボードを読み取れません",
+    "fileTypeError": "対応していないファイル形式です：{names}",
+    "pasteHint": "Ctrl+V / ⌘V で直接貼り付けることもできます",
+    "charCount": "{n} 文字",
+    "noOutput": "結果はここに表示されます",
+    "loadExample": "サンプルを読み込む"
   },
   "notFound": {
     "title": "ページが見つかりません",
@@ -112,7 +122,10 @@ export default {
       "urlSafe": "URL-safe（+ / の代わりに - _）",
       "inputText": "テキストを入力",
       "inputBase64": "Base64 を入力",
-      "decodeError": "デコードできません：有効な Base64 文字列ではありません"
+      "decodeError": "デコードできません：有効な Base64 文字列ではありません",
+      "swapHint": "結果を入力欄に移してモードを切り替える",
+      "notText": "デコード結果はテキストではありません（{size}）。画像や圧縮ファイルの可能性があります。",
+      "downloadBinary": "ファイルとしてダウンロード"
     },
     "bcrypt": {
       "title": "Bcrypt ハッシュ / 検証",
@@ -128,12 +141,13 @@ export default {
       "verify": "検証",
       "match": "一致",
       "noMatch": "不一致",
-      "computing": "計算中…"
+      "roundsHint": "ラウンドが 1 増えるごとに計算時間は約 2 倍になります。通常は 10〜12 です。"
     },
     "case-convert": {
       "title": "大文字小文字 / 命名規則変換",
       "description": "テキストを複数の命名規則と大文字小文字の形式に一度に変換します。",
-      "inputText": "テキストを入力"
+      "inputText": "テキストを入力",
+      "emptyHint": "テキストを入力または貼り付けると、すべての命名スタイルで表示されます。"
     },
     "color-convert": {
       "title": "カラー変換",
@@ -143,7 +157,14 @@ export default {
       "picker": "カラーピッカー",
       "preview": "プレビュー",
       "tintsShades": "濃淡（明 → 暗）",
-      "clickToCopy": "クリックしてコピー"
+      "clickToCopy": "クリックしてコピー",
+      "contrast": "コントラスト比 (WCAG)",
+      "onWhite": "白背景",
+      "onBlack": "黒背景",
+      "levelAaa": "AAA",
+      "levelAa": "AA",
+      "levelAaLarge": "AA(大きい文字)",
+      "levelFail": "不適合"
     },
     "color-picker-image": {
       "title": "画像スポイト",
@@ -153,7 +174,9 @@ export default {
       "clickHint": "画像上でマウスを動かすとプレビュー、クリックで色を保存します。",
       "recent": "取得した色",
       "empty": "まだ色が取得されていません。画像をクリックして追加してください。",
-      "clear": "履歴をクリア"
+      "clear": "履歴をクリア",
+      "zoomFit": "幅に合わせる",
+      "zoomActual": "実寸"
     },
     "countdown": {
       "title": "カウントダウンタイマー",
@@ -173,11 +196,13 @@ export default {
       "pause": "一時停止",
       "resume": "再開",
       "reset": "リセット",
-      "finished": "カウントダウン終了"
+      "finished": "カウントダウン終了",
+      "quickPick": "クイック設定",
+      "minutesShort": "{n} 分"
     },
     "cron-parser": {
       "title": "Cron 式パーサー",
-      "description": "説明",
+      "description": "Cron 式を分かりやすい文章に変換し、次回の実行時刻を一覧表示します。よく使うスケジュールのプリセット付き。",
       "expression": "Cron 式",
       "nextRuns": "次回以降の実行時刻",
       "presets": "よく使うテンプレート",
@@ -187,7 +212,8 @@ export default {
       "weekly": "毎週",
       "monthly": "毎月",
       "englishFallback": "（日本語ロケールが見つからないため英語で表示）",
-      "errInvalid": "無効な Cron 式です。"
+      "errInvalid": "無効な Cron 式です。",
+      "humanReadable": "説明"
     },
     "date-calc": {
       "title": "日付計算機",
@@ -195,7 +221,6 @@ export default {
       "modeAdd": "加算 / 減算",
       "modeDiff": "間隔",
       "baseDate": "基準の日付と時刻",
-      "operation": "演算",
       "add": "加算",
       "subtract": "減算",
       "years": "年",
@@ -215,7 +240,8 @@ export default {
       "totalHours": "合計時間",
       "totalMinutes": "合計分",
       "humanized": "読みやすい形式",
-      "copyResult": "結果をコピー"
+      "now": "現在",
+      "resetAmounts": "入力値をリセット"
     },
     "hash": {
       "title": "ハッシュ生成",
@@ -224,8 +250,8 @@ export default {
       "file": "ファイル",
       "inputText": "テキストを入力",
       "uppercase": "大文字で出力",
-      "selectedFile": "選択したファイル",
-      "computing": "計算中…"
+      "computing": "計算中…",
+      "copyAll": "すべてコピー"
     },
     "hmac": {
       "title": "HMAC 生成",
@@ -235,7 +261,9 @@ export default {
       "algorithm": "アルゴリズム",
       "hex": "16 進数 (Hex)",
       "base64": "Base64",
-      "computing": "計算中…"
+      "computing": "計算中…",
+      "showSecret": "鍵を表示",
+      "hideSecret": "鍵を隠す"
     },
     "image-base64": {
       "title": "画像 ↔ Base64",
@@ -250,7 +278,8 @@ export default {
       "pasteHint": "data URI を貼り付け（data:image/...;base64,...）",
       "preview": "プレビュー",
       "download": "ダウンロード",
-      "errInvalid": "有効な画像 Data URI ではありません。"
+      "errInvalid": "有効な画像 Data URI ではありません。",
+      "dimensions": "サイズ"
     },
     "image-convert": {
       "title": "画像変換 / 圧縮",
@@ -268,7 +297,9 @@ export default {
       "fileSize": "ファイルサイズ",
       "download": "ダウンロード",
       "errLoad": "画像を読み込めませんでした。",
-      "errConvert": "変換に失敗しました。"
+      "errConvert": "変換に失敗しました。",
+      "smaller": "{percent}% 削減",
+      "larger": "{percent}% 増加"
     },
     "image-editor": {
       "title": "画像エディター",
@@ -316,7 +347,8 @@ export default {
       "quality": "JPEG 品質",
       "download": "ダウンロード",
       "dimensions": "サイズ",
-      "noImage": "画像が読み込まれていません。"
+      "noImage": "画像が読み込まれていません。",
+      "undoShortcut": "元に戻す（Ctrl/⌘ + Z）"
     },
     "image-editor-pro": {
       "title": "画像エディター（レイヤー / Fabric）",
@@ -366,7 +398,9 @@ export default {
       "fileSize": "ファイルサイズ",
       "dimensions": "サイズ",
       "download": "クリーンした画像をダウンロード",
-      "sizeDelta": "サイズの変化"
+      "sizeDelta": "サイズの変化",
+      "smaller": "{percent}% 削減",
+      "larger": "{percent}% 増加"
     },
     "image-to-pdf": {
       "title": "画像を PDF に変換",
@@ -387,7 +421,8 @@ export default {
       "generate": "PDF を生成",
       "generating": "生成中…",
       "download": "PDF をダウンロード",
-      "imageCount": "{count} 枚の画像"
+      "imageCount": "{count} 枚の画像",
+      "generated": "{count} ページ · {size}"
     },
     "ip-subnet": {
       "title": "IP サブネット計算機",
@@ -405,7 +440,8 @@ export default {
       "totalHosts": "総アドレス数",
       "usableHosts": "利用可能なホスト数",
       "ipClass": "IP クラス",
-      "errInvalid": "無効な IPv4 アドレスまたは CIDR プレフィックス（0–32）です。"
+      "errInvalid": "無効な IPv4 アドレスまたは CIDR プレフィックス（0–32）です。",
+      "copyAll": "すべてコピー"
     },
     "json-convert": {
       "title": "JSON / YAML / TOML / CSV 相互変換",
@@ -415,7 +451,8 @@ export default {
       "inputData": "入力データ",
       "parseError": "解析に失敗しました",
       "convertError": "変換に失敗しました",
-      "csvNote": "CSV にはオブジェクトの配列（ヘッダー行を含む）が必要です。"
+      "csvNote": "CSV にはオブジェクトの配列（ヘッダー行を含む）が必要です。",
+      "swapHint": "形式を入れ替えて結果を入力欄に移す"
     },
     "json-format": {
       "title": "JSON 整形 / 検証",
@@ -430,7 +467,7 @@ export default {
       "indentTab": "タブ",
       "valid": "JSON は有効です",
       "parseError": "解析エラー：{msg}",
-      "download": ".json をダウンロード"
+      "errorAt": "{line} 行目 {column} 列目"
     },
     "jwt-decode": {
       "title": "JWT デコーダー",
@@ -451,7 +488,12 @@ export default {
       "title": "Markdown プレビュー",
       "description": "Markdown をリアルタイムでレンダリングし、安全にサニタイズした HTML を出力します。",
       "inputMd": "Markdown を入力",
-      "preview": "プレビュー"
+      "preview": "プレビュー",
+      "copyHtml": "HTML をコピー",
+      "downloadMd": ".md をダウンロード",
+      "downloadHtml": ".html をダウンロード",
+      "layoutSplit": "エディターとプレビューを並べて表示",
+      "layoutPreview": "プレビューのみ"
     },
     "number-base": {
       "title": "基数変換",
@@ -469,14 +511,14 @@ export default {
       "count": "生成数",
       "regenerate": "再生成",
       "strength": "強度",
-      "entropy": "エントロピー",
       "bits": "ビット",
       "veryWeak": "非常に弱い",
       "weak": "弱い",
       "fair": "普通",
       "strong": "強い",
       "veryStrong": "非常に強い",
-      "noCharset": "少なくとも 1 種類の文字を選択してください"
+      "noCharset": "少なくとも 1 種類の文字を選択してください",
+      "allPasswords": "すべてのパスワード"
     },
     "pdf-merge": {
       "title": "PDF 結合",
@@ -494,14 +536,16 @@ export default {
       "merging": "結合中…",
       "loadError": "「{name}」を読み込めませんでした。有効な PDF でないか、暗号化されている可能性があります。",
       "mergeError": "結合に失敗しました。ファイルが有効か確認してください。",
-      "outputName": "merged.pdf"
+      "outputName": "merged.pdf",
+      "needTwo": "結合するには PDF を 2 つ以上追加してください。",
+      "totalSize": "合計サイズ：{size}",
+      "merged": "{count} 個のファイルを {name} に結合しました。"
     },
     "pdf-organize": {
       "title": "PDF ページ管理",
       "description": "PDF をアップロードし、ページの並べ替え・回転・削除を行って新しい PDF を出力します。すべてブラウザ内で処理されます。",
       "dropHint": "PDF ファイルをドラッグまたはクリックしてアップロード",
       "loading": "PDF を読み込み中…",
-      "rendering": "サムネイルを生成中…",
       "pageLabel": "{n} ページ目",
       "rotate": "90° 回転",
       "delete": "削除",
@@ -514,7 +558,9 @@ export default {
       "applying": "PDF を生成中…",
       "noPagesLeft": "少なくとも 1 ページは残す必要があります。",
       "loadError": "この PDF ファイルを読み込めませんでした。",
-      "applyError": "PDF の生成中にエラーが発生しました。"
+      "applyError": "PDF の生成中にエラーが発生しました。",
+      "keptCount": "{count} ページを保持",
+      "deletedCount": "{count} ページを削除"
     },
     "pdf-sign": {
       "title": "PDF 電子署名",
@@ -537,7 +583,8 @@ export default {
       "reset": "リセット",
       "loadError": "この PDF ファイルを読み込めませんでした。",
       "signatureError": "この署名画像を読み込めませんでした。",
-      "applyError": "PDF の生成中にエラーが発生しました。"
+      "applyError": "PDF の生成中にエラーが発生しました。",
+      "applied": "署名済み PDF を {name} として保存しました。"
     },
     "pdf-split": {
       "title": "PDF 分割 / ページ抽出",
@@ -561,10 +608,10 @@ export default {
       "rangeReversed": "開始ページは終了ページより大きくできません：「{part}」。",
       "everyInvalid": "0 より大きい整数を入力してください。",
       "processError": "処理に失敗しました。設定を確認してください。",
-      "outputRange": "extracted.pdf",
-      "outputPart": "part-{n}.pdf",
       "resultExtract": "{count} ページを抽出しました。",
-      "resultSplit": "{count} 個のファイルに分割し、ダウンロードを開始しました。"
+      "resultSplit": "{count} 個のファイルに分割し、ダウンロードを開始しました。",
+      "willExtract": "{count} ページを取り出します。",
+      "willSplit": "{count} 個のファイルに分割されます。"
     },
     "pdf-to-image": {
       "title": "PDF を画像に変換",
@@ -577,7 +624,12 @@ export default {
       "downloadPage": "このページをダウンロード",
       "downloadAll": "すべてダウンロード",
       "pageCount": "全 {count} ページ",
-      "noPdf": "PDF がまだ読み込まれていません"
+      "noPdf": "PDF がまだ読み込まれていません",
+      "format": "出力形式",
+      "jpegQuality": "JPEG 品質",
+      "renderingPage": "ページ {n} / {total} を描画中…",
+      "notPdf": "PDF ファイルを選択してください",
+      "renderError": "描画に失敗しました：{msg}"
     },
     "pdf-watermark": {
       "title": "PDF 透かし",
@@ -595,7 +647,60 @@ export default {
       "applying": "適用中…",
       "download": "PDF をダウンロード",
       "pageCount": "全 {count} ページ",
-      "noPdf": "PDF がまだ読み込まれていません"
+      "noPdf": "PDF がまだ読み込まれていません",
+      "applied": "透かし入り PDF を {name} として保存しました。",
+      "notPdf": "PDF ファイルを選択してください",
+      "loadError": "この PDF を読み込めませんでした：{msg}"
+    },
+    "pdf-compress": {
+      "title": "PDF 圧縮",
+      "description": "ブラウザ内で PDF を圧縮します。埋め込み画像の再圧縮・縮小、不要データの削除、目標ファイルサイズの指定に対応し、圧縮前後のサイズをすぐに確認できます。",
+      "dropHint": "PDF をここにドロップまたはクリックしてアップロード",
+      "noPdf": "PDF がまだ読み込まれていません",
+      "notPdf": "PDF ファイルを選択してください",
+      "loadFailed": "この PDF を読み込めません：{msg}",
+      "encrypted": "この PDF はパスワードで保護されています。開くためのパスワードを入力してください。",
+      "password": "パスワード",
+      "unlock": "解除",
+      "wrongPassword": "パスワードが違います。もう一度お試しください",
+      "encryptedNote": "この PDF はパスワードで保護されていました。圧縮後のファイルは暗号化されません。",
+      "pages": "{count} ページ",
+      "imageInfo": "画像 {count} 枚（{size}）を含み、うち {candidates} 枚（{candidateSize}）を再圧縮できます。",
+      "noImages": "この PDF には再圧縮できる画像がないため、通常モードでは構造の整理しかできません。大きく縮小したい場合は「ページを画像に変換」モードをお試しください。",
+      "mode": "圧縮方法",
+      "modePreset": "レベルを選ぶ",
+      "modeTarget": "目標サイズを指定",
+      "presetLight": "軽め",
+      "presetMedium": "標準",
+      "presetStrong": "強力",
+      "imageDetail": "画質 {quality}%・長辺 ≤ {edge}px",
+      "rasterDetail": "ページを画像化 {dpi} DPI・画質 {quality}%",
+      "rasterize": "ページを画像に変換（最大圧縮）",
+      "rasterizeHint": "各ページを JPEG にレンダリングして PDF を再構成します。圧縮率は最も高くなりますが、文字の選択や検索ができなくなり、ベクター図形もビットマップになります。",
+      "rasterFallback": "目標に届かない場合、ページの画像化を許可する",
+      "stripMeta": "メタデータとアプリ固有データを削除",
+      "stripMetaHint": "XMP メタデータ、ページサムネイル、Illustrator / Photoshop の編集データなどを削除します。表示内容には影響しません。",
+      "target": "目標サイズ",
+      "targetHint": "複数の設定を自動で試し、目標内で最も高画質な結果を探します。",
+      "invalidTarget": "有効な目標サイズを入力してください",
+      "estimateAll": "全レベルを試算",
+      "compress": "圧縮開始",
+      "compressing": "圧縮中…",
+      "progressImages": "画像を処理中 {done} / {total}",
+      "progressPages": "ページを描画中 {done} / {total}",
+      "progressSaving": "保存中…",
+      "progressAttempt": "{n} 回目の試行（{detail}）",
+      "resultTitle": "圧縮結果",
+      "reduced": "{percent}% 削減",
+      "increased": "{percent}% 増加",
+      "resultLarger": "圧縮後のサイズが小さくなりませんでした。この PDF はすでに十分に最適化されています。より強いレベルか「ページを画像に変換」モードをお試しください。",
+      "targetMet": "目標を達成（≤ {target}）",
+      "targetMissed": "{target} 以下にできませんでした。最小 {size} まで縮小できます。",
+      "targetMissedHint": "「ページの画像化を許可する」をオンにすると、さらに高い圧縮率が得られます。",
+      "usedSettings": "使用した設定：{detail}",
+      "stats": "画像 {images} 枚を再圧縮・不要オブジェクト {objects} 個を削除",
+      "download": "圧縮した PDF をダウンロード",
+      "about": "約 {size}"
     },
     "qr-scan": {
       "title": "QR Code / バーコードスキャナー",
@@ -636,7 +741,8 @@ export default {
       "bgColor": "背景色",
       "downloadPng": "PNG をダウンロード",
       "emptyHint": "QR Code を生成する内容を入力してください",
-      "encNone": "なし"
+      "encNone": "なし",
+      "downloadSvg": "SVG をダウンロード"
     },
     "regex-tester": {
       "title": "正規表現テスター",
@@ -651,7 +757,15 @@ export default {
       "groups": "キャプチャグループ",
       "group": "グループ {n}",
       "namedGroup": "グループ「{name}」",
-      "invalidRegex": "無効な正規表現：{msg}"
+      "invalidRegex": "無効な正規表現：{msg}",
+      "presets": "よく使うパターン",
+      "presetEmail": "メールアドレス",
+      "presetUrl": "URL",
+      "presetIpv4": "IPv4 アドレス",
+      "presetDate": "日付 (YYYY-MM-DD)",
+      "presetNumber": "数値",
+      "presetHexColor": "16 進数カラーコード",
+      "presetCjk": "漢字"
     },
     "stopwatch": {
       "title": "ストップウォッチ",
@@ -664,11 +778,16 @@ export default {
       "lapNo": "ラップ",
       "lapTime": "ラップタイム",
       "split": "スプリット",
-      "total": "合計"
+      "total": "合計",
+      "shortcutsHint": "キーボード：スペース = 開始／一時停止、L = ラップ、R = リセット",
+      "lapsTitle": "ラップ（{count}）"
     },
     "text-diff": {
       "title": "テキスト差分 (Diff)",
-      "description": "2 つのテキストを比較し、行単位または単語単位で差分を強調表示します。"
+      "description": "2 つのテキストを比較し、行単位または単語単位で差分を強調表示します。",
+      "ignoreCase": "大文字と小文字を区別しない",
+      "ignoreWhitespace": "空白を無視",
+      "swapHint": "原文と変更後のテキストを入れ替える"
     },
     "text-sort": {
       "title": "テキストの並べ替え / 重複削除",
@@ -698,7 +817,10 @@ export default {
       "paragraphs": "段落数",
       "bytes": "UTF-8 バイト数",
       "readingTime": "読了時間",
-      "minutes": "{n} 分"
+      "minutes": "{n} 分",
+      "emptyTitle": "まだ統計する内容がありません",
+      "emptyHint": "上にテキストを入力または貼り付けると、文字数・単語数・行数と頻出単語が表示されます。",
+      "topWords": "頻出単語"
     },
     "timestamp": {
       "title": "タイムスタンプ変換",
@@ -719,15 +841,14 @@ export default {
       "invalidDate": "日付を解析できません",
       "seconds": "秒",
       "millis": "ミリ秒",
-      "ago": "前",
-      "fromNow": "後",
       "justNow": "たった今",
       "second": "秒",
       "minute": "分",
       "hour": "時間",
       "day": "日",
       "month": "か月",
-      "year": "年"
+      "year": "年",
+      "useNow": "現在時刻を使用"
     },
     "unit-convert": {
       "title": "単位変換",
@@ -757,7 +878,8 @@ export default {
       "scope": "範囲",
       "inputText": "テキストを入力",
       "inputEncoded": "エンコード済み文字列を入力",
-      "decodeError": "デコードできません：無効なパーセントエンコードシーケンスが含まれています"
+      "decodeError": "デコードできません：無効なパーセントエンコードシーケンスが含まれています",
+      "swapHint": "結果を入力欄に移してモードを切り替える"
     },
     "user-agent": {
       "title": "User-Agent パーサー",
@@ -767,12 +889,9 @@ export default {
       "field": "項目",
       "value": "値",
       "browser": "ブラウザ",
-      "version": "バージョン",
       "engine": "エンジン",
       "os": "OS",
       "device": "デバイス",
-      "vendor": "ベンダー",
-      "model": "モデル",
       "type": "種類",
       "cpu": "CPU アーキテクチャ",
       "unknown": "不明"
@@ -786,8 +905,7 @@ export default {
       "uppercase": "大文字",
       "removeHyphens": "ハイフンを除去",
       "nanoidSize": "NanoID の長さ",
-      "regenerate": "再生成",
-      "copyAll": "すべてコピー"
+      "regenerate": "再生成"
     },
     "jiaobei": {
       "title": "杯筊",
@@ -807,11 +925,12 @@ export default {
     "satisfying-switch": {
       "title": "スイッチ壁",
       "description": "全てのスイッチをカチカチしよう！",
-      "onCount": "{on} / {total} オン",
-      "allOn": "全オン",
-      "allOff": "全オフ",
-      "random": "ランダム",
-      "labels": ["照明","エアコン","テレビ","オーディオ","扇風機","食洗機","洗濯機","乾燥機","電子レンジ","オーブン","冷蔵庫","給湯器","コーヒー","掃除機","ロボット掃除機","除湿機","空気清浄機","カメラ","ルーター","パソコン","プリンター","プロジェクター","音楽","常夜灯"]
+      "toggleSwitch": "スイッチを切り替える",
+      "toggleCount": "切り替え回数：{n}",
+      "on": "ON",
+      "off": "OFF",
+      "mute": "ミュート",
+      "unmute": "ミュート解除"
     },
     "joss-paper": {
       "title": "紙銭を焼く",
@@ -821,7 +940,8 @@ export default {
       "burned": "焼いた",
       "sheets": "枚",
       "sound": "音",
-      "mute": "ミュート"
+      "mute": "ミュート",
+      "hint": "タップまたは長押しで焼く"
     },
     "bubble-wrap": {
       "title": "プチプチ",
@@ -829,7 +949,10 @@ export default {
       "popped": "潰した",
       "total": "合計",
       "reset": "リセット",
-      "popAll": "全部潰す"
+      "popAll": "全部潰す",
+      "bubble": "プチプチ {n}",
+      "mute": "ミュート",
+      "unmute": "ミュート解除"
     },
     "wooden-fish": {
       "title": "木魚",
@@ -837,7 +960,10 @@ export default {
       "merit": "功徳",
       "session": "今回",
       "total": "累計",
-      "reset": "累計をリセット"
+      "reset": "累計をリセット",
+      "mute": "ミュート",
+      "unmute": "ミュート解除",
+      "confirmReset": "累計の功徳をゼロに戻しますか？この操作は元に戻せません。"
     },
     "lottery": {
       "title": "くじ引き",
@@ -873,8 +999,7 @@ export default {
       "allDrawn": "すべての賞品が抽選されました！",
       "drawAll": "全員抽選",
       "exportMasked": "エクスポート（マスク）",
-      "exportPlain": "エクスポート（そのまま）",
-      "poolEmpty": "参加者が足りません"
+      "exportPlain": "エクスポート（そのまま）"
     },
     "spin-wheel": {
       "title": "ルーレット",
@@ -888,9 +1013,12 @@ export default {
       "weightDistribution": "重み分布",
       "spin": "スピン！",
       "spinning": "スピン中…",
-      "result": "結果",
       "winner": "当選",
-      "removeOption": "削除"
+      "removeOption": "削除",
+      "defaultLabel": "選択肢 {letter}",
+      "removeWinner": "当選項目をルーレットから外す",
+      "mute": "ミュート",
+      "unmute": "ミュート解除"
     },
     "whisper-transcribe": {
       "title": "Whisper 文字起こし",
@@ -952,6 +1080,29 @@ export default {
     "analytics": {
       "title": "利用状況の分析",
       "description": "匿名の利用データを Google Analytics 経由で送信することを許可します。どのツールが人気かを把握するために使用します。個人を特定できる情報は収集しません。"
-    }
+    },
+    "appearance": "外観",
+    "theme": "テーマ",
+    "themeSystem": "システムに従う",
+    "themeLight": "ライト",
+    "themeDark": "ダーク",
+    "language": "言語",
+    "privacy": "プライバシー",
+    "data": "ローカルデータ",
+    "dataDescription": "履歴、お気に入り、最近使ったツール、各ツールの設定はこのブラウザにのみ保存され、送信されることはありません。",
+    "historyCount": "履歴 {count} 件",
+    "favoritesCount": "お気に入り {count} 件",
+    "recentsCount": "最近使ったツール {count} 件",
+    "manageHistory": "履歴を管理",
+    "clearAll": "すべてのローカルデータを削除",
+    "clearAllConfirm": "すべてのローカルデータを削除しますか？履歴、お気に入り、最近使ったツール、ツール設定が削除されます。この操作は元に戻せません。",
+    "cleared": "ローカルデータを削除しました",
+    "shortcuts": "キーボードショートカット",
+    "shortcutSearch": "ツール検索を開く"
+  },
+  "palette": {
+    "placeholder": "ツール名またはキーワードを入力…",
+    "results": "検索結果",
+    "hint": "↑↓ 選択 · Enter 開く · Esc 閉じる · どのページでも ⌘K / Ctrl+K または / で開けます"
   }
 }

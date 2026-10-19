@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import PasteBtn from '@/components/PasteBtn.vue'
 import { useHistory } from '@/composables/useHistory'
 
 const TOOL_ID = 'timestamp'
 const { t, locale } = useI18n()
-const route = useRoute()
 
 const history = useHistory<{ tsInput: string; dateInput: string }>(TOOL_ID)
 
@@ -113,6 +112,24 @@ const dateError = computed(() =>
   dateInput.value.trim() && !dateParsed.value ? t('tools.timestamp.invalidDate') : '',
 )
 
+// ---- "use now" ----
+/** Local-time ISO string without offset ("2026-10-19T12:34:56"); new Date() parses it as local time. */
+function toLocalIso(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  )
+}
+
+function useNowTs() {
+  tsInput.value = String(Math.floor(Date.now() / 1000))
+}
+
+function useNowDate() {
+  dateInput.value = toLocalIso(new Date())
+}
+
 function save() {
   if (!tsInput.value.trim() && !dateInput.value.trim()) return
   const label = tsInput.value.trim() || dateInput.value.trim()
@@ -123,17 +140,14 @@ watch([tsInput, dateInput], () => save())
 
 onMounted(() => {
   timer = setInterval(() => (now.value = Date.now()), 1000)
-  const h = route.query.h as string | undefined
-  if (h) {
-    const e = history.entries.value.find((x) => x.id === h)
-    if (e) {
-      tsInput.value = e.data.tsInput
-      dateInput.value = e.data.dateInput
-    }
-  }
 })
 
 onBeforeUnmount(() => clearInterval(timer))
+
+history.restoreFromRoute((d) => {
+  tsInput.value = d.tsInput
+  dateInput.value = d.dateInput
+})
 </script>
 
 <template>
@@ -142,14 +156,14 @@ onBeforeUnmount(() => clearInterval(timer))
       <v-card variant="tonal" class="pa-4 flex-grow-1 d-flex align-center justify-space-between ga-3">
         <div>
           <div class="text-caption text-medium-emphasis">{{ t('tools.timestamp.nowSeconds') }}</div>
-          <div class="text-h6 code-text">{{ nowSeconds }}</div>
+          <div class="text-h6 font-mono tabular-nums">{{ nowSeconds }}</div>
         </div>
         <CopyBtn :text="String(nowSeconds)" icon />
       </v-card>
       <v-card variant="tonal" class="pa-4 flex-grow-1 d-flex align-center justify-space-between ga-3">
         <div>
           <div class="text-caption text-medium-emphasis">{{ t('tools.timestamp.nowMillis') }}</div>
-          <div class="text-h6 code-text">{{ nowMillis }}</div>
+          <div class="text-h6 font-mono tabular-nums">{{ nowMillis }}</div>
         </div>
         <CopyBtn :text="String(nowMillis)" icon />
       </v-card>
@@ -165,13 +179,19 @@ onBeforeUnmount(() => clearInterval(timer))
       clearable
       class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2">
+      <PasteBtn @paste="tsInput = $event" />
+      <v-btn variant="text" prepend-icon="mdi-clock-outline" @click="useNowTs">
+        {{ t('tools.timestamp.useNow') }}
+      </v-btn>
+    </div>
     <v-list v-if="tsRows.length" bg-color="transparent">
       <v-list-item v-for="row in tsRows" :key="row.label" class="px-0">
         <template #title>
           <span class="text-caption text-medium-emphasis">{{ row.label }}</span>
         </template>
         <template #subtitle>
-          <span class="code-text text-body-1">{{ row.value }}</span>
+          <span class="font-mono break-all text-body-1">{{ row.value }}</span>
         </template>
         <template #append>
           <CopyBtn :text="row.value" icon />
@@ -188,15 +208,22 @@ onBeforeUnmount(() => clearInterval(timer))
       :error-messages="dateError"
       placeholder="2026-06-23 12:00:00"
       clearable
+      hide-details="auto"
       class="code-area"
     />
+    <div class="d-flex flex-wrap align-center ga-2 mt-2">
+      <PasteBtn @paste="dateInput = $event" />
+      <v-btn variant="text" prepend-icon="mdi-clock-outline" @click="useNowDate">
+        {{ t('tools.timestamp.useNow') }}
+      </v-btn>
+    </div>
     <v-list v-if="dateRows.length" bg-color="transparent">
       <v-list-item v-for="row in dateRows" :key="row.label" class="px-0">
         <template #title>
           <span class="text-caption text-medium-emphasis">{{ row.label }}</span>
         </template>
         <template #subtitle>
-          <span class="code-text text-body-1">{{ row.value }}</span>
+          <span class="font-mono break-all text-body-1">{{ row.value }}</span>
         </template>
         <template #append>
           <CopyBtn :text="row.value" icon />
@@ -205,13 +232,3 @@ onBeforeUnmount(() => clearInterval(timer))
     </v-list>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-area :deep(input) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.code-text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  word-break: break-all;
-}
-</style>

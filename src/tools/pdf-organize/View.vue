@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PDFDocument, degrees } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { downloadBlob } from '@/utils/download'
+import { stripExtension } from '@/utils/format'
 import { getDocument } from '@/utils/pdfjs'
 
 interface PageItem {
@@ -25,6 +27,9 @@ const pages = reactive<PageItem[]>([])
 const loading = ref(false)
 const applying = ref(false)
 const error = ref('')
+
+const keptCount = computed(() => pages.filter((p) => !p.deleted).length)
+const deletedCount = computed(() => pages.length - keptCount.value)
 
 function revokeThumbs() {
   for (const p of pages) {
@@ -121,13 +126,10 @@ async function apply() {
       out.addPage(page)
     })
     const bytes = await out.save()
-    const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = fileName.value.replace(/\.pdf$/i, '') + '-organized.pdf'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(
+      new Blob([bytes as BlobPart], { type: 'application/pdf' }),
+      `${stripExtension(fileName.value)}-organized.pdf`,
+    )
   } catch {
     error.value = t('tools.pdf-organize.applyError')
   } finally {
@@ -142,7 +144,8 @@ onBeforeUnmount(revokeThumbs)
   <ToolShell>
     <FileDrop
       v-if="pages.length === 0 && !loading"
-      accept="application/pdf"
+      accept="application/pdf,.pdf"
+      :show-selected="false"
       :hint="t('tools.pdf-organize.dropHint')"
       @files="onFiles"
     />
@@ -158,8 +161,16 @@ onBeforeUnmount(revokeThumbs)
 
     <template v-if="pages.length > 0">
       <div class="d-flex flex-wrap align-center ga-3 mb-4">
-        <span class="text-body-2 text-medium-emphasis">{{ fileName }}</span>
+        <span class="text-body-2 text-medium-emphasis text-truncate">{{ fileName }}</span>
         <v-spacer />
+        <div class="d-flex ga-1">
+          <v-chip size="small" variant="tonal" color="primary" label>
+            {{ t('tools.pdf-organize.keptCount', { count: keptCount }) }}
+          </v-chip>
+          <v-chip v-if="deletedCount" size="small" variant="tonal" color="error" label>
+            {{ t('tools.pdf-organize.deletedCount', { count: deletedCount }) }}
+          </v-chip>
+        </div>
         <v-btn variant="text" prepend-icon="mdi-refresh" @click="clearState">
           {{ t('tools.pdf-organize.reset') }}
         </v-btn>
@@ -168,6 +179,8 @@ onBeforeUnmount(revokeThumbs)
           variant="flat"
           prepend-icon="mdi-download"
           :loading="applying"
+          :disabled="keptCount === 0"
+          :title="keptCount === 0 ? t('tools.pdf-organize.noPagesLeft') : undefined"
           @click="apply"
         >
           {{ t('tools.pdf-organize.apply') }}

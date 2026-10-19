@@ -2,19 +2,20 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { useAudioContext } from '@/composables/useAudioContext'
+import { isNumber, useStoredRef } from '@/composables/useStoredRef'
 
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.countdown.${key}`, args ?? {})
 
 type Mode = 'target' | 'duration'
 const mode = ref<Mode>('target')
 
 // ---------- shared beep ----------
-let audioCtx: AudioContext | null = null
+const audio = useAudioContext()
+
 function beep() {
-  try {
-    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    if (!audioCtx) audioCtx = new Ctor()
-    const ctx = audioCtx
+  audio.play((ctx) => {
     // Three short beeps.
     for (let i = 0; i < 3; i++) {
       const osc = ctx.createOscillator()
@@ -30,15 +31,12 @@ function beep() {
       osc.start(startAt)
       osc.stop(startAt + 0.22)
     }
-  } catch {
-    /* audio not available */
-  }
+  })
 }
 
 // ---------- Mode A: target datetime ----------
 function defaultTarget(): string {
   const d = new Date(Date.now() + 60 * 60 * 1000)
-  const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
@@ -78,8 +76,11 @@ const targetReached = computed(() => {
 startTargetTimer()
 
 // ---------- Mode B: duration timer ----------
-const inputMinutes = ref(5)
-const inputSeconds = ref(0)
+const QUICK_MINUTES = [1, 3, 5, 10, 25]
+
+// The last duration is remembered between visits; nothing else is.
+const inputMinutes = useStoredRef('countdown.inputMinutes', 5, isNumber)
+const inputSeconds = useStoredRef('countdown.inputSeconds', 0, isNumber)
 const durationRemaining = ref(0) // ms
 const running = ref(false)
 const durationFinished = ref(false)
@@ -106,10 +107,12 @@ function tickDuration() {
     running.value = false
     durationFinished.value = true
     stopDurationTimer()
+    restoreTitle()
     beep()
     return
   }
   durationRemaining.value = left
+  showRemainingInTitle(left)
 }
 
 function startDuration() {
@@ -121,6 +124,7 @@ function startDuration() {
   deadline = Date.now() + base
   running.value = true
   stopDurationTimer()
+  showRemainingInTitle(base)
   durationTimer = setInterval(tickDuration, 200)
 }
 
@@ -129,6 +133,7 @@ function pauseDuration() {
   running.value = false
   stopDurationTimer()
   durationRemaining.value = Math.max(0, deadline - Date.now())
+  restoreTitle()
 }
 
 function resetDuration() {
@@ -136,9 +141,41 @@ function resetDuration() {
   running.value = false
   durationFinished.value = false
   durationRemaining.value = 0
+  restoreTitle()
 }
 
-const durationParts = computed(() => splitDHMS(durationRemaining.value))
+function pickMinutes(n: number) {
+  if (running.value) return
+  inputMinutes.value = n
+  inputSeconds.value = 0
+  resetDuration()
+}
+
+const isQuickPicked = (n: number) => Number(inputMinutes.value) === n && Number(inputSeconds.value) === 0
+
+// Before the timer starts (or after a reset) show the configured duration, so
+// the big display reflects what "Start" will count down from.
+const durationDisplayMs = computed(() =>
+  running.value || durationRemaining.value > 0 ? durationRemaining.value : totalDurationMs(),
+)
+const durationParts = computed(() => splitDHMS(durationDisplayMs.value))
+
+// ---------- document.title while a duration timer runs ----------
+// The app layout owns the title; remember what it set and put it back once
+// the timer stops, so a running countdown is visible from any other tab.
+let savedTitle: string | null = null
+
+function showRemainingInTitle(ms: number) {
+  if (savedTitle === null) savedTitle = document.title
+  document.title = `${fmtClock(ms)} · ${savedTitle}`
+}
+
+function restoreTitle() {
+  if (savedTitle !== null) {
+    document.title = savedTitle
+    savedTitle = null
+  }
+}
 
 // ---------- helpers ----------
 function splitDHMS(ms: number) {
@@ -153,14 +190,19 @@ function splitDHMS(ms: number) {
 function pad(n: number) {
   return String(n).padStart(2, '0')
 }
+/** "mm:ss", or "h:mm:ss" once there is at least an hour left. */
+function fmtClock(ms: number) {
+  const total = Math.ceil(ms / 1000)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+}
 
 onUnmounted(() => {
   stopTargetTimer()
   stopDurationTimer()
-  if (audioCtx) {
-    audioCtx.close().catch(() => {})
-    audioCtx = null
-  }
+  restoreTitle()
 })
 </script>
 
@@ -168,8 +210,8 @@ onUnmounted(() => {
   <ToolShell>
     <div class="mb-4">
       <v-btn-toggle v-model="mode" mandatory color="primary" density="comfortable" variant="outlined">
-        <v-btn value="target">{{ t('tools.countdown.modeTarget') }}</v-btn>
-        <v-btn value="duration">{{ t('tools.countdown.modeDuration') }}</v-btn>
+        <v-btn value="target">{{ T('modeTarget') }}</v-btn>
+        <v-btn value="duration">{{ T('modeDuration') }}</v-btn>
       </v-btn-toggle>
     </div>
 
@@ -178,7 +220,7 @@ onUnmounted(() => {
       <v-text-field
         v-model="target"
         type="datetime-local"
-        :label="t('tools.countdown.targetDateTime')"
+        :label="T('targetDateTime')"
         density="comfortable"
         @update:model-value="tickTarget"
       />
@@ -186,24 +228,24 @@ onUnmounted(() => {
       <v-card variant="tonal" :color="targetReached ? 'success' : 'primary'" class="mt-2">
         <v-card-text class="text-center py-6">
           <div v-if="targetReached" class="text-h4 font-weight-bold">
-            {{ t('tools.countdown.reached') }}
+            {{ T('reached') }}
           </div>
-          <div v-else class="d-flex justify-center ga-4 flex-wrap">
+          <div v-else class="d-flex justify-center ga-4 flex-wrap tabular-nums">
             <div class="text-center">
               <div class="text-h3 font-weight-bold">{{ targetParts.days }}</div>
-              <div class="text-caption">{{ t('tools.countdown.days') }}</div>
+              <div class="text-caption">{{ T('days') }}</div>
             </div>
             <div class="text-center">
               <div class="text-h3 font-weight-bold">{{ pad(targetParts.hours) }}</div>
-              <div class="text-caption">{{ t('tools.countdown.hours') }}</div>
+              <div class="text-caption">{{ T('hours') }}</div>
             </div>
             <div class="text-center">
               <div class="text-h3 font-weight-bold">{{ pad(targetParts.minutes) }}</div>
-              <div class="text-caption">{{ t('tools.countdown.minutes') }}</div>
+              <div class="text-caption">{{ T('minutes') }}</div>
             </div>
             <div class="text-center">
               <div class="text-h3 font-weight-bold">{{ pad(targetParts.seconds) }}</div>
-              <div class="text-caption">{{ t('tools.countdown.seconds') }}</div>
+              <div class="text-caption">{{ T('seconds') }}</div>
             </div>
           </div>
         </v-card-text>
@@ -212,13 +254,28 @@ onUnmounted(() => {
 
     <!-- Mode B: duration timer -->
     <template v-else>
-      <v-row dense>
+      <div class="d-flex flex-wrap align-center ga-2 mb-3">
+        <span class="text-caption text-medium-emphasis">{{ T('quickPick') }}</span>
+        <v-chip
+          v-for="n in QUICK_MINUTES"
+          :key="n"
+          size="small"
+          :color="isQuickPicked(n) ? 'primary' : undefined"
+          :variant="isQuickPicked(n) ? 'flat' : 'tonal'"
+          :disabled="running"
+          @click="pickMinutes(n)"
+        >
+          {{ T('minutesShort', { n }) }}
+        </v-chip>
+      </div>
+
+      <v-row density="comfortable">
         <v-col cols="6">
           <v-text-field
             v-model.number="inputMinutes"
             type="number"
             min="0"
-            :label="t('tools.countdown.minutesLabel')"
+            :label="T('minutesLabel')"
             :disabled="running"
             density="comfortable"
           />
@@ -229,7 +286,7 @@ onUnmounted(() => {
             type="number"
             min="0"
             max="59"
-            :label="t('tools.countdown.secondsLabel')"
+            :label="T('secondsLabel')"
             :disabled="running"
             density="comfortable"
           />
@@ -239,9 +296,9 @@ onUnmounted(() => {
       <v-card variant="tonal" :color="durationFinished ? 'success' : 'primary'" class="mb-3">
         <v-card-text class="text-center py-6">
           <div v-if="durationFinished" class="text-h4 font-weight-bold">
-            {{ t('tools.countdown.finished') }}
+            {{ T('finished') }}
           </div>
-          <div v-else class="text-h2 font-weight-bold timer-mono">
+          <div v-else class="text-h2 font-weight-bold tabular-nums">
             {{ pad(durationParts.hours) }}:{{ pad(durationParts.minutes) }}:{{ pad(durationParts.seconds) }}
           </div>
         </v-card-text>
@@ -252,23 +309,18 @@ onUnmounted(() => {
           v-if="!running"
           color="primary"
           prepend-icon="mdi-play"
+          :disabled="durationRemaining <= 0 && totalDurationMs() <= 0"
           @click="startDuration"
         >
-          {{ durationRemaining > 0 ? t('tools.countdown.resume') : t('tools.countdown.start') }}
+          {{ durationRemaining > 0 ? T('resume') : T('start') }}
         </v-btn>
         <v-btn v-else color="warning" prepend-icon="mdi-pause" @click="pauseDuration">
-          {{ t('tools.countdown.pause') }}
+          {{ T('pause') }}
         </v-btn>
         <v-btn variant="outlined" prepend-icon="mdi-restart" @click="resetDuration">
-          {{ t('tools.countdown.reset') }}
+          {{ T('reset') }}
         </v-btn>
       </div>
     </template>
   </ToolShell>
 </template>
-
-<style scoped>
-.timer-mono {
-  font-variant-numeric: tabular-nums;
-}
-</style>

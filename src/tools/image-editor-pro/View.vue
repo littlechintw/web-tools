@@ -4,6 +4,9 @@ import { useI18n } from 'vue-i18n'
 import * as fabric from 'fabric'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { downloadUrl } from '@/utils/download'
+import { stripExtension } from '@/utils/format'
 
 const TOOL_ID = 'image-editor-pro'
 
@@ -20,13 +23,15 @@ let canvas: fabric.Canvas | null = null
 const objectUrls: string[] = []
 
 const hasImage = ref(false)
+const sourceName = ref('')
 const hasSelection = ref(false)
 const drawingMode = ref(false)
 const brushColor = ref('#ff5252')
 const brushWidth = ref(6)
 const fillColor = ref('#4caf50')
 const strokeColor = ref('#000000')
-const multiplier = ref<1 | 2>(1)
+// Export resolution is remembered between visits.
+const multiplier = useStoredRef<1 | 2>('image-editor-pro.multiplier', 1, oneOf([1, 2]))
 const errorMsg = ref('')
 
 function syncSelection() {
@@ -81,6 +86,7 @@ async function onFiles(files: File[]) {
     canvas.setActiveObject(img)
     canvas.requestRenderAll()
     hasImage.value = true
+    sourceName.value = file.name
     syncSelection()
   } catch {
     errorMsg.value = tt('loadError')
@@ -241,10 +247,8 @@ function exportPng() {
   canvas.discardActiveObject()
   canvas.requestRenderAll()
   const dataUrl = canvas.toDataURL({ format: 'png', multiplier: multiplier.value })
-  const a = document.createElement('a')
-  a.href = dataUrl
-  a.download = tt('outputName')
-  a.click()
+  const name = sourceName.value ? `${stripExtension(sourceName.value)}-edited.png` : tt('outputName')
+  downloadUrl(dataUrl, name)
 }
 </script>
 

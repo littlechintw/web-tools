@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useClipboard } from '@/composables/useClipboard'
 
@@ -10,12 +11,17 @@ const props = withDefaults(
     block?: boolean
     label?: boolean
     icon?: boolean
+    /** Disable explicitly; the button is also disabled while `text` is empty. */
+    disabled?: boolean
+    /** Custom caption instead of "Copy" (the "Copied!" feedback is kept). */
+    labelText?: string
   }>(),
-  { variant: 'tonal', size: 'default', block: false, label: true, icon: false },
+  { variant: 'tonal', size: 'default', block: false, label: true, icon: false, disabled: false, labelText: '' },
 )
 
 const { t } = useI18n()
 const { copied, copy } = useClipboard()
+const isDisabled = computed(() => props.disabled || !props.text)
 </script>
 
 <template>
@@ -24,8 +30,10 @@ const { copied, copy } = useClipboard()
     :icon="copied ? 'mdi-check' : 'mdi-content-copy'"
     :color="copied ? 'success' : undefined"
     :size="size"
+    :disabled="isDisabled"
     variant="text"
-    :title="t('common.copy')"
+    :title="copied ? t('common.copied') : t('common.copy')"
+    :aria-label="t('common.copy')"
     @click="copy(props.text)"
   />
   <v-btn
@@ -33,10 +41,11 @@ const { copied, copy } = useClipboard()
     :variant="variant"
     :size="size"
     :block="block"
+    :disabled="isDisabled"
     :color="copied ? 'success' : 'primary'"
     :prepend-icon="copied ? 'mdi-check' : 'mdi-content-copy'"
     @click="copy(props.text)"
   >
-    <template v-if="label">{{ copied ? t('common.copied') : t('common.copy') }}</template>
+    <template v-if="label">{{ copied ? t('common.copied') : labelText || t('common.copy') }}</template>
   </v-btn>
 </template>

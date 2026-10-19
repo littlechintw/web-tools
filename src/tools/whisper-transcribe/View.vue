@@ -4,6 +4,9 @@ import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { downloadBlob } from '@/utils/download'
+import { stripExtension } from '@/utils/format'
 import { chunksToSrt, type TranscriptChunk } from './srt'
 import {
   SEGMENT_SECONDS,
@@ -347,19 +350,25 @@ function stopRecording() {
 // Recognition settings
 // ---------------------------------------------------------------------------
 
+// Model, language and mode are remembered between visits; the prompt is data
+// the user typed and is not.
 const MODELS = ['Xenova/whisper-tiny', 'Xenova/whisper-base'] as const
 type ModelId = (typeof MODELS)[number]
-const model = ref<ModelId>('Xenova/whisper-tiny')
+const model = useStoredRef<ModelId>('whisper-transcribe.model', 'Xenova/whisper-tiny', oneOf(MODELS))
 
 const LANGUAGES = ['auto', 'zh', 'en', 'ja'] as const
 type LanguageId = (typeof LANGUAGES)[number]
-const language = ref<LanguageId>('zh')
+const language = useStoredRef<LanguageId>('whisper-transcribe.language', 'zh', oneOf(LANGUAGES))
 
 const promptText = ref('')
 
 const TRANSCRIBE_MODES = ['after', 'live'] as const
 type TranscribeMode = (typeof TRANSCRIBE_MODES)[number]
-const transcribeMode = ref<TranscribeMode>('after')
+const transcribeMode = useStoredRef<TranscribeMode>(
+  'whisper-transcribe.transcribeMode',
+  'after',
+  oneOf(TRANSCRIBE_MODES),
+)
 
 const modelItems = computed(() => [
   { title: t('tools.whisper-transcribe.modelTiny'), value: 'Xenova/whisper-tiny' },
@@ -722,13 +731,11 @@ function extensionFor(mime: string): string {
   return 'webm'
 }
 
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+/** Transcripts of an uploaded file are named after it; recordings get a
+ *  timestamp since they have no source name. */
+function transcriptBaseName(): string {
+  const blob = recordedBlob.value
+  return blob instanceof File ? stripExtension(blob.name) : `transcript_${timestampLabel()}`
 }
 
 /** Works both mid-recording (snapshots what's captured so far via requestData)
@@ -741,28 +748,25 @@ async function downloadRecording() {
       recorder.requestData()
     })
     const blob = new Blob(audioChunks, { type: recorder.mimeType || 'audio/webm' })
-    triggerDownload(blob, `recording_${timestampLabel()}.${extensionFor(blob.type)}`)
+    downloadBlob(blob, `recording_${timestampLabel()}.${extensionFor(blob.type)}`)
     return
   }
   if (!recordedBlob.value) return
   const blob = recordedBlob.value
   const filename = blob instanceof File ? blob.name : `recording_${timestampLabel()}.${extensionFor(blob.type)}`
-  triggerDownload(blob, filename)
+  downloadBlob(blob, filename)
 }
 
 function downloadTxt() {
   if (!resultText.value) return
-  triggerDownload(
-    new Blob([resultText.value], { type: 'text/plain;charset=utf-8' }),
-    `transcript_${timestampLabel()}.txt`,
-  )
+  downloadBlob(new Blob([resultText.value], { type: 'text/plain;charset=utf-8' }), `${transcriptBaseName()}.txt`)
 }
 
 function downloadSrt() {
   if (!resultChunks.value.length) return
-  triggerDownload(
+  downloadBlob(
     new Blob([chunksToSrt(resultChunks.value)], { type: 'application/x-subrip;charset=utf-8' }),
-    `transcript_${timestampLabel()}.srt`,
+    `${transcriptBaseName()}.srt`,
   )
 }
 
@@ -900,7 +904,7 @@ onBeforeUnmount(() => {
         </v-btn-toggle>
       </div>
 
-      <v-row dense>
+      <v-row density="comfortable">
         <v-col cols="12" sm="6">
           <v-select
             v-model="model"
@@ -1085,7 +1089,7 @@ onBeforeUnmount(() => {
           class="transcript-row"
           :class="{ 'transcript-row--active': i === activeChunkIndex }"
         >
-          <span class="transcript-time text-caption text-medium-emphasis">{{ formatChunkTime(chunk.timestamp[0]) }}</span>
+          <span class="transcript-time text-caption text-medium-emphasis font-mono tabular-nums">{{ formatChunkTime(chunk.timestamp[0]) }}</span>
           <span class="transcript-text">{{ chunk.text.trim() }}</span>
         </div>
       </div>
@@ -1165,11 +1169,6 @@ onBeforeUnmount(() => {
   height: 60px;
 }
 
-.code-area :deep(textarea) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-
 .transcript-list {
   max-height: 420px;
   overflow-y: auto;
@@ -1195,7 +1194,6 @@ onBeforeUnmount(() => {
   flex: 0 0 auto;
   width: 4.5em;
   padding-top: 1px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .transcript-text {

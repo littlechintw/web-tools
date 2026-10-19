@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import CopyBtn from '@/components/CopyBtn.vue'
 
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.stopwatch.${key}`, args ?? {})
 
 const elapsed = ref(0) // ms
 const running = ref(false)
@@ -46,6 +48,11 @@ function pause() {
   stopRaf()
 }
 
+function toggle() {
+  if (running.value) pause()
+  else start()
+}
+
 function reset() {
   stopRaf()
   running.value = false
@@ -78,24 +85,71 @@ function fmt(ms: number): string {
 
 const display = computed(() => fmt(elapsed.value))
 const lapsReversed = computed(() => [...laps.value].reverse())
+/** One line per lap, oldest first: "#1<tab>split<tab>total". */
+const lapsText = computed(() => laps.value.map((l) => `#${l.index}\t${fmt(l.split)}\t${fmt(l.total)}`).join('\n'))
 
-onUnmounted(stopRaf)
+/* ---------------- Keyboard shortcuts ---------------- */
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && !!target.closest('input, textarea, select, [contenteditable="true"]')
+}
+
+function isSpace(e: KeyboardEvent): boolean {
+  return e.code === 'Space' || e.key === ' '
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
+  if (isTypingTarget(e.target)) return
+  if (isSpace(e)) {
+    e.preventDefault()
+    toggle()
+    return
+  }
+  const key = e.key.toLowerCase()
+  if (key === 'l') {
+    e.preventDefault()
+    lap()
+  } else if (key === 'r') {
+    e.preventDefault()
+    reset()
+  }
+}
+
+// Buttons activate on the keyup of Space, so a shortcut press while a button
+// still has focus (e.g. after clicking "Lap") would also click that button.
+function onKeyup(e: KeyboardEvent) {
+  if (isSpace(e) && e.target instanceof HTMLElement && e.target.closest('button') && !isTypingTarget(e.target)) {
+    e.preventDefault()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('keyup', onKeyup)
+})
+
+onUnmounted(() => {
+  stopRaf()
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('keyup', onKeyup)
+})
 </script>
 
 <template>
   <ToolShell>
     <v-card variant="tonal" color="primary" class="mb-4">
       <v-card-text class="text-center py-8">
-        <div class="text-h2 font-weight-bold stopwatch-mono">{{ display }}</div>
+        <div class="text-h2 font-weight-bold font-mono tabular-nums">{{ display }}</div>
       </v-card-text>
     </v-card>
 
-    <div class="d-flex ga-2 flex-wrap mb-4">
+    <div class="d-flex ga-2 flex-wrap mb-2">
       <v-btn v-if="!running" color="primary" prepend-icon="mdi-play" @click="start">
-        {{ elapsed > 0 ? t('tools.stopwatch.resume') : t('tools.stopwatch.start') }}
+        {{ elapsed > 0 ? T('resume') : T('start') }}
       </v-btn>
       <v-btn v-else color="warning" prepend-icon="mdi-pause" @click="pause">
-        {{ t('tools.stopwatch.pause') }}
+        {{ T('pause') }}
       </v-btn>
       <v-btn
         color="secondary"
@@ -104,35 +158,39 @@ onUnmounted(stopRaf)
         :disabled="elapsed <= 0"
         @click="lap"
       >
-        {{ t('tools.stopwatch.lap') }}
+        {{ T('lap') }}
       </v-btn>
       <v-btn variant="outlined" prepend-icon="mdi-restart" :disabled="elapsed <= 0 && !running" @click="reset">
-        {{ t('tools.stopwatch.reset') }}
+        {{ T('reset') }}
       </v-btn>
     </div>
 
-    <v-table v-if="laps.length" density="comfortable">
-      <thead>
-        <tr>
-          <th>{{ t('tools.stopwatch.lapNo') }}</th>
-          <th class="text-right">{{ t('tools.stopwatch.split') }}</th>
-          <th class="text-right">{{ t('tools.stopwatch.total') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="l in lapsReversed" :key="l.index">
-          <td>#{{ l.index }}</td>
-          <td class="text-right stopwatch-mono">{{ fmt(l.split) }}</td>
-          <td class="text-right stopwatch-mono">{{ fmt(l.total) }}</td>
-        </tr>
-      </tbody>
-    </v-table>
+    <p class="text-caption text-medium-emphasis mb-4">
+      <v-icon icon="mdi-keyboard-outline" size="14" class="mr-1" />{{ T('shortcutsHint') }}
+    </p>
+
+    <template v-if="laps.length">
+      <div class="d-flex align-center ga-2 mb-1">
+        <span class="text-subtitle-2">{{ T('lapsTitle', { count: laps.length }) }}</span>
+        <v-spacer />
+        <CopyBtn :text="lapsText" variant="text" size="small" />
+      </div>
+      <v-table density="comfortable">
+        <thead>
+          <tr>
+            <th>{{ T('lapNo') }}</th>
+            <th class="text-right">{{ T('split') }}</th>
+            <th class="text-right">{{ T('total') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="l in lapsReversed" :key="l.index">
+            <td>#{{ l.index }}</td>
+            <td class="text-right font-mono tabular-nums">{{ fmt(l.split) }}</td>
+            <td class="text-right font-mono tabular-nums">{{ fmt(l.total) }}</td>
+          </tr>
+        </tbody>
+      </v-table>
+    </template>
   </ToolShell>
 </template>
-
-<style scoped>
-.stopwatch-mono {
-  font-variant-numeric: tabular-nums;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-</style>

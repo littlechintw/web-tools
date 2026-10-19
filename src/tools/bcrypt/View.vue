@@ -4,19 +4,27 @@ import { useI18n } from 'vue-i18n'
 import bcrypt from 'bcryptjs'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
+import { isNumber, useStoredRef } from '@/composables/useStoredRef'
 
 const { t } = useI18n()
 
 type Tab = 'hash' | 'verify'
 const tab = ref<Tab>('hash')
 
+const MIN_ROUNDS = 4
+const MAX_ROUNDS = 15
+const isRounds = (v: unknown): v is number =>
+  isNumber(v) && Number.isInteger(v) && v >= MIN_ROUNDS && v <= MAX_ROUNDS
+
 // Hash tab
 const text = ref('')
-const rounds = ref(10)
+// The cost factor is a preference, remembered between visits.
+const rounds = useStoredRef('bcrypt.rounds', 10, isRounds)
 const hashResult = ref('')
 const hashing = ref(false)
 
 async function doHash() {
+  if (hashing.value) return
   if (!text.value) {
     hashResult.value = ''
     return
@@ -64,13 +72,15 @@ async function doVerify() {
           clearable
           hide-details
           class="mb-4"
+          @keydown.enter="doHash"
         />
 
         <div class="d-flex justify-space-between">
           <span class="text-body-2">{{ t('tools.bcrypt.rounds') }}</span>
-          <span class="text-body-2 font-weight-bold">{{ rounds }}</span>
+          <span class="text-body-2 font-weight-bold tabular-nums">{{ rounds }}</span>
         </div>
-        <v-slider v-model="rounds" :min="4" :max="15" :step="1" hide-details class="mb-2" />
+        <v-slider v-model="rounds" :min="MIN_ROUNDS" :max="MAX_ROUNDS" :step="1" hide-details />
+        <div class="text-caption text-medium-emphasis mb-3">{{ t('tools.bcrypt.roundsHint') }}</div>
 
         <v-btn color="primary" prepend-icon="mdi-lock" :loading="hashing" @click="doHash">
           {{ t('tools.bcrypt.generate') }}
@@ -79,7 +89,7 @@ async function doVerify() {
         <template v-if="hashResult">
           <div class="text-caption text-medium-emphasis mt-4">{{ t('tools.bcrypt.hashResult') }}</div>
           <div class="d-flex align-center ga-2">
-            <v-text-field :model-value="hashResult" readonly hide-details density="compact" class="code-field flex-grow-1" />
+            <v-text-field :model-value="hashResult" readonly hide-details density="compact" class="code-area flex-grow-1" />
             <CopyBtn :text="hashResult" icon />
           </div>
         </template>
@@ -93,14 +103,16 @@ async function doVerify() {
           hide-details
           class="mb-4"
           @update:model-value="verifyResult = null"
+          @keydown.enter="doVerify"
         />
         <v-text-field
           v-model="hashToVerify"
           :label="t('tools.bcrypt.hashToVerify')"
           clearable
           hide-details
-          class="code-field mb-4"
+          class="code-area mb-4"
           @update:model-value="verifyResult = null"
+          @keydown.enter="doVerify"
         />
 
         <v-btn color="primary" prepend-icon="mdi-check-decagram" @click="doVerify">
@@ -119,10 +131,3 @@ async function doVerify() {
     </v-window>
   </ToolShell>
 </template>
-
-<style scoped>
-.code-field :deep(input) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-}
-</style>

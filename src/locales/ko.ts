@@ -14,7 +14,9 @@ export default {
     "theme": "테마 전환",
     "language": "언어",
     "github": "소스",
-    "toggleNav": "사이드바 전환"
+    "toggleNav": "사이드바 전환",
+    "search": "도구 검색",
+    "filterTools": "도구 필터…"
   },
   "home": {
     "searchPlaceholder": "도구 검색…（이름, 키워드）",
@@ -23,7 +25,9 @@ export default {
     "toolCount": "도구 {count}개",
     "favorites": "즐겨찾기",
     "addFavorite": "즐겨찾기에 추가",
-    "removeFavorite": "즐겨찾기에서 제거"
+    "removeFavorite": "즐겨찾기에서 제거",
+    "recent": "최근 사용",
+    "clearRecent": "지우기"
   },
   "history": {
     "title": "기록 관리",
@@ -71,7 +75,13 @@ export default {
     "selectFile": "파일 선택",
     "dropHere": "여기에 파일을 끌어다 놓거나 클릭하여 선택",
     "loading": "처리 중…",
-    "reset": "초기화"
+    "reset": "초기화",
+    "pasteFailed": "클립보드를 읽을 수 없습니다",
+    "fileTypeError": "지원하지 않는 파일 형식: {names}",
+    "pasteHint": "Ctrl+V / ⌘V로 바로 붙여넣을 수도 있습니다",
+    "charCount": "{n}자",
+    "noOutput": "결과가 여기에 표시됩니다",
+    "loadExample": "예시 불러오기"
   },
   "notFound": {
     "title": "페이지를 찾을 수 없습니다",
@@ -112,7 +122,10 @@ export default {
       "urlSafe": "URL-safe（+ / 대신 - _）",
       "inputText": "텍스트 입력",
       "inputBase64": "Base64 입력",
-      "decodeError": "디코드할 수 없습니다: 유효한 Base64 문자열이 아닙니다"
+      "decodeError": "디코드할 수 없습니다: 유효한 Base64 문자열이 아닙니다",
+      "swapHint": "결과를 입력란으로 옮기고 모드 전환",
+      "notText": "디코딩 결과가 텍스트가 아닙니다({size}). 이미지나 압축 파일일 수 있습니다.",
+      "downloadBinary": "파일로 다운로드"
     },
     "bcrypt": {
       "title": "Bcrypt 해시 / 검증",
@@ -128,12 +141,13 @@ export default {
       "verify": "검증",
       "match": "일치",
       "noMatch": "불일치",
-      "computing": "계산 중…"
+      "roundsHint": "라운드가 1 늘어날 때마다 계산 시간이 약 2배가 됩니다. 보통 10–12를 사용합니다."
     },
     "case-convert": {
       "title": "대소문자 / 명명 규칙 변환",
       "description": "텍스트를 여러 명명 규칙과 대소문자 형식으로 한 번에 변환합니다.",
-      "inputText": "텍스트 입력"
+      "inputText": "텍스트 입력",
+      "emptyHint": "텍스트를 입력하거나 붙여넣으면 모든 명명 스타일로 표시됩니다."
     },
     "color-convert": {
       "title": "색상 변환",
@@ -143,7 +157,14 @@ export default {
       "picker": "색상 선택기",
       "preview": "미리보기",
       "tintsShades": "명암 단계（밝음 → 어두움）",
-      "clickToCopy": "클릭하여 복사"
+      "clickToCopy": "클릭하여 복사",
+      "contrast": "대비 (WCAG)",
+      "onWhite": "흰 배경",
+      "onBlack": "검은 배경",
+      "levelAaa": "AAA",
+      "levelAa": "AA",
+      "levelAaLarge": "AA(큰 글자)",
+      "levelFail": "미달"
     },
     "color-picker-image": {
       "title": "이미지 색상 추출기",
@@ -153,7 +174,9 @@ export default {
       "clickHint": "이미지 위에서 마우스를 움직이면 미리보기, 클릭하면 색상이 저장됩니다.",
       "recent": "추출한 색상",
       "empty": "아직 추출한 색상이 없습니다. 이미지를 클릭하여 추가하세요.",
-      "clear": "기록 지우기"
+      "clear": "기록 지우기",
+      "zoomFit": "너비에 맞춤",
+      "zoomActual": "실제 크기"
     },
     "countdown": {
       "title": "카운트다운 타이머",
@@ -173,11 +196,13 @@ export default {
       "pause": "일시정지",
       "resume": "재개",
       "reset": "초기화",
-      "finished": "카운트다운 종료"
+      "finished": "카운트다운 종료",
+      "quickPick": "빠른 선택",
+      "minutesShort": "{n}분"
     },
     "cron-parser": {
       "title": "Cron 표현식 파서",
-      "description": "설명",
+      "description": "Cron 표현식을 알기 쉬운 문장으로 풀이하고 다음 실행 시각을 나열합니다. 자주 쓰는 일정 프리셋 포함.",
       "expression": "Cron 표현식",
       "nextRuns": "다음 실행 시각",
       "presets": "자주 쓰는 템플릿",
@@ -187,7 +212,8 @@ export default {
       "weekly": "매주",
       "monthly": "매월",
       "englishFallback": "(한국어 로케일을 찾을 수 없어 영어로 표시)",
-      "errInvalid": "유효하지 않은 Cron 표현식입니다."
+      "errInvalid": "유효하지 않은 Cron 표현식입니다.",
+      "humanReadable": "설명"
     },
     "date-calc": {
       "title": "날짜 계산기",
@@ -195,7 +221,6 @@ export default {
       "modeAdd": "더하기 / 빼기",
       "modeDiff": "간격",
       "baseDate": "기준 날짜 및 시간",
-      "operation": "연산",
       "add": "더하기",
       "subtract": "빼기",
       "years": "년",
@@ -215,7 +240,8 @@ export default {
       "totalHours": "총 시간",
       "totalMinutes": "총 분",
       "humanized": "읽기 쉬운 형식",
-      "copyResult": "결과 복사"
+      "now": "현재",
+      "resetAmounts": "값 초기화"
     },
     "hash": {
       "title": "해시 생성기",
@@ -224,8 +250,8 @@ export default {
       "file": "파일",
       "inputText": "텍스트 입력",
       "uppercase": "대문자로 출력",
-      "selectedFile": "선택한 파일",
-      "computing": "계산 중…"
+      "computing": "계산 중…",
+      "copyAll": "모두 복사"
     },
     "hmac": {
       "title": "HMAC 생성기",
@@ -235,7 +261,9 @@ export default {
       "algorithm": "알고리즘",
       "hex": "16진수 (Hex)",
       "base64": "Base64",
-      "computing": "계산 중…"
+      "computing": "계산 중…",
+      "showSecret": "키 표시",
+      "hideSecret": "키 숨기기"
     },
     "image-base64": {
       "title": "이미지 ↔ Base64",
@@ -250,7 +278,8 @@ export default {
       "pasteHint": "data URI 붙여넣기 (data:image/...;base64,...)",
       "preview": "미리보기",
       "download": "다운로드",
-      "errInvalid": "유효한 이미지 Data URI 가 아닙니다."
+      "errInvalid": "유효한 이미지 Data URI 가 아닙니다.",
+      "dimensions": "크기"
     },
     "image-convert": {
       "title": "이미지 변환 / 압축",
@@ -268,7 +297,9 @@ export default {
       "fileSize": "파일 크기",
       "download": "다운로드",
       "errLoad": "이미지를 불러올 수 없습니다.",
-      "errConvert": "변환에 실패했습니다."
+      "errConvert": "변환에 실패했습니다.",
+      "smaller": "{percent}% 감소",
+      "larger": "{percent}% 증가"
     },
     "image-editor": {
       "title": "이미지 편집기",
@@ -316,7 +347,8 @@ export default {
       "quality": "JPEG 품질",
       "download": "다운로드",
       "dimensions": "크기",
-      "noImage": "아직 이미지가 없습니다."
+      "noImage": "아직 이미지가 없습니다.",
+      "undoShortcut": "실행 취소 (Ctrl/⌘ + Z)"
     },
     "image-editor-pro": {
       "title": "이미지 편집기 (레이어 / Fabric)",
@@ -366,7 +398,9 @@ export default {
       "fileSize": "파일 크기",
       "dimensions": "크기",
       "download": "정리된 이미지 다운로드",
-      "sizeDelta": "크기 변화"
+      "sizeDelta": "크기 변화",
+      "smaller": "{percent}% 감소",
+      "larger": "{percent}% 증가"
     },
     "image-to-pdf": {
       "title": "이미지를 PDF로 변환",
@@ -387,7 +421,8 @@ export default {
       "generate": "PDF 생성",
       "generating": "생성 중…",
       "download": "PDF 다운로드",
-      "imageCount": "이미지 {count}장"
+      "imageCount": "이미지 {count}장",
+      "generated": "{count}페이지 · {size}"
     },
     "ip-subnet": {
       "title": "IP 서브넷 계산기",
@@ -405,7 +440,8 @@ export default {
       "totalHosts": "전체 주소 수",
       "usableHosts": "사용 가능한 호스트 수",
       "ipClass": "IP 클래스",
-      "errInvalid": "유효하지 않은 IPv4 주소 또는 CIDR 프리픽스(0–32)입니다."
+      "errInvalid": "유효하지 않은 IPv4 주소 또는 CIDR 프리픽스(0–32)입니다.",
+      "copyAll": "모두 복사"
     },
     "json-convert": {
       "title": "JSON / YAML / TOML / CSV 변환",
@@ -415,7 +451,8 @@ export default {
       "inputData": "입력 데이터",
       "parseError": "파싱 실패",
       "convertError": "변환 실패",
-      "csvNote": "CSV는 객체 배열(헤더 행 포함)이 필요합니다."
+      "csvNote": "CSV는 객체 배열(헤더 행 포함)이 필요합니다.",
+      "swapHint": "형식을 서로 바꾸고 결과를 입력란으로 옮깁니다"
     },
     "json-format": {
       "title": "JSON 포맷 / 검증",
@@ -430,7 +467,7 @@ export default {
       "indentTab": "탭",
       "valid": "유효한 JSON",
       "parseError": "파싱 오류: {msg}",
-      "download": ".json 다운로드"
+      "errorAt": "{line}행 {column}열"
     },
     "jwt-decode": {
       "title": "JWT 디코더",
@@ -451,7 +488,12 @@ export default {
       "title": "Markdown 미리보기",
       "description": "Markdown 을 실시간으로 렌더링하고 안전하게 정제된 HTML 을 출력합니다.",
       "inputMd": "Markdown 입력",
-      "preview": "미리보기"
+      "preview": "미리보기",
+      "copyHtml": "HTML 복사",
+      "downloadMd": ".md 다운로드",
+      "downloadHtml": ".html 다운로드",
+      "layoutSplit": "편집기와 미리보기 나란히 표시",
+      "layoutPreview": "미리보기만"
     },
     "number-base": {
       "title": "진법 변환",
@@ -469,14 +511,14 @@ export default {
       "count": "생성 수량",
       "regenerate": "다시 생성",
       "strength": "강도",
-      "entropy": "엔트로피",
       "bits": "비트",
       "veryWeak": "매우 약함",
       "weak": "약함",
       "fair": "보통",
       "strong": "강함",
       "veryStrong": "매우 강함",
-      "noCharset": "문자 종류를 하나 이상 선택하세요"
+      "noCharset": "문자 종류를 하나 이상 선택하세요",
+      "allPasswords": "모든 비밀번호"
     },
     "pdf-merge": {
       "title": "PDF 병합",
@@ -494,14 +536,16 @@ export default {
       "merging": "병합 중…",
       "loadError": "\"{name}\"을(를) 읽을 수 없습니다. 유효한 PDF가 아니거나 암호화되어 있을 수 있습니다.",
       "mergeError": "병합에 실패했습니다. 파일이 유효한지 확인하세요.",
-      "outputName": "merged.pdf"
+      "outputName": "merged.pdf",
+      "needTwo": "병합하려면 PDF를 2개 이상 추가하세요.",
+      "totalSize": "총 크기: {size}",
+      "merged": "{count}개 파일을 {name}(으)로 병합했습니다."
     },
     "pdf-organize": {
       "title": "PDF 페이지 관리",
       "description": "PDF를 업로드한 다음 페이지를 재정렬, 회전, 삭제하여 새 PDF를 만듭니다. 모든 처리는 브라우저에서 이루어집니다.",
       "dropHint": "PDF 파일을 드래그하거나 클릭하여 업로드",
       "loading": "PDF 불러오는 중…",
-      "rendering": "썸네일 생성 중…",
       "pageLabel": "{n} 페이지",
       "rotate": "90° 회전",
       "delete": "삭제",
@@ -514,7 +558,9 @@ export default {
       "applying": "PDF 생성 중…",
       "noPagesLeft": "최소 한 페이지는 남아 있어야 합니다.",
       "loadError": "이 PDF 파일을 읽을 수 없습니다.",
-      "applyError": "PDF를 생성하는 중 오류가 발생했습니다."
+      "applyError": "PDF를 생성하는 중 오류가 발생했습니다.",
+      "keptCount": "{count}페이지 유지",
+      "deletedCount": "{count}페이지 삭제"
     },
     "pdf-sign": {
       "title": "PDF 전자 서명",
@@ -537,7 +583,8 @@ export default {
       "reset": "초기화",
       "loadError": "이 PDF 파일을 읽을 수 없습니다.",
       "signatureError": "이 서명 이미지를 읽을 수 없습니다.",
-      "applyError": "PDF를 생성하는 중 오류가 발생했습니다."
+      "applyError": "PDF를 생성하는 중 오류가 발생했습니다.",
+      "applied": "서명된 PDF를 {name}(으)로 저장했습니다."
     },
     "pdf-split": {
       "title": "PDF 분할 / 페이지 추출",
@@ -561,10 +608,10 @@ export default {
       "rangeReversed": "시작 페이지는 끝 페이지보다 클 수 없습니다: \"{part}\".",
       "everyInvalid": "0보다 큰 정수를 입력하세요.",
       "processError": "처리에 실패했습니다. 설정을 확인하세요.",
-      "outputRange": "extracted.pdf",
-      "outputPart": "part-{n}.pdf",
       "resultExtract": "{count}개 페이지를 추출했습니다.",
-      "resultSplit": "{count}개 파일로 분할하여 다운로드를 시작했습니다."
+      "resultSplit": "{count}개 파일로 분할하여 다운로드를 시작했습니다.",
+      "willExtract": "{count}페이지를 추출합니다.",
+      "willSplit": "{count}개 파일로 분할됩니다."
     },
     "pdf-to-image": {
       "title": "PDF를 이미지로 변환",
@@ -577,7 +624,12 @@ export default {
       "downloadPage": "이 페이지 다운로드",
       "downloadAll": "전체 다운로드",
       "pageCount": "총 {count} 페이지",
-      "noPdf": "로드된 PDF가 없습니다"
+      "noPdf": "로드된 PDF가 없습니다",
+      "format": "출력 형식",
+      "jpegQuality": "JPEG 품질",
+      "renderingPage": "{n} / {total} 페이지 렌더링 중…",
+      "notPdf": "PDF 파일을 선택하세요",
+      "renderError": "렌더링 실패: {msg}"
     },
     "pdf-watermark": {
       "title": "PDF 워터마크",
@@ -595,7 +647,60 @@ export default {
       "applying": "적용 중…",
       "download": "PDF 다운로드",
       "pageCount": "총 {count} 페이지",
-      "noPdf": "로드된 PDF가 없습니다"
+      "noPdf": "로드된 PDF가 없습니다",
+      "applied": "워터마크가 적용된 PDF를 {name}(으)로 저장했습니다.",
+      "notPdf": "PDF 파일을 선택하세요",
+      "loadError": "이 PDF를 읽을 수 없습니다: {msg}"
+    },
+    "pdf-compress": {
+      "title": "PDF 압축",
+      "description": "브라우저에서 PDF를 압축합니다. 포함된 이미지를 다시 압축·축소하고 불필요한 데이터를 제거하거나 목표 파일 크기를 지정할 수 있으며, 압축 전후 크기를 바로 확인할 수 있습니다.",
+      "dropHint": "여기에 PDF를 끌어다 놓거나 클릭하여 업로드",
+      "noPdf": "로드된 PDF가 없습니다",
+      "notPdf": "PDF 파일을 선택해 주세요",
+      "loadFailed": "이 PDF를 읽을 수 없습니다: {msg}",
+      "encrypted": "이 PDF는 비밀번호로 보호되어 있습니다. 열기 비밀번호를 입력해 주세요.",
+      "password": "비밀번호",
+      "unlock": "잠금 해제",
+      "wrongPassword": "비밀번호가 틀렸습니다. 다시 시도해 주세요",
+      "encryptedNote": "이 PDF는 비밀번호로 보호되어 있었습니다. 압축된 파일은 더 이상 암호화되지 않습니다.",
+      "pages": "{count}페이지",
+      "imageInfo": "이미지 {count}개({size})가 포함되어 있으며, 그중 {candidates}개({candidateSize})를 다시 압축할 수 있습니다.",
+      "noImages": "이 PDF에는 다시 압축할 수 있는 이미지가 없어 일반 모드에서는 구조 정리만 가능합니다. 크게 줄이려면 '페이지를 이미지로 변환' 모드를 사용하세요.",
+      "mode": "압축 방식",
+      "modePreset": "단계 선택",
+      "modeTarget": "목표 크기 지정",
+      "presetLight": "약하게",
+      "presetMedium": "보통",
+      "presetStrong": "강하게",
+      "imageDetail": "이미지 품질 {quality}% · 긴 변 ≤ {edge}px",
+      "rasterDetail": "페이지를 이미지로 {dpi} DPI · 품질 {quality}%",
+      "rasterize": "페이지를 이미지로 변환 (최대 압축)",
+      "rasterizeHint": "각 페이지를 JPEG로 렌더링한 뒤 PDF를 다시 만듭니다. 압축률이 가장 높지만 텍스트를 선택·검색할 수 없고 벡터 그래픽도 비트맵이 됩니다.",
+      "rasterFallback": "목표에 못 미치면 페이지 이미지 변환 허용",
+      "stripMeta": "메타데이터와 앱 전용 데이터 제거",
+      "stripMetaHint": "XMP 메타데이터, 페이지 썸네일, Illustrator / Photoshop 편집 데이터 등을 제거합니다. 표시 내용에는 영향이 없습니다.",
+      "target": "목표 크기",
+      "targetHint": "여러 설정을 자동으로 시도해 목표 안에서 가장 좋은 품질을 찾습니다.",
+      "invalidTarget": "올바른 목표 크기를 입력해 주세요",
+      "estimateAll": "모든 단계 예상치 계산",
+      "compress": "압축 시작",
+      "compressing": "압축 중…",
+      "progressImages": "이미지 처리 중 {done} / {total}",
+      "progressPages": "페이지 렌더링 중 {done} / {total}",
+      "progressSaving": "저장 중…",
+      "progressAttempt": "{n}번째 시도 ({detail})",
+      "resultTitle": "압축 결과",
+      "reduced": "{percent}% 감소",
+      "increased": "{percent}% 증가",
+      "resultLarger": "압축 후 크기가 줄지 않았습니다. 이 PDF는 이미 충분히 최적화되어 있습니다. 더 강한 단계나 '페이지를 이미지로 변환' 모드를 시도해 보세요.",
+      "targetMet": "목표 달성 (≤ {target})",
+      "targetMissed": "{target} 이하로 줄일 수 없습니다. 최소 {size}까지 가능합니다.",
+      "targetMissedHint": "'페이지 이미지 변환 허용'을 켜면 훨씬 높은 압축률을 얻을 수 있습니다.",
+      "usedSettings": "사용한 설정: {detail}",
+      "stats": "이미지 {images}개 재압축 · 불필요한 객체 {objects}개 제거",
+      "download": "압축된 PDF 다운로드",
+      "about": "약 {size}"
     },
     "qr-scan": {
       "title": "QR Code / 바코드 스캐너",
@@ -636,7 +741,8 @@ export default {
       "bgColor": "배경색",
       "downloadPng": "PNG 다운로드",
       "emptyHint": "QR Code 를 생성할 내용을 입력하세요",
-      "encNone": "없음"
+      "encNone": "없음",
+      "downloadSvg": "SVG 다운로드"
     },
     "regex-tester": {
       "title": "정규식 테스터",
@@ -651,7 +757,15 @@ export default {
       "groups": "캡처 그룹",
       "group": "그룹 {n}",
       "namedGroup": "그룹 \"{name}\"",
-      "invalidRegex": "잘못된 정규식: {msg}"
+      "invalidRegex": "잘못된 정규식: {msg}",
+      "presets": "자주 쓰는 패턴",
+      "presetEmail": "이메일 주소",
+      "presetUrl": "URL",
+      "presetIpv4": "IPv4 주소",
+      "presetDate": "날짜 (YYYY-MM-DD)",
+      "presetNumber": "숫자",
+      "presetHexColor": "16진수 색상 코드",
+      "presetCjk": "한자"
     },
     "stopwatch": {
       "title": "스톱워치",
@@ -664,11 +778,16 @@ export default {
       "lapNo": "랩",
       "lapTime": "랩 타임",
       "split": "구간",
-      "total": "합계"
+      "total": "합계",
+      "shortcutsHint": "키보드: Space = 시작/일시정지, L = 랩, R = 초기화",
+      "lapsTitle": "랩 ({count})"
     },
     "text-diff": {
       "title": "텍스트 비교 (Diff)",
-      "description": "두 텍스트를 비교하여 줄 또는 단어 단위로 차이를 강조 표시합니다."
+      "description": "두 텍스트를 비교하여 줄 또는 단어 단위로 차이를 강조 표시합니다.",
+      "ignoreCase": "대소문자 무시",
+      "ignoreWhitespace": "공백 무시",
+      "swapHint": "원본과 변경된 텍스트를 서로 바꿉니다"
     },
     "text-sort": {
       "title": "텍스트 정렬 / 중복 제거",
@@ -698,7 +817,10 @@ export default {
       "paragraphs": "단락 수",
       "bytes": "UTF-8 바이트",
       "readingTime": "읽기 시간",
-      "minutes": "{n} 분"
+      "minutes": "{n} 분",
+      "emptyTitle": "아직 집계할 내용이 없습니다",
+      "emptyHint": "위에 텍스트를 입력하거나 붙여넣으면 문자 수, 단어 수, 줄 수와 자주 쓰인 단어를 볼 수 있습니다.",
+      "topWords": "자주 쓰인 단어"
     },
     "timestamp": {
       "title": "타임스탬프 변환",
@@ -719,15 +841,14 @@ export default {
       "invalidDate": "날짜를 해석할 수 없습니다",
       "seconds": "초",
       "millis": "밀리초",
-      "ago": "전",
-      "fromNow": "후",
       "justNow": "방금",
       "second": "초",
       "minute": "분",
       "hour": "시간",
       "day": "일",
       "month": "개월",
-      "year": "년"
+      "year": "년",
+      "useNow": "현재 시간 사용"
     },
     "unit-convert": {
       "title": "단위 변환",
@@ -757,7 +878,8 @@ export default {
       "scope": "범위",
       "inputText": "텍스트 입력",
       "inputEncoded": "인코딩된 문자열 입력",
-      "decodeError": "디코드할 수 없습니다: 잘못된 퍼센트 인코딩 시퀀스가 포함되어 있습니다"
+      "decodeError": "디코드할 수 없습니다: 잘못된 퍼센트 인코딩 시퀀스가 포함되어 있습니다",
+      "swapHint": "결과를 입력란으로 옮기고 모드를 전환합니다"
     },
     "user-agent": {
       "title": "User-Agent 파서",
@@ -767,12 +889,9 @@ export default {
       "field": "항목",
       "value": "값",
       "browser": "브라우저",
-      "version": "버전",
       "engine": "엔진",
       "os": "운영체제",
       "device": "기기",
-      "vendor": "제조사",
-      "model": "모델",
       "type": "유형",
       "cpu": "CPU 아키텍처",
       "unknown": "알 수 없음"
@@ -786,8 +905,7 @@ export default {
       "uppercase": "대문자",
       "removeHyphens": "하이픈 제거",
       "nanoidSize": "NanoID 길이",
-      "regenerate": "다시 생성",
-      "copyAll": "모두 복사"
+      "regenerate": "다시 생성"
     },
     "jiaobei": {
       "title": "교배",
@@ -807,11 +925,12 @@ export default {
     "satisfying-switch": {
       "title": "만족 스위치",
       "description": "모든 스위치를 켜고 끄며 만족감을 느껴보세요!",
-      "onCount": "{on} / {total} 켜짐",
-      "allOn": "모두 켜기",
-      "allOff": "모두 끄기",
-      "random": "무작위",
-      "labels": ["조명","에어컨","TV","오디오","선풍기","식기세척기","세탁기","건조기","전자레인지","오븐","냉장고","온수기","커피머신","청소기","로봇청소기","제습기","공기청정기","카메라","라우터","컴퓨터","프린터","프로젝터","음악","야간등"]
+      "toggleSwitch": "스위치 전환",
+      "toggleCount": "전환 횟수: {n}",
+      "on": "ON",
+      "off": "OFF",
+      "mute": "음소거",
+      "unmute": "음소거 해제"
     },
     "joss-paper": {
       "title": "지전 태우기",
@@ -821,7 +940,8 @@ export default {
       "burned": "태운",
       "sheets": "장",
       "sound": "소리",
-      "mute": "음소거"
+      "mute": "음소거",
+      "hint": "탭하거나 길게 눌러 태우기"
     },
     "bubble-wrap": {
       "title": "뽁뽁이",
@@ -829,7 +949,10 @@ export default {
       "popped": "터진",
       "total": "전체",
       "reset": "초기화",
-      "popAll": "전부 터뜨리기"
+      "popAll": "전부 터뜨리기",
+      "bubble": "뽁뽁이 {n}",
+      "mute": "음소거",
+      "unmute": "음소거 해제"
     },
     "wooden-fish": {
       "title": "목어",
@@ -837,7 +960,10 @@ export default {
       "merit": "공덕",
       "session": "이번",
       "total": "누적",
-      "reset": "누적 초기화"
+      "reset": "누적 초기화",
+      "mute": "음소거",
+      "unmute": "음소거 해제",
+      "confirmReset": "누적 공덕을 0으로 초기화할까요? 이 작업은 되돌릴 수 없습니다."
     },
     "lottery": {
       "title": "추첨",
@@ -873,8 +999,7 @@ export default {
       "allDrawn": "모든 상품이 추첨되었습니다!",
       "drawAll": "전체 추첨",
       "exportMasked": "내보내기 (마스킹)",
-      "exportPlain": "내보내기 (원문)",
-      "poolEmpty": "참가자가 부족합니다"
+      "exportPlain": "내보내기 (원문)"
     },
     "spin-wheel": {
       "title": "돌림판",
@@ -888,9 +1013,12 @@ export default {
       "weightDistribution": "가중치 분포",
       "spin": "돌리기!",
       "spinning": "돌리는 중…",
-      "result": "결과",
       "winner": "당첨",
-      "removeOption": "삭제"
+      "removeOption": "삭제",
+      "defaultLabel": "옵션 {letter}",
+      "removeWinner": "당첨 항목을 돌림판에서 제거",
+      "mute": "음소거",
+      "unmute": "음소거 해제"
     },
     "whisper-transcribe": {
       "title": "Whisper 음성 받아쓰기",
@@ -952,6 +1080,29 @@ export default {
     "analytics": {
       "title": "이용 분석",
       "description": "Google Analytics를 통해 익명 이용 데이터를 전송하도록 허용합니다. 어떤 도구가 인기 있는지 파악하는 데 사용됩니다. 개인 식별 정보는 수집하지 않습니다."
-    }
+    },
+    "appearance": "모양",
+    "theme": "테마",
+    "themeSystem": "시스템 따르기",
+    "themeLight": "라이트",
+    "themeDark": "다크",
+    "language": "언어",
+    "privacy": "개인정보",
+    "data": "로컬 데이터",
+    "dataDescription": "기록, 즐겨찾기, 최근 사용 도구와 각 도구의 설정은 이 브라우저에만 저장되며 업로드되지 않습니다.",
+    "historyCount": "기록 {count}개",
+    "favoritesCount": "즐겨찾기 {count}개",
+    "recentsCount": "최근 사용 {count}개",
+    "manageHistory": "기록 관리",
+    "clearAll": "모든 로컬 데이터 지우기",
+    "clearAllConfirm": "모든 로컬 데이터를 지울까요? 기록, 즐겨찾기, 최근 사용 도구, 도구 설정이 삭제되며 되돌릴 수 없습니다.",
+    "cleared": "로컬 데이터를 지웠습니다",
+    "shortcuts": "키보드 단축키",
+    "shortcutSearch": "도구 검색 열기"
+  },
+  "palette": {
+    "placeholder": "도구 이름이나 키워드 입력…",
+    "results": "검색 결과",
+    "hint": "↑↓ 선택 · Enter 열기 · Esc 닫기 · 어느 페이지에서나 ⌘K / Ctrl+K 또는 / 로 열 수 있습니다"
   }
 }

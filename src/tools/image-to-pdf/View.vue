@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PDFDocument } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
+import { downloadBlob } from '@/utils/download'
+import { formatBytes, stripExtension } from '@/utils/format'
+import { canvasToBlob, loadImage } from '@/utils/image'
 
+const TOOL_ID = 'image-to-pdf'
 const { t } = useI18n()
+const T = (key: string, args?: Record<string, unknown>) => t(`tools.${TOOL_ID}.${key}`, args ?? {})
 
 interface ImageItem {
   file: File
@@ -16,17 +22,29 @@ type PageSize = 'a4' | 'letter' | 'fit'
 type Orientation = 'portrait' | 'landscape'
 
 const items = ref<ImageItem[]>([])
-const pageSize = ref<PageSize>('a4')
-const orientation = ref<Orientation>('portrait')
-const margin = ref(24)
+// Layout options are remembered between visits.
+const pageSize = useStoredRef<PageSize>('image-to-pdf.pageSize', 'a4', oneOf(['a4', 'letter', 'fit']))
+const orientation = useStoredRef<Orientation>('image-to-pdf.orientation', 'portrait', oneOf(['portrait', 'landscape']))
+const margin = useStoredRef('image-to-pdf.margin', 24, isNumber)
 const busy = ref(false)
 const error = ref('')
+const result = shallowRef<{ blob: Blob; pages: number; name: string } | null>(null)
 
 // Page dimensions in PostScript points (1pt = 1/72 inch).
 const SIZES: Record<Exclude<PageSize, 'fit'>, [number, number]> = {
   a4: [595.28, 841.89],
   letter: [612, 792],
 }
+
+const outputName = computed(() => {
+  const first = items.value[0]
+  if (!first) return 'images.pdf'
+  const base = stripExtension(first.file.name) || 'images'
+  return items.value.length > 1 ? `${base}-${items.value.length}p.pdf` : `${base}.pdf`
+})
+
+// Any change to the inputs makes the last PDF stale.
+watch([items, pageSize, orientation, margin], () => (result.value = null), { deep: true })
 
 function addFiles(files: File[]) {
   for (const file of files) {
@@ -66,35 +84,19 @@ async function readBytes(file: File): Promise<Uint8Array> {
   return new Uint8Array(await file.arrayBuffer())
 }
 
-/** Decode any image File and re-encode it as PNG bytes via a canvas. */
-async function reencodeBytes(file: File, type: 'image/png' | 'image/jpeg'): Promise<Uint8Array> {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image()
-      el.onload = () => resolve(el)
-      el.onerror = () => reject(new Error('decode failed'))
-      el.src = url
-    })
-    // The browser applies EXIF orientation when decoding, so drawing to a
-    // canvas also normalizes rotated phone photos.
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('no 2d context')
-    ctx.drawImage(img, 0, 0)
-    const blob = await new Promise<Blob | null>((res) =>
-      canvas.toBlob(res, type, type === 'image/jpeg' ? 0.92 : undefined),
-    )
-    if (!blob) throw new Error('encode failed')
-    return new Uint8Array(await blob.arrayBuffer())
-  } finally {
-    URL.revokeObjectURL(url)
-  }
+/** Decode an image and re-encode it via a canvas. The browser applies EXIF
+ *  orientation when decoding, so this also normalizes rotated phone photos. */
+async function reencodeBytes(item: ImageItem, type: 'image/png' | 'image/jpeg'): Promise<Uint8Array> {
+  const img = await loadImage(item.url)
+  const canvas = document.createElement('canvas')
+  canvas.width = img.naturalWidth
+  canvas.height = img.naturalHeight
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('no 2d context')
+  ctx.drawImage(img, 0, 0)
+  const blob = await canvasToBlob(canvas, type, 0.92)
+  return new Uint8Array(await blob.arrayBuffer())
 }
-
-const toPngBytes = (file: File) => reencodeBytes(file, 'image/png')
 
 /** Read the EXIF orientation tag of a JPEG (1 = upright / none). */
 async function jpegOrientation(file: File): Promise<number> {
@@ -129,7 +131,7 @@ async function jpegOrientation(file: File): Promise<number> {
 }
 
 async function generate() {
-  if (!items.value.length) return
+  if (!items.value.length || busy.value) return
   busy.value = true
   error.value = ''
   try {
@@ -140,16 +142,16 @@ async function generate() {
       let embedded
       if (type === 'image/jpeg' || type === 'image/jpg') {
         // embedJpg ignores EXIF orientation; re-encode rotated photos upright
-        const orientation = await jpegOrientation(item.file)
+        const orient = await jpegOrientation(item.file)
         embedded =
-          orientation > 1
-            ? await doc.embedJpg(await reencodeBytes(item.file, 'image/jpeg'))
+          orient > 1
+            ? await doc.embedJpg(await reencodeBytes(item, 'image/jpeg'))
             : await doc.embedJpg(await readBytes(item.file))
       } else if (type === 'image/png') {
         embedded = await doc.embedPng(await readBytes(item.file))
       } else {
         // gif / webp / svg / etc. — rasterize to PNG first.
-        embedded = await doc.embedPng(await toPngBytes(item.file))
+        embedded = await doc.embedPng(await reencodeBytes(item, 'image/png'))
       }
 
       const iw = embedded.width
@@ -165,7 +167,7 @@ async function generate() {
       if (orientation.value === 'landscape') [pw, ph] = [ph, pw]
       const page = doc.addPage([pw, ph])
 
-      const m = Math.max(0, margin.value)
+      const m = Math.max(0, Number(margin.value) || 0)
       const availW = Math.max(1, pw - m * 2)
       const availH = Math.max(1, ph - m * 2)
       const scale = Math.min(availW / iw, availH / ih, 1)
@@ -181,12 +183,9 @@ async function generate() {
 
     const bytes = await doc.save()
     const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'images.pdf'
-    a.click()
-    URL.revokeObjectURL(url)
+    const name = outputName.value
+    result.value = { blob, pages: items.value.length, name }
+    downloadBlob(blob, name)
   } catch (e) {
     error.value = (e as Error).message
   } finally {
@@ -201,7 +200,7 @@ onUnmounted(() => {
 
 <template>
   <ToolShell>
-    <FileDrop accept="image/*" multiple :hint="t('tools.image-to-pdf.dropHint')" @files="addFiles" />
+    <FileDrop accept="image/*" multiple :hint="T('dropHint')" :show-selected="false" @files="addFiles" />
 
     <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-4">
       {{ error }}
@@ -209,29 +208,22 @@ onUnmounted(() => {
 
     <div class="d-flex align-center justify-space-between mt-6 mb-2">
       <div class="text-subtitle-1 font-weight-medium">
-        {{ t('tools.image-to-pdf.images') }}
+        {{ T('images') }}
         <span v-if="items.length" class="text-medium-emphasis text-body-2">
-          ({{ t('tools.image-to-pdf.imageCount', { count: items.length }) }})
+          ({{ T('imageCount', { count: items.length }) }})
         </span>
       </div>
-      <v-btn
-        v-if="items.length"
-        size="small"
-        variant="text"
-        color="error"
-        prepend-icon="mdi-delete-sweep"
-        @click="clearAll"
-      >
-        {{ t('tools.image-to-pdf.clearAll') }}
+      <v-btn v-if="items.length" size="small" variant="text" color="error" prepend-icon="mdi-delete-sweep" @click="clearAll">
+        {{ T('clearAll') }}
       </v-btn>
     </div>
 
     <p v-if="!items.length" class="text-medium-emphasis text-body-2">
-      {{ t('tools.image-to-pdf.noImages') }}
+      {{ T('noImages') }}
     </p>
 
     <v-list v-else lines="two" class="rounded-lg border">
-      <v-list-item v-for="(item, i) in items" :key="item.url" :title="item.file.name">
+      <v-list-item v-for="(item, i) in items" :key="item.url" :title="item.file.name" :subtitle="formatBytes(item.file.size)">
         <template #prepend>
           <v-avatar rounded="lg" size="56" class="mr-2">
             <v-img :src="item.url" cover />
@@ -243,7 +235,7 @@ onUnmounted(() => {
             size="small"
             variant="text"
             :disabled="i === 0"
-            :title="t('tools.image-to-pdf.moveUp')"
+            :title="T('moveUp')"
             @click="moveUp(i)"
           />
           <v-btn
@@ -251,30 +243,23 @@ onUnmounted(() => {
             size="small"
             variant="text"
             :disabled="i === items.length - 1"
-            :title="t('tools.image-to-pdf.moveDown')"
+            :title="T('moveDown')"
             @click="moveDown(i)"
           />
-          <v-btn
-            icon="mdi-close"
-            size="small"
-            variant="text"
-            color="error"
-            :title="t('tools.image-to-pdf.remove')"
-            @click="removeAt(i)"
-          />
+          <v-btn icon="mdi-close" size="small" variant="text" color="error" :title="T('remove')" @click="removeAt(i)" />
         </template>
       </v-list-item>
     </v-list>
 
-    <v-row class="mt-4" dense>
+    <v-row density="comfortable" class="mt-4">
       <v-col cols="12" sm="4">
         <v-select
           v-model="pageSize"
-          :label="t('tools.image-to-pdf.pageSize')"
+          :label="T('pageSize')"
           :items="[
             { title: 'A4', value: 'a4' },
             { title: 'Letter', value: 'letter' },
-            { title: t('tools.image-to-pdf.fit'), value: 'fit' },
+            { title: T('fit'), value: 'fit' },
           ]"
           hide-details
           density="comfortable"
@@ -283,11 +268,11 @@ onUnmounted(() => {
       <v-col cols="12" sm="4">
         <v-select
           v-model="orientation"
-          :label="t('tools.image-to-pdf.orientation')"
+          :label="T('orientation')"
           :disabled="pageSize === 'fit'"
           :items="[
-            { title: t('tools.image-to-pdf.portrait'), value: 'portrait' },
-            { title: t('tools.image-to-pdf.landscape'), value: 'landscape' },
+            { title: T('portrait'), value: 'portrait' },
+            { title: T('landscape'), value: 'landscape' },
           ]"
           hide-details
           density="comfortable"
@@ -296,7 +281,7 @@ onUnmounted(() => {
       <v-col cols="12" sm="4">
         <v-text-field
           v-model.number="margin"
-          :label="t('tools.image-to-pdf.margin')"
+          :label="T('margin')"
           :disabled="pageSize === 'fit'"
           type="number"
           min="0"
@@ -309,12 +294,29 @@ onUnmounted(() => {
     <v-btn
       class="mt-4"
       color="primary"
+      size="large"
       :loading="busy"
       :disabled="!items.length"
       prepend-icon="mdi-file-pdf-box"
       @click="generate"
     >
-      {{ busy ? t('tools.image-to-pdf.generating') : t('tools.image-to-pdf.generate') }}
+      {{ busy ? T('generating') : T('generate') }}
     </v-btn>
+
+    <!-- Result: the PDF was downloaded already; this lets the user grab it again. -->
+    <v-card v-if="result && !busy" variant="outlined" rounded="lg" class="mt-4 pa-4">
+      <div class="d-flex align-center flex-wrap ga-3">
+        <v-icon icon="mdi-file-pdf-box" size="28" color="primary" />
+        <div class="flex-grow-1 min-w-0">
+          <div class="text-subtitle-2 font-weight-medium text-truncate">{{ result.name }}</div>
+          <div class="text-body-2 text-medium-emphasis">
+            {{ T('generated', { count: result.pages, size: formatBytes(result.blob.size) }) }}
+          </div>
+        </div>
+        <v-btn color="primary" variant="tonal" prepend-icon="mdi-download" @click="downloadBlob(result.blob, result.name)">
+          {{ T('download') }}
+        </v-btn>
+      </div>
+    </v-card>
   </ToolShell>
 </template>

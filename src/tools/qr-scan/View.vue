@@ -148,7 +148,7 @@ onUnmounted(() => {
     <v-card v-if="result" variant="tonal" class="mt-4">
       <v-card-title class="text-subtitle-2">{{ t('tools.qr-scan.result') }}</v-card-title>
       <v-card-text>
-        <div class="result-text mb-3">{{ result }}</div>
+        <div class="result-text font-mono break-all mb-3">{{ result }}</div>
         <div class="d-flex flex-wrap ga-2">
           <CopyBtn :text="result" />
           <v-btn
@@ -188,9 +188,6 @@ onUnmounted(() => {
   object-fit: cover;
 }
 .result-text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
-  word-break: break-all;
   white-space: pre-wrap;
 }
 </style>

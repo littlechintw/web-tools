@@ -1,29 +1,21 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ToolShell from '@/components/ToolShell.vue'
+import { useAudioContext } from '@/composables/useAudioContext'
+import { isBoolean, useStoredRef } from '@/composables/useStoredRef'
 
 const { t } = useI18n()
+const audio = useAudioContext()
 
 // ── Canvas ref ────────────────────────────────────────────────────────────────
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const burnedCount = ref(0)
-const muted = ref(false)
+const muted = useStoredRef('joss-paper.muted', false, isBoolean)
 
 // ── Web Audio ─────────────────────────────────────────────────────────────────
-let audioCtx: AudioContext | null = null
-
-function getAudioCtx(): AudioContext {
-  if (!audioCtx) {
-    const Ctor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    audioCtx = new Ctor()
-  }
-  return audioCtx
-}
-
 function crackle(ctx: AudioContext) {
   const bufLen = ctx.sampleRate * 0.15
   const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate)
@@ -45,11 +37,7 @@ function crackle(ctx: AudioContext) {
 
 function playSound() {
   if (muted.value) return
-  try {
-    crackle(getAudioCtx())
-  } catch {
-    /* audio unavailable */
-  }
+  audio.play(crackle)
 }
 
 // ── Particle system ───────────────────────────────────────────────────────────
@@ -353,6 +341,8 @@ function reset() {
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
   const canvas = canvasRef.value
   if (!canvas) return
@@ -372,14 +362,11 @@ onMounted(() => {
   }
   resize()
 
-  const resizeObserver = new ResizeObserver(resize)
+  resizeObserver = new ResizeObserver(resize)
   resizeObserver.observe(canvas)
 
   lastTime = performance.now()
   frameId = requestAnimationFrame((t) => tick(canvas, ctx, t))
-
-  // Cleanup observer on unmount via closure
-  ;(canvas as HTMLCanvasElement & { _ro?: ResizeObserver })._ro = resizeObserver
 })
 
 onUnmounted(() => {
@@ -391,28 +378,21 @@ onUnmounted(() => {
     clearInterval(holdInterval)
     holdInterval = null
   }
-  if (audioCtx) {
-    audioCtx.close().catch(() => {})
-    audioCtx = null
-  }
-  const canvas = canvasRef.value
-  if (canvas) {
-    const ro = (canvas as HTMLCanvasElement & { _ro?: ResizeObserver })._ro
-    ro?.disconnect()
-  }
+  resizeObserver?.disconnect()
+  resizeObserver = null
   papers.length = 0
   particles.length = 0
 })
 </script>
 
 <template>
-  <v-container class="pa-4" style="max-width: 900px">
+  <ToolShell :max-width="900">
     <!-- Controls row -->
-    <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-3">
+    <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-3">
       <!-- Merit counter -->
-      <div class="d-flex align-center gap-2">
+      <div class="d-flex align-center ga-2">
         <v-icon color="amber" size="20">mdi-fire</v-icon>
-        <span class="text-body-1">
+        <span class="text-body-1 tabular-nums" aria-live="polite">
           <span class="font-weight-bold text-amber">{{ t('tools.joss-paper.burned') }}</span>
           <span class="text-medium-emphasis mx-1">{{ burnedCount.toLocaleString() }}</span>
           <span class="text-medium-emphasis">{{ t('tools.joss-paper.sheets') }}</span>
@@ -420,7 +400,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Buttons -->
-      <div class="d-flex gap-2 flex-wrap">
+      <div class="d-flex ga-2 flex-wrap">
         <v-btn
           size="small"
           variant="tonal"
@@ -435,6 +415,7 @@ onUnmounted(() => {
           variant="tonal"
           :color="muted ? 'grey' : 'orange'"
           :prepend-icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
+          :aria-pressed="muted"
           @click="muted = !muted"
         >
           {{ muted ? t('tools.joss-paper.mute') : t('tools.joss-paper.sound') }}
@@ -444,6 +425,7 @@ onUnmounted(() => {
           variant="outlined"
           color="error"
           prepend-icon="mdi-refresh"
+          :disabled="burnedCount === 0"
           @click="reset"
         >
           {{ t('tools.joss-paper.reset') }}
@@ -466,12 +448,12 @@ onUnmounted(() => {
         <div v-if="burnedCount === 0" class="hint-overlay">
           <v-icon color="amber-lighten-2" size="32">mdi-gesture-tap</v-icon>
           <p class="text-amber-lighten-2 mt-2 text-body-2">
-            {{ t('tools.joss-paper.burn') }} · Click / Hold
+            {{ t('tools.joss-paper.hint') }}
           </p>
         </div>
       </Transition>
     </div>
-  </v-container>
+  </ToolShell>
 </template>
 
 <style scoped>
