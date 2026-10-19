@@ -20,6 +20,33 @@ const reader = new BrowserMultiFormatReader()
 let controls: IScannerControls | null = null
 let objectUrl: string | null = null
 
+// Camera choice: labels are only available after permission was granted, so
+// the list is (re)filled once scanning has started at least once.
+const cameras = ref<{ id: string; label: string }[]>([])
+const cameraId = ref<string | undefined>(undefined)
+
+async function refreshCameras() {
+  try {
+    const devices = await BrowserMultiFormatReader.listVideoInputDevices()
+    cameras.value = devices.map((d, i) => ({ id: d.deviceId, label: d.label || `${t('tools.qr-scan.camera')} ${i + 1}` }))
+    if (cameraId.value && !cameras.value.some((c) => c.id === cameraId.value)) cameraId.value = undefined
+    // Prefer the rear camera on phones when nothing was picked yet.
+    if (!cameraId.value) {
+      const back = devices.find((d) => /back|rear|environment|後|背/i.test(d.label))
+      if (back) cameraId.value = back.deviceId
+    }
+  } catch {
+    cameras.value = []
+  }
+}
+
+function switchCamera() {
+  if (cameras.value.length < 2) return
+  const i = cameras.value.findIndex((c) => c.id === cameraId.value)
+  cameraId.value = cameras.value[(i + 1) % cameras.value.length].id
+  if (scanning.value) void startCamera()
+}
+
 const isUrl = computed(() => /^https?:\/\//i.test(result.value.trim()))
 
 function revokeUrl() {
@@ -51,7 +78,7 @@ async function startCamera() {
   const session = camSession
   try {
     scanning.value = true
-    const c = await reader.decodeFromVideoDevice(undefined, videoEl.value, (res, err) => {
+    const c = await reader.decodeFromVideoDevice(cameraId.value, videoEl.value, (res, err) => {
       if (res) {
         result.value = res.getText()
         stopCamera()
@@ -64,6 +91,7 @@ async function startCamera() {
       return
     }
     controls = c
+    void refreshCameras()
   } catch (e) {
     if (session !== camSession) return
     scanning.value = false
@@ -126,13 +154,32 @@ onUnmounted(() => {
       <div class="video-wrap rounded-lg mb-3">
         <video ref="videoEl" class="video-el" muted playsinline />
       </div>
-      <div class="d-flex ga-2 mb-2">
+      <div class="d-flex flex-wrap align-center ga-2 mb-2">
         <v-btn v-if="!scanning" color="primary" prepend-icon="mdi-camera" @click="startCamera">
           {{ t('tools.qr-scan.start') }}
         </v-btn>
         <v-btn v-else color="error" variant="tonal" prepend-icon="mdi-stop" @click="stopCamera">
           {{ t('tools.qr-scan.stop') }}
         </v-btn>
+        <v-btn
+          v-if="cameras.length > 1"
+          variant="tonal"
+          prepend-icon="mdi-camera-flip-outline"
+          :title="t('tools.qr-scan.switchCamera')"
+          @click="switchCamera"
+        >
+          {{ t('tools.qr-scan.switchCamera') }}
+        </v-btn>
+        <v-select
+          v-if="cameras.length > 1"
+          v-model="cameraId"
+          :items="cameras.map((c) => ({ title: c.label, value: c.id }))"
+          :label="t('tools.qr-scan.camera')"
+          density="compact"
+          hide-details
+          style="max-width: 260px"
+          @update:model-value="scanning && startCamera()"
+        />
         <span v-if="scanning" class="text-medium-emphasis align-self-center">
           {{ t('tools.qr-scan.scanning') }}
         </span>

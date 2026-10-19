@@ -51,7 +51,8 @@ export default {
     "count": "{count} 筆",
     "createdAt": "建立時間",
     "restored": "已載入紀錄",
-    "saved": "已儲存"
+    "saved": "已儲存",
+    "imported": "已匯入 {count} 筆紀錄"
   },
   "common": {
     "copy": "複製",
@@ -81,7 +82,11 @@ export default {
     "pasteHint": "也可以直接按 Ctrl+V / ⌘V 貼上",
     "charCount": "{n} 字元",
     "noOutput": "結果會顯示在這裡",
-    "loadExample": "載入範例"
+    "loadExample": "載入範例",
+    "mute": "靜音",
+    "unmute": "開啟音效",
+    "downloadZip": "下載 ZIP（全部）",
+    "offlineReady": "已可離線使用"
   },
   "notFound": {
     "title": "找不到頁面",
@@ -112,7 +117,8 @@ export default {
       "displayValue": "顯示文字",
       "invalidValue": "此格式的數值無效",
       "downloadPng": "下載 PNG",
-      "valueHint": "輸入要編碼的內容"
+      "valueHint": "輸入要編碼的內容",
+      "downloadSvg": "下載 SVG"
     },
     "base64": {
       "title": "Base64 編解碼",
@@ -141,7 +147,7 @@ export default {
       "verify": "驗證",
       "match": "相符",
       "noMatch": "不相符",
-      "roundsHint": "每增加 1 回合,計算時間約增加一倍;一般使用 10–12。"
+      "roundsHint": "每增加 1 回合，計算時間約增加一倍；一般使用 10–12。"
     },
     "case-convert": {
       "title": "大小寫 / 命名轉換",
@@ -646,7 +652,7 @@ export default {
     },
     "pdf-to-image": {
       "title": "PDF 轉圖片",
-      "description": "將 PDF 的每一頁渲染為 PNG 圖片，可選擇輸出品質，支援逐頁或一次全部下載，全程於瀏覽器處理。",
+      "description": "將 PDF 的每一頁渲染為 PNG 或 JPEG 圖片，可選解析度與品質，支援逐頁下載或一鍵打包 ZIP，全程於瀏覽器處理。",
       "dropHint": "拖曳 PDF 到此或點擊上傳",
       "quality": "輸出品質",
       "render": "渲染頁面",
@@ -681,7 +687,9 @@ export default {
       "noPdf": "尚未載入 PDF",
       "applied": "已下載加上浮水印的 PDF：{name}。",
       "notPdf": "請選擇 PDF 檔案",
-      "loadError": "無法讀取此 PDF：{msg}"
+      "loadError": "無法讀取此 PDF：{msg}",
+      "preview": "預覽（第 {n} 頁）",
+      "previewHint": "預覽為近似效果，實際輸出以 PDF 為準。"
     },
     "pdf-compress": {
       "title": "PDF 壓縮",
@@ -747,7 +755,8 @@ export default {
       "noResult": "尚未掃描到任何內容。",
       "errPermission": "無法存取相機，請確認已授權相機權限。",
       "errNoCamera": "找不到可用的相機裝置。",
-      "errDecode": "無法從圖片中解析出條碼。"
+      "errDecode": "無法從圖片中解析出條碼。",
+      "switchCamera": "切換鏡頭"
     },
     "qrcode-generate": {
       "title": "QR Code 製作",
@@ -952,9 +961,7 @@ export default {
       "total": "全部",
       "reset": "重置泡泡紙",
       "popAll": "全部戳爆",
-      "bubble": "泡泡 {n}",
-      "mute": "靜音",
-      "unmute": "取消靜音"
+      "bubble": "泡泡 {n}"
     },
     "jiaobei": {
       "title": "擲筊",
@@ -988,9 +995,7 @@ export default {
       "toggleSwitch": "切換開關",
       "toggleCount": "切換次數：{n}",
       "on": "ON",
-      "off": "OFF",
-      "mute": "靜音",
-      "unmute": "取消靜音"
+      "off": "OFF"
     },
     "wooden-fish": {
       "title": "木魚",
@@ -999,8 +1004,6 @@ export default {
       "session": "本次",
       "total": "累計",
       "reset": "重置累計",
-      "mute": "靜音",
-      "unmute": "取消靜音",
       "confirmReset": "確定要將累計功德歸零嗎？此操作無法復原。"
     },
     "lottery": {
@@ -1054,9 +1057,7 @@ export default {
       "winner": "結果",
       "removeOption": "刪除",
       "defaultLabel": "選項 {letter}",
-      "removeWinner": "從轉盤移除此結果",
-      "mute": "靜音",
-      "unmute": "取消靜音"
+      "removeWinner": "從轉盤移除此結果"
     },
     "whisper-transcribe": {
       "title": "Whisper 語音逐字稿",
@@ -1142,5 +1143,9 @@ export default {
     "placeholder": "輸入工具名稱或關鍵字…",
     "results": "搜尋結果",
     "hint": "↑↓ 選擇 · Enter 開啟 · Esc 關閉 · 任何頁面按 ⌘K / Ctrl+K 或 / 都能叫出"
+  },
+  "pwa": {
+    "updateAvailable": "有新版本可用",
+    "reload": "重新整理"
   }
 }

@@ -100,8 +100,8 @@ function reset() {
       <v-btn
         :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
         variant="text"
-        :title="muted ? t('tools.bubble-wrap.unmute') : t('tools.bubble-wrap.mute')"
-        :aria-label="muted ? t('tools.bubble-wrap.unmute') : t('tools.bubble-wrap.mute')"
+        :title="muted ? t('common.unmute') : t('common.mute')"
+        :aria-label="muted ? t('common.unmute') : t('common.mute')"
         :aria-pressed="muted"
         @click="muted = !muted"
       />

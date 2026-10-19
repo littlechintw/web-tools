@@ -49,8 +49,8 @@ function resetCount() {
       <v-btn
         :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
         variant="text"
-        :title="muted ? t('tools.satisfying-switch.unmute') : t('tools.satisfying-switch.mute')"
-        :aria-label="muted ? t('tools.satisfying-switch.unmute') : t('tools.satisfying-switch.mute')"
+        :title="muted ? t('common.unmute') : t('common.mute')"
+        :aria-label="muted ? t('common.unmute') : t('common.mute')"
         :aria-pressed="muted"
         @click="muted = !muted"
       />

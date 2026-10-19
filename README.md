@@ -9,6 +9,7 @@ browser — no backend, no tracking, your data never leaves your device.
 
 - 🧰 **50+ 個工具**，首頁可搜尋、分類、加入最愛，並顯示最近使用
 - ⌨️ **⌘K / Ctrl+K 指令面板**：任何頁面都能快速搜尋並切換工具
+- 📴 **可安裝、可離線**：PWA（Service Worker 預快取殼層與常用工具，重型工具在首次開啟後也能離線使用）
 - 💾 **記住你的選項**：各工具的格式、品質、旗標等設定會保存在本機，下次打開就是上次的設定
 - 🔒 **隱私優先**：無後端、無追蹤，運算全在瀏覽器
 - 🕘 **歷史紀錄系統**：工具使用紀錄自動存於 LocalStorage，並有集中的管理頁可查看 / 編輯 / 刪除 / 匯入匯出
@@ -25,7 +26,7 @@ Vue 3 · Vuetify 4 · TypeScript · Vite · Vue Router · Pinia · vue-i18n
 - 雜湊（SHA-1/256/384/512）與 HMAC 使用瀏覽器原生 **Web Crypto API**
 - 亂數（密碼 / ID）使用 **`crypto.getRandomValues`**（CSPRNG，無 modulo bias）
 - Markdown 渲染先經過 **DOMPurify** 淨化，避免 XSS
-- 相依套件刻意最小化；MD5、NanoID、UA 解析、圖片壓縮皆為自寫、零相依
+- 相依套件刻意最小化；MD5、NanoID、UA 解析、圖片壓縮、ZIP 打包、Service Worker 皆為自寫、零相依
 - GitHub Actions 的 actions 全部 **pin 到 commit SHA**（供應鏈強化）
 
 ## 📦 開發

@@ -25,3 +25,34 @@
 .break-all {
   word-break: break-all;
 }
+
+/* ---------------------------------------------------------------------------
+   Typography compatibility layer.
+   Vuetify 4 ships only the Material 3 type-scale classes (text-headline-*,
+   text-title-*, text-body-large …). This code base was written against the
+   Material 2 names (text-h1…h6, text-subtitle-*, text-body-1/2, text-caption),
+   which Vuetify 4 silently ignores — leaving every heading, caption and the
+   big timer digits at the 14px body size. Define them here with the classic
+   Material 2 scale so the intended hierarchy renders. Weights are left
+   overridable by Vuetify's font-weight-* utilities. */
+.text-h1 { font-size: 6rem !important; font-weight: 300; line-height: 1 !important; letter-spacing: -0.015625em !important; }
+.text-h2 { font-size: 3.75rem !important; font-weight: 300; line-height: 1 !important; letter-spacing: -0.0083333333em !important; }
+.text-h3 { font-size: 3rem !important; font-weight: 400; line-height: 1.05 !important; letter-spacing: normal !important; }
+.text-h4 { font-size: 2.125rem !important; font-weight: 400; line-height: 1.175 !important; letter-spacing: 0.0073529412em !important; }
+.text-h5 { font-size: 1.5rem !important; font-weight: 400; line-height: 1.334 !important; letter-spacing: normal !important; }
+.text-h6 { font-size: 1.25rem !important; font-weight: 500; line-height: 1.6 !important; letter-spacing: 0.0125em !important; }
+.text-subtitle-1 { font-size: 1rem !important; font-weight: 400; line-height: 1.75 !important; letter-spacing: 0.009375em !important; }
+.text-subtitle-2 { font-size: 0.875rem !important; font-weight: 500; line-height: 1.6 !important; letter-spacing: 0.0071428571em !important; }
+.text-body-1 { font-size: 1rem !important; font-weight: 400; line-height: 1.5 !important; letter-spacing: 0.03125em !important; }
+.text-body-2 { font-size: 0.875rem !important; font-weight: 400; line-height: 1.425 !important; letter-spacing: 0.0178571429em !important; }
+.text-caption { font-size: 0.75rem !important; font-weight: 400; line-height: 1.667 !important; letter-spacing: 0.0333333333em !important; }
+.text-overline { font-size: 0.75rem !important; font-weight: 500; line-height: 2.667 !important; letter-spacing: 0.1666666667em !important; text-transform: uppercase; }
+@media (min-width: 960px) {
+  .text-md-h3 { font-size: 3rem !important; font-weight: 400; line-height: 1.05 !important; letter-spacing: normal !important; }
+}
+/* Big digits (timers) scale down on phones so they never overflow. */
+@media (max-width: 599px) {
+  .text-h2 { font-size: 2.75rem !important; }
+  .text-h3 { font-size: 2.25rem !important; }
+  .text-h4 { font-size: 1.75rem !important; }
+}

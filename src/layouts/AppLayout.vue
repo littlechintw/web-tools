@@ -11,6 +11,7 @@ import { useRecentsStore } from '@/stores/recents'
 import { trackPageView } from '@/plugins/analytics'
 import { searchTools } from '@/lib/toolSearch'
 import CommandPalette from '@/components/CommandPalette.vue'
+import { applyUpdate, offlineReady, updateAvailable } from '@/plugins/pwa'
 import type { Locale } from '@/types'
 
 const theme = useTheme()
@@ -199,6 +200,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   </v-main>
 
   <CommandPalette v-model="palette" />
+
+  <!-- PWA: a newer build is waiting / the shell is now cached for offline use. -->
+  <v-snackbar v-model="updateAvailable" :timeout="-1" location="bottom right" color="primary">
+    {{ t('pwa.updateAvailable') }}
+    <template #actions>
+      <v-btn variant="text" @click="applyUpdate">{{ t('pwa.reload') }}</v-btn>
+    </template>
+  </v-snackbar>
+  <v-snackbar v-model="offlineReady" :timeout="4000" location="bottom right">
+    {{ t('common.offlineReady') }}
+  </v-snackbar>
 
   <v-snackbar
     :model-value="settings.analyticsEnabled === null"

@@ -103,6 +103,8 @@ values. It is auto-discovered (glob); optionally add a display label in
   `<a download>` by hand.
 - `format.ts` — `formatBytes`, `stripExtension` (derive output names from the
   input file name: `stripExtension(file.name) + '-compressed.pdf'`).
+- `zip.ts` — `createZip(entries)` (stored ZIP, no deps). Use it whenever a tool
+  would otherwise trigger several downloads (pages, split parts).
 - `image.ts` — `loadImage`, `canvasToBlob`, `readFileAsDataUrl`, `extensionForMime`.
 - `bytes.ts` — `bytesToHex`, `bytesToBase64`, `base64ToBytes`, `dataUrlToBytes`.
 - `md5`, `nanoid`, `uaParser`, `pdfjs` (configured pdf.js `getDocument`).
@@ -113,6 +115,12 @@ Global classes from `src/styles/main.css`: `code-area` (monospace
 v-text-field / v-textarea), `font-mono`, `tabular-nums`, `break-all`. Do not
 re-declare monospace fonts in scoped CSS. Vuetify 4: use
 `<v-row density="comfortable">` (not `dense`) and `ga-*` for gaps.
+
+Typography: Vuetify 4 only ships the Material 3 classes (`text-headline-*`,
+`text-title-*`, `text-body-large`…). The Material 2 names this code base uses
+(`text-h1…h6`, `text-subtitle-1/2`, `text-body-1/2`, `text-caption`,
+`text-overline`, `text-md-h3`) are defined in `src/styles/main.css`, so keep
+using them — but don't invent new breakpoint variants without adding them there.
 
 ### UX checklist for a new tool
 

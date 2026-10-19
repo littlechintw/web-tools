@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { PDFDocument } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
-import { downloadBlob, downloadSequentially } from '@/utils/download'
+import { downloadBlob } from '@/utils/download'
+import { createZip } from '@/utils/zip'
 import { formatBytes, stripExtension } from '@/utils/format'
 
 type Mode = 'range' | 'every'
@@ -131,7 +132,9 @@ async function run() {
           filename: `${baseName.value}-part${parts.length + 1}.pdf`,
         })
       }
-      await downloadSequentially(parts)
+      // A single archive instead of N staggered downloads.
+      const zip = await createZip(parts.map((p) => ({ name: p.filename, data: p.blob })))
+      downloadBlob(zip, `${baseName.value}-split.zip`)
       result.value = T('resultSplit', { count: parts.length })
     }
   } catch {

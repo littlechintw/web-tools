@@ -51,7 +51,8 @@ export default {
     "count": "{count} entries",
     "createdAt": "Created",
     "restored": "Entry loaded",
-    "saved": "Saved"
+    "saved": "Saved",
+    "imported": "Imported {count} entries"
   },
   "common": {
     "copy": "Copy",
@@ -81,7 +82,11 @@ export default {
     "pasteHint": "You can also paste with Ctrl+V / ⌘V",
     "charCount": "{n} chars",
     "noOutput": "The result will appear here",
-    "loadExample": "Load example"
+    "loadExample": "Load example",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "downloadZip": "Download ZIP (all)",
+    "offlineReady": "Ready to work offline"
   },
   "notFound": {
     "title": "Page not found",
@@ -112,7 +117,8 @@ export default {
       "displayValue": "Show text",
       "invalidValue": "Value is invalid for this format",
       "downloadPng": "Download PNG",
-      "valueHint": "Enter content to encode"
+      "valueHint": "Enter content to encode",
+      "downloadSvg": "Download SVG"
     },
     "base64": {
       "title": "Base64 Encode / Decode",
@@ -646,7 +652,7 @@ export default {
     },
     "pdf-to-image": {
       "title": "PDF to Images",
-      "description": "Render every page of a PDF as a PNG image. Pick the output quality and download pages one by one or all at once — all in your browser.",
+      "description": "Render every page of a PDF to PNG or JPEG at the resolution and quality you choose, then download pages one by one or all at once as a ZIP — entirely in your browser.",
       "dropHint": "Drop a PDF here or click to upload",
       "quality": "Output quality",
       "render": "Render pages",
@@ -681,7 +687,9 @@ export default {
       "noPdf": "No PDF loaded yet",
       "applied": "Watermarked PDF saved as {name}.",
       "notPdf": "Please choose a PDF file",
-      "loadError": "Could not read this PDF: {msg}"
+      "loadError": "Could not read this PDF: {msg}",
+      "preview": "Preview (page {n})",
+      "previewHint": "The preview is an approximation; the PDF output is authoritative."
     },
     "pdf-compress": {
       "title": "PDF Compress",
@@ -747,7 +755,8 @@ export default {
       "noResult": "Nothing scanned yet.",
       "errPermission": "Cannot access the camera. Please grant camera permission.",
       "errNoCamera": "No camera device available.",
-      "errDecode": "Could not decode a barcode from the image."
+      "errDecode": "Could not decode a barcode from the image.",
+      "switchCamera": "Switch camera"
     },
     "qrcode-generate": {
       "title": "QR Code Generator",
@@ -952,9 +961,7 @@ export default {
       "total": "Total",
       "reset": "Reset",
       "popAll": "Pop All",
-      "bubble": "Bubble {n}",
-      "mute": "Mute",
-      "unmute": "Unmute"
+      "bubble": "Bubble {n}"
     },
     "jiaobei": {
       "title": "Moon Blocks",
@@ -977,9 +984,7 @@ export default {
       "toggleSwitch": "Toggle switch",
       "toggleCount": "Toggles: {n}",
       "on": "ON",
-      "off": "OFF",
-      "mute": "Mute",
-      "unmute": "Unmute"
+      "off": "OFF"
     },
     "joss-paper": {
       "title": "Burn Joss Paper",
@@ -999,8 +1004,6 @@ export default {
       "session": "Session",
       "total": "Total",
       "reset": "Reset total",
-      "mute": "Mute",
-      "unmute": "Unmute",
       "confirmReset": "Reset the total merit to zero? This can't be undone."
     },
     "lottery": {
@@ -1054,9 +1057,7 @@ export default {
       "winner": "Winner",
       "removeOption": "Remove",
       "defaultLabel": "Option {letter}",
-      "removeWinner": "Remove winner from wheel",
-      "mute": "Mute",
-      "unmute": "Unmute"
+      "removeWinner": "Remove winner from wheel"
     },
     "whisper-transcribe": {
       "title": "Whisper Transcription",
@@ -1142,5 +1143,9 @@ export default {
     "placeholder": "Type a tool name or keyword…",
     "results": "Results",
     "hint": "↑↓ select · Enter open · Esc close · press ⌘K / Ctrl+K or / on any page"
+  },
+  "pwa": {
+    "updateAvailable": "A new version is available",
+    "reload": "Reload"
   }
 }

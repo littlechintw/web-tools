@@ -51,7 +51,8 @@ export default {
     "count": "{count}건",
     "createdAt": "생성 시간",
     "restored": "기록을 불러왔습니다",
-    "saved": "저장됨"
+    "saved": "저장됨",
+    "imported": "기록 {count}개를 가져왔습니다"
   },
   "common": {
     "copy": "복사",
@@ -81,7 +82,11 @@ export default {
     "pasteHint": "Ctrl+V / ⌘V로 바로 붙여넣을 수도 있습니다",
     "charCount": "{n}자",
     "noOutput": "결과가 여기에 표시됩니다",
-    "loadExample": "예시 불러오기"
+    "loadExample": "예시 불러오기",
+    "mute": "음소거",
+    "unmute": "소리 켜기",
+    "downloadZip": "ZIP 다운로드 (전체)",
+    "offlineReady": "오프라인에서 사용할 수 있습니다"
   },
   "notFound": {
     "title": "페이지를 찾을 수 없습니다",
@@ -112,7 +117,8 @@ export default {
       "displayValue": "텍스트 표시",
       "invalidValue": "이 형식에는 값이 유효하지 않습니다",
       "downloadPng": "PNG 다운로드",
-      "valueHint": "인코딩할 내용을 입력하세요"
+      "valueHint": "인코딩할 내용을 입력하세요",
+      "downloadSvg": "SVG 다운로드"
     },
     "base64": {
       "title": "Base64 인코드 / 디코드",
@@ -615,7 +621,7 @@ export default {
     },
     "pdf-to-image": {
       "title": "PDF를 이미지로 변환",
-      "description": "PDF의 모든 페이지를 PNG 이미지로 렌더링합니다. 출력 품질을 선택하고 페이지를 하나씩 또는 한 번에 다운로드할 수 있으며 모두 브라우저에서 처리됩니다.",
+      "description": "PDF의 각 페이지를 PNG 또는 JPEG 이미지로 변환합니다. 해상도와 품질을 선택할 수 있고, 페이지별 또는 ZIP으로 한 번에 다운로드할 수 있으며 모두 브라우저에서 처리됩니다.",
       "dropHint": "여기에 PDF를 끌어다 놓거나 클릭하여 업로드",
       "quality": "출력 품질",
       "render": "페이지 렌더링",
@@ -650,7 +656,9 @@ export default {
       "noPdf": "로드된 PDF가 없습니다",
       "applied": "워터마크가 적용된 PDF를 {name}(으)로 저장했습니다.",
       "notPdf": "PDF 파일을 선택하세요",
-      "loadError": "이 PDF를 읽을 수 없습니다: {msg}"
+      "loadError": "이 PDF를 읽을 수 없습니다: {msg}",
+      "preview": "미리보기 ({n}페이지)",
+      "previewHint": "미리보기는 근사치이며 실제 출력은 PDF를 기준으로 합니다."
     },
     "pdf-compress": {
       "title": "PDF 압축",
@@ -716,7 +724,8 @@ export default {
       "noResult": "아직 스캔된 내용이 없습니다.",
       "errPermission": "카메라에 접근할 수 없습니다. 카메라 권한을 허용해 주세요.",
       "errNoCamera": "사용 가능한 카메라 장치를 찾을 수 없습니다.",
-      "errDecode": "이미지에서 바코드를 해독할 수 없습니다."
+      "errDecode": "이미지에서 바코드를 해독할 수 없습니다.",
+      "switchCamera": "카메라 전환"
     },
     "qrcode-generate": {
       "title": "QR Code 생성",
@@ -928,9 +937,7 @@ export default {
       "toggleSwitch": "스위치 전환",
       "toggleCount": "전환 횟수: {n}",
       "on": "ON",
-      "off": "OFF",
-      "mute": "음소거",
-      "unmute": "음소거 해제"
+      "off": "OFF"
     },
     "joss-paper": {
       "title": "지전 태우기",
@@ -950,9 +957,7 @@ export default {
       "total": "전체",
       "reset": "초기화",
       "popAll": "전부 터뜨리기",
-      "bubble": "뽁뽁이 {n}",
-      "mute": "음소거",
-      "unmute": "음소거 해제"
+      "bubble": "뽁뽁이 {n}"
     },
     "wooden-fish": {
       "title": "목어",
@@ -961,8 +966,6 @@ export default {
       "session": "이번",
       "total": "누적",
       "reset": "누적 초기화",
-      "mute": "음소거",
-      "unmute": "음소거 해제",
       "confirmReset": "누적 공덕을 0으로 초기화할까요? 이 작업은 되돌릴 수 없습니다."
     },
     "lottery": {
@@ -1016,9 +1019,7 @@ export default {
       "winner": "당첨",
       "removeOption": "삭제",
       "defaultLabel": "옵션 {letter}",
-      "removeWinner": "당첨 항목을 돌림판에서 제거",
-      "mute": "음소거",
-      "unmute": "음소거 해제"
+      "removeWinner": "당첨 항목을 돌림판에서 제거"
     },
     "whisper-transcribe": {
       "title": "Whisper 음성 받아쓰기",
@@ -1104,5 +1105,9 @@ export default {
     "placeholder": "도구 이름이나 키워드 입력…",
     "results": "검색 결과",
     "hint": "↑↓ 선택 · Enter 열기 · Esc 닫기 · 어느 페이지에서나 ⌘K / Ctrl+K 또는 / 로 열 수 있습니다"
+  },
+  "pwa": {
+    "updateAvailable": "새 버전이 있습니다",
+    "reload": "새로고침"
   }
 }

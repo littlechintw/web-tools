@@ -6,7 +6,7 @@ import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
 import { useHistory } from '@/composables/useHistory'
 import { isBoolean, isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
-import { downloadUrl } from '@/utils/download'
+import { downloadText, downloadUrl } from '@/utils/download'
 
 const TOOL_ID = 'barcode-generate'
 const { t } = useI18n()
@@ -78,11 +78,34 @@ function render() {
   })
 }
 
+function baseName() {
+  const slug = value.value.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+  return `barcode-${format.value}${slug ? `-${slug}` : ''}`
+}
+
 function download() {
   const el = canvasRef.value
   if (!el || !valid.value) return
-  const slug = value.value.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 40)
-  downloadUrl(el.toDataURL('image/png'), `barcode-${format.value}${slug ? `-${slug}` : ''}.png`)
+  downloadUrl(el.toDataURL('image/png'), `${baseName()}.png`)
+}
+
+/** Vector export: JsBarcode renders into a detached <svg>, serialized as-is. */
+function downloadSvg() {
+  if (!valid.value) return
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  try {
+    JsBarcode(svg, value.value, {
+      format: format.value,
+      width: Math.max(1, Math.trunc(barWidth.value) || 1),
+      height: Math.max(10, Math.trunc(height.value) || 10),
+      displayValue: displayValue.value,
+      margin: 10,
+    })
+  } catch {
+    return
+  }
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg)
+  downloadText(xml, `${baseName()}.svg`, 'image/svg+xml;charset=utf-8')
 }
 
 function save() {
@@ -172,6 +195,9 @@ const formatItems = [...FORMATS]
     <div class="d-flex ga-2 flex-wrap justify-center">
       <v-btn color="primary" prepend-icon="mdi-download" :disabled="!valid" @click="download">
         {{ T('downloadPng') }}
+      </v-btn>
+      <v-btn variant="tonal" prepend-icon="mdi-vector-curve" :disabled="!valid" @click="downloadSvg">
+        {{ T('downloadSvg') }}
       </v-btn>
       <CopyBtn :text="value" />
     </div>

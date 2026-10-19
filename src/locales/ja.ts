@@ -51,7 +51,8 @@ export default {
     "count": "{count} 件",
     "createdAt": "作成日時",
     "restored": "履歴を読み込みました",
-    "saved": "保存しました"
+    "saved": "保存しました",
+    "imported": "{count} 件の履歴を読み込みました"
   },
   "common": {
     "copy": "コピー",
@@ -81,7 +82,11 @@ export default {
     "pasteHint": "Ctrl+V / ⌘V で直接貼り付けることもできます",
     "charCount": "{n} 文字",
     "noOutput": "結果はここに表示されます",
-    "loadExample": "サンプルを読み込む"
+    "loadExample": "サンプルを読み込む",
+    "mute": "ミュート",
+    "unmute": "ミュート解除",
+    "downloadZip": "ZIP でダウンロード（すべて）",
+    "offlineReady": "オフラインで利用できます"
   },
   "notFound": {
     "title": "ページが見つかりません",
@@ -112,7 +117,8 @@ export default {
       "displayValue": "テキストを表示",
       "invalidValue": "この形式では数値が無効です",
       "downloadPng": "PNG をダウンロード",
-      "valueHint": "エンコードする内容を入力してください"
+      "valueHint": "エンコードする内容を入力してください",
+      "downloadSvg": "SVG をダウンロード"
     },
     "base64": {
       "title": "Base64 エンコード / デコード",
@@ -615,7 +621,7 @@ export default {
     },
     "pdf-to-image": {
       "title": "PDF を画像に変換",
-      "description": "PDF の各ページを PNG 画像としてレンダリングします。出力品質を選び、1ページずつまたは一括でダウンロードできます。すべてブラウザ内で処理されます。",
+      "description": "PDF の各ページを PNG または JPEG として書き出します。解像度と画質を選べ、1 ページずつ、または ZIP でまとめてダウンロードできます。すべてブラウザ内で処理されます。",
       "dropHint": "PDF をここにドロップまたはクリックしてアップロード",
       "quality": "出力品質",
       "render": "ページをレンダリング",
@@ -650,7 +656,9 @@ export default {
       "noPdf": "PDF がまだ読み込まれていません",
       "applied": "透かし入り PDF を {name} として保存しました。",
       "notPdf": "PDF ファイルを選択してください",
-      "loadError": "この PDF を読み込めませんでした：{msg}"
+      "loadError": "この PDF を読み込めませんでした：{msg}",
+      "preview": "プレビュー（{n} ページ目）",
+      "previewHint": "プレビューは近似表示です。実際の出力は PDF をご確認ください。"
     },
     "pdf-compress": {
       "title": "PDF 圧縮",
@@ -716,7 +724,8 @@ export default {
       "noResult": "まだ何も読み取っていません。",
       "errPermission": "カメラにアクセスできません。カメラの権限を許可してください。",
       "errNoCamera": "利用可能なカメラデバイスが見つかりません。",
-      "errDecode": "画像からバーコードを読み取れませんでした。"
+      "errDecode": "画像からバーコードを読み取れませんでした。",
+      "switchCamera": "カメラを切り替え"
     },
     "qrcode-generate": {
       "title": "QR Code 作成",
@@ -928,9 +937,7 @@ export default {
       "toggleSwitch": "スイッチを切り替える",
       "toggleCount": "切り替え回数：{n}",
       "on": "ON",
-      "off": "OFF",
-      "mute": "ミュート",
-      "unmute": "ミュート解除"
+      "off": "OFF"
     },
     "joss-paper": {
       "title": "紙銭を焼く",
@@ -950,9 +957,7 @@ export default {
       "total": "合計",
       "reset": "リセット",
       "popAll": "全部潰す",
-      "bubble": "プチプチ {n}",
-      "mute": "ミュート",
-      "unmute": "ミュート解除"
+      "bubble": "プチプチ {n}"
     },
     "wooden-fish": {
       "title": "木魚",
@@ -961,8 +966,6 @@ export default {
       "session": "今回",
       "total": "累計",
       "reset": "累計をリセット",
-      "mute": "ミュート",
-      "unmute": "ミュート解除",
       "confirmReset": "累計の功徳をゼロに戻しますか？この操作は元に戻せません。"
     },
     "lottery": {
@@ -1016,9 +1019,7 @@ export default {
       "winner": "当選",
       "removeOption": "削除",
       "defaultLabel": "選択肢 {letter}",
-      "removeWinner": "当選項目をルーレットから外す",
-      "mute": "ミュート",
-      "unmute": "ミュート解除"
+      "removeWinner": "当選項目をルーレットから外す"
     },
     "whisper-transcribe": {
       "title": "Whisper 文字起こし",
@@ -1104,5 +1105,9 @@ export default {
     "placeholder": "ツール名またはキーワードを入力…",
     "results": "検索結果",
     "hint": "↑↓ 選択 · Enter 開く · Esc 閉じる · どのページでも ⌘K / Ctrl+K または / で開けます"
+  },
+  "pwa": {
+    "updateAvailable": "新しいバージョンがあります",
+    "reload": "再読み込み"
   }
 }

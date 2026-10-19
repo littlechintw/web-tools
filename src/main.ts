@@ -5,6 +5,7 @@ import { router } from './router'
 import { vuetify } from './plugins/vuetify'
 import { i18n } from './plugins/i18n'
 import './styles/main.css'
+import { registerServiceWorker } from './plugins/pwa'
 
 const app = createApp(App)
 
@@ -14,3 +15,5 @@ app.use(vuetify)
 app.use(i18n)
 
 app.mount('#app')
+
+registerServiceWorker()

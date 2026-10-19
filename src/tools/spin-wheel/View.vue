@@ -369,8 +369,8 @@ onUnmounted(() => {
       <v-btn
         :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
         variant="text"
-        :title="muted ? t('tools.spin-wheel.unmute') : t('tools.spin-wheel.mute')"
-        :aria-label="muted ? t('tools.spin-wheel.unmute') : t('tools.spin-wheel.mute')"
+        :title="muted ? t('common.unmute') : t('common.mute')"
+        :aria-label="muted ? t('common.unmute') : t('common.mute')"
         :aria-pressed="muted"
         @click="muted = !muted"
       />

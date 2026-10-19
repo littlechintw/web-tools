@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PDFDocument, StandardFonts, degrees, rgb, type PDFPage } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
@@ -7,6 +7,7 @@ import FileDrop from '@/components/FileDrop.vue'
 import { isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
 import { downloadBlob } from '@/utils/download'
 import { stripExtension } from '@/utils/format'
+import { getDocument } from '@/utils/pdfjs'
 
 const { t } = useI18n()
 const T = (key: string, args?: Record<string, unknown>) => t(`tools.pdf-watermark.${key}`, args ?? {})
@@ -31,6 +32,91 @@ const layout = useStoredRef<Layout>('pdf-watermark.layout', 'tile', oneOf(LAYOUT
 const busy = ref(false)
 const error = ref('')
 const success = ref('')
+
+// ---------------------------------------------------------------------------
+// Live preview: the chosen page rendered once by pdf.js, with the watermark
+// drawn on an overlay canvas using the same placement maths as apply().
+const previewCanvas = ref<HTMLCanvasElement | null>(null)
+const overlayCanvas = ref<HTMLCanvasElement | null>(null)
+const previewPage = ref(1)
+const previewBusy = ref(false)
+let pageImage: { canvas: HTMLCanvasElement; widthPt: number; heightPt: number } | null = null
+let previewSeq = 0
+
+async function renderPreviewPage() {
+  if (!pdfBytes.value) return
+  const seq = ++previewSeq
+  previewBusy.value = true
+  const pdf = await getDocument({ data: pdfBytes.value.slice() }).promise
+  try {
+    const page = await pdf.getPage(Math.min(Math.max(1, previewPage.value), pdf.numPages))
+    // rotation 0 = PDF user space, the coordinate system the watermark is placed in.
+    const base = page.getViewport({ scale: 1, rotation: 0 })
+    const vp = page.getViewport({ scale: Math.min(2, 560 / base.width), rotation: 0 })
+    const off = document.createElement('canvas')
+    off.width = Math.floor(vp.width)
+    off.height = Math.floor(vp.height)
+    const ctx = off.getContext('2d')
+    if (!ctx) return
+    await page.render({ canvasContext: ctx, viewport: vp, canvas: off }).promise
+    if (seq !== previewSeq) return
+    pageImage = { canvas: off, widthPt: base.width, heightPt: base.height }
+    await nextTick()
+    drawPreview()
+  } catch {
+    // Preview is best-effort; applying still works without it.
+  } finally {
+    void pdf.loadingTask.destroy()
+    if (seq === previewSeq) previewBusy.value = false
+  }
+}
+
+function drawPreview() {
+  const pc = previewCanvas.value
+  const oc = overlayCanvas.value
+  if (!pc || !oc || !pageImage) return
+  pc.width = oc.width = pageImage.canvas.width
+  pc.height = oc.height = pageImage.canvas.height
+  pc.getContext('2d')?.drawImage(pageImage.canvas, 0, 0)
+  const ctx = oc.getContext('2d')
+  if (!ctx) return
+  ctx.clearRect(0, 0, oc.width, oc.height)
+  if (!text.value) return
+
+  const s = oc.width / pageImage.widthPt // canvas px per PDF point
+  const { widthPt: width, heightPt: height } = pageImage
+  const size = fontSize.value
+  ctx.font = `${size * s}px Helvetica, Arial, sans-serif`
+  ctx.textBaseline = 'alphabetic'
+  ctx.globalAlpha = opacity.value
+  ctx.fillStyle = color.value
+  const textWidth = ctx.measureText(text.value).width / s
+  const rad = (rotation.value * Math.PI) / 180
+  // (x, y) is the baseline origin in PDF space (y up); pdf-lib rotates
+  // counter-clockwise, which is a negative rotation on a y-down canvas.
+  const mark = (x: number, y: number) => {
+    ctx.save()
+    ctx.translate(x * s, (height - y) * s)
+    ctx.rotate(-rad)
+    ctx.fillText(text.value, 0, 0)
+    ctx.restore()
+  }
+  if (layout.value === 'center') {
+    mark(width / 2 - (textWidth / 2) * Math.cos(rad), height / 2 - (textWidth / 2) * Math.sin(rad))
+  } else {
+    const stepX = Math.max(textWidth + size * 2, size * 4)
+    const stepY = Math.max(size * 4, 60)
+    for (let y = -stepY; y < height + stepY; y += stepY) {
+      for (let x = -stepX; x < width + stepX; x += stepX) mark(x, y)
+    }
+  }
+}
+
+watch([text, fontSize, color, opacity, rotation, layout], drawPreview)
+watch(previewPage, () => void renderPreviewPage())
+onUnmounted(() => {
+  previewSeq++
+})
 
 /** Convert a #rrggbb string to pdf-lib rgb (0-1 components). */
 function hexToRgb(hex: string) {
@@ -80,6 +166,9 @@ async function onFiles(files: File[]) {
   try {
     const doc = await PDFDocument.load(pdfBytes.value.slice())
     pageCount.value = doc.getPageCount()
+    previewPage.value = 1
+    pageImage = null
+    void renderPreviewPage()
   } catch (e) {
     error.value = T('loadError', { msg: (e as Error).message })
     pdfBytes.value = null
@@ -189,57 +278,79 @@ async function apply() {
         {{ t('tools.pdf-watermark.pageCount', { count: pageCount }) }}
       </p>
 
-      <v-text-field
-        v-model="text"
-        :label="t('tools.pdf-watermark.text')"
-        class="mt-2"
-        density="comfortable"
-        hide-details
-      />
-
-      <v-row class="mt-2" density="comfortable">
-        <v-col cols="12" sm="6">
+      <div class="d-flex flex-wrap ga-6 mt-2">
+        <div class="controls-col">
           <v-text-field
-            v-model.number="fontSize"
-            :label="t('tools.pdf-watermark.fontSize')"
-            type="number"
-            min="1"
+            v-model="text"
+            :label="t('tools.pdf-watermark.text')"
+            class="mt-2"
             density="comfortable"
             hide-details
           />
-        </v-col>
-        <v-col cols="12" sm="6">
-          <v-text-field
-            v-model="color"
-            :label="t('tools.pdf-watermark.color')"
-            type="color"
-            density="comfortable"
-            hide-details
-          />
-        </v-col>
-      </v-row>
 
-      <div class="mt-4">
-        <label class="text-body-2 text-medium-emphasis">
-          {{ t('tools.pdf-watermark.opacity') }}: {{ opacity.toFixed(2) }}
-        </label>
-        <v-slider v-model="opacity" :min="0" :max="1" :step="0.05" hide-details density="compact" />
-      </div>
+          <v-row class="mt-2" density="comfortable">
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model.number="fontSize"
+                :label="t('tools.pdf-watermark.fontSize')"
+                type="number"
+                min="1"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-text-field
+                v-model="color"
+                :label="t('tools.pdf-watermark.color')"
+                type="color"
+                density="comfortable"
+                hide-details
+              />
+            </v-col>
+          </v-row>
 
-      <div class="mt-2">
-        <label class="text-body-2 text-medium-emphasis">
-          {{ t('tools.pdf-watermark.rotation') }}: {{ rotation }}°
-        </label>
-        <v-slider v-model="rotation" :min="-180" :max="180" :step="1" hide-details density="compact" />
-      </div>
+          <div class="mt-4">
+            <label class="text-body-2 text-medium-emphasis">
+              {{ t('tools.pdf-watermark.opacity') }}: {{ opacity.toFixed(2) }}
+            </label>
+            <v-slider v-model="opacity" :min="0" :max="1" :step="0.05" hide-details density="compact" />
+          </div>
 
-      <div class="mt-4">
-        <label class="text-body-2 text-medium-emphasis d-block mb-2">
-          {{ t('tools.pdf-watermark.layout') }}
-        </label>
-        <v-btn-toggle v-model="layout" mandatory color="primary" density="comfortable" variant="outlined">
-          <v-btn v-for="l in LAYOUTS" :key="l" :value="l">{{ t(`tools.pdf-watermark.${l}`) }}</v-btn>
-        </v-btn-toggle>
+          <div class="mt-2">
+            <label class="text-body-2 text-medium-emphasis">
+              {{ t('tools.pdf-watermark.rotation') }}: {{ rotation }}°
+            </label>
+            <v-slider v-model="rotation" :min="-180" :max="180" :step="1" hide-details density="compact" />
+          </div>
+
+          <div class="mt-4">
+            <label class="text-body-2 text-medium-emphasis d-block mb-2">
+              {{ t('tools.pdf-watermark.layout') }}
+            </label>
+            <v-btn-toggle v-model="layout" mandatory color="primary" density="comfortable" variant="outlined">
+              <v-btn v-for="l in LAYOUTS" :key="l" :value="l">{{ t(`tools.pdf-watermark.${l}`) }}</v-btn>
+            </v-btn-toggle>
+          </div>
+        </div>
+
+        <div class="preview-col">
+          <div class="d-flex align-center ga-1 mb-2">
+            <span class="text-caption text-medium-emphasis">{{ T('preview', { n: previewPage }) }}</span>
+            <v-spacer />
+            <template v-if="pageCount > 1">
+              <v-btn icon="mdi-chevron-left" size="x-small" variant="text" :disabled="previewPage <= 1" @click="previewPage--" />
+              <span class="text-caption tabular-nums">{{ previewPage }} / {{ pageCount }}</span>
+              <v-btn icon="mdi-chevron-right" size="x-small" variant="text" :disabled="previewPage >= pageCount" @click="previewPage++" />
+            </template>
+          </div>
+          <div class="preview-wrap" :class="{ 'preview-wrap--busy': previewBusy }">
+            <canvas ref="previewCanvas" class="preview-canvas" />
+            <canvas ref="overlayCanvas" class="preview-overlay" />
+            <v-progress-circular v-if="previewBusy" indeterminate size="28" class="preview-spinner" />
+          </div>
+          <div class="text-caption text-medium-emphasis mt-1">{{ T('previewHint') }}</div>
+        </div>
       </div>
 
       <v-btn
@@ -255,3 +366,47 @@ async function apply() {
     </template>
   </ToolShell>
 </template>
+
+<style scoped>
+.controls-col {
+  flex: 1 1 300px;
+  min-width: 260px;
+}
+.preview-col {
+  flex: 1 1 320px;
+  min-width: 260px;
+  max-width: 560px;
+}
+.preview-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  border: 1px solid rgba(var(--v-border-color), 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(var(--v-border-color), 0.06);
+  min-height: 120px;
+}
+.preview-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.preview-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.preview-wrap--busy .preview-canvas {
+  opacity: 0.4;
+}
+.preview-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+</style>

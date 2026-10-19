@@ -115,8 +115,8 @@ function resetMerit() {
       <v-btn
         :icon="muted ? 'mdi-volume-off' : 'mdi-volume-high'"
         variant="text"
-        :title="muted ? t('tools.wooden-fish.unmute') : t('tools.wooden-fish.mute')"
-        :aria-label="muted ? t('tools.wooden-fish.unmute') : t('tools.wooden-fish.mute')"
+        :title="muted ? t('common.unmute') : t('common.mute')"
+        :aria-label="muted ? t('common.unmute') : t('common.mute')"
         :aria-pressed="muted"
         @click="muted = !muted"
       />

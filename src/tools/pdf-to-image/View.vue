@@ -4,10 +4,11 @@ import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
 import { isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
-import { downloadSequentially, downloadUrl } from '@/utils/download'
+import { downloadBlob, downloadUrl } from '@/utils/download'
 import { formatBytes, stripExtension } from '@/utils/format'
 import { canvasToBlob, extensionForMime } from '@/utils/image'
 import { getDocument } from '@/utils/pdfjs'
+import { createZip } from '@/utils/zip'
 
 const { t } = useI18n()
 const T = (key: string, args?: Record<string, unknown>) => t(`tools.pdf-to-image.${key}`, args ?? {})
@@ -15,6 +16,7 @@ const T = (key: string, args?: Record<string, unknown>) => t(`tools.pdf-to-image
 interface RenderedPage {
   index: number
   url: string
+  blob: Blob
   size: number
 }
 
@@ -96,7 +98,7 @@ async function render(file: File) {
       canvas.height = vp.height
       await page.render({ canvasContext: ctx, viewport: vp, canvas }).promise
       const blob = await canvasToBlob(canvas, type, q)
-      out.push({ index: n, url: URL.createObjectURL(blob), size: blob.size })
+      out.push({ index: n, url: URL.createObjectURL(blob), blob, size: blob.size })
     }
     if (seq === renderSeq) {
       progress.value = { done: pdf.numPages, total: pdf.numPages }
@@ -128,8 +130,18 @@ function downloadPage(p: RenderedPage) {
   downloadUrl(p.url, pageFilename(p))
 }
 
-function downloadAll() {
-  void downloadSequentially(pages.value.map((p) => ({ url: p.url, filename: pageFilename(p) })))
+const zipping = ref(false)
+
+/** One archive beats a dozen staggered downloads the browser may throttle. */
+async function downloadAll() {
+  if (zipping.value) return
+  zipping.value = true
+  try {
+    const zip = await createZip(pages.value.map((p) => ({ name: pageFilename(p), data: p.blob })))
+    downloadBlob(zip, `${fileName.value || 'pages'}.zip`)
+  } finally {
+    zipping.value = false
+  }
 }
 
 onUnmounted(() => {
@@ -203,8 +215,8 @@ onUnmounted(() => {
         <div class="text-subtitle-1 font-weight-medium">{{ T('pageCount', { count: pages.length }) }}</div>
         <span class="text-body-2 text-medium-emphasis">· {{ formatBytes(totalSize) }}</span>
         <v-spacer />
-        <v-btn color="primary" size="small" prepend-icon="mdi-download-multiple" @click="downloadAll">
-          {{ T('downloadAll') }}
+        <v-btn color="primary" size="small" prepend-icon="mdi-folder-zip-outline" :loading="zipping" @click="downloadAll">
+          {{ t('common.downloadZip') }}
         </v-btn>
       </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
@@ -79,6 +79,9 @@ async function onFiles(files: File[]) {
   sourceName.value = file.name
   try {
     const img = await loadImage(objectUrl.value)
+    // The canvas lives inside v-if="hasImage": mount it first, then draw.
+    hasImage.value = true
+    await nextTick()
     const canvas = canvasRef.value
     if (!canvas) return
     canvas.width = img.naturalWidth
@@ -97,6 +100,7 @@ async function onFiles(files: File[]) {
     undoSnapshot.value = null
     clearSelection()
   } catch {
+    hasImage.value = false
     error.value = T('errLoad')
   }
 }

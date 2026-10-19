@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useHistoryStore } from '@/stores/history'
-import { allTools, toolsByRoute } from '@/tools/registry'
+import { allTools } from '@/tools/registry'
 import type { HistoryEntry } from '@/types'
 
 const { t } = useI18n()
@@ -80,18 +80,42 @@ function saveEdit() {
   editDialog.value = false
 }
 
-// ----- delete -----
+// ----- delete (in-app confirmation instead of the browser's confirm()) -----
+const confirmDialog = ref(false)
+const confirmMessage = ref('')
+let confirmAction: (() => void) | null = null
+
+function askConfirm(message: string, action: () => void) {
+  confirmMessage.value = message
+  confirmAction = action
+  confirmDialog.value = true
+}
+
+function runConfirmed() {
+  confirmAction?.()
+  confirmAction = null
+  confirmDialog.value = false
+}
+
 function delEntry(e: HistoryEntry) {
-  if (confirm(t('history.confirmDelete'))) store.remove(e.id)
+  askConfirm(t('history.confirmDelete'), () => store.remove(e.id))
 }
 
 function clearCurrentTool() {
   if (toolFilter.value === 'all') {
-    if (confirm(t('history.confirmClearEverything'))) store.clearAll()
+    askConfirm(t('history.confirmClearEverything'), () => store.clearAll())
   } else {
-    const name = toolName(toolFilter.value)
-    if (confirm(t('history.confirmDeleteAll', { tool: name }))) store.clearTool(toolFilter.value)
+    const id = toolFilter.value
+    askConfirm(t('history.confirmDeleteAll', { tool: toolName(id) }), () => {
+      store.clearTool(id)
+      toolFilter.value = 'all'
+    })
   }
+}
+
+const snackbar = ref({ show: false, text: '', color: 'success' })
+function notify(text: string, color = 'success') {
+  snackbar.value = { show: true, text, color }
 }
 
 // ----- export / import -----
@@ -115,15 +139,16 @@ async function onImport(e: Event) {
   try {
     const text = await file.text()
     const data = JSON.parse(text)
-    if (Array.isArray(data)) store.importEntries(data, 'merge')
+    if (!Array.isArray(data)) throw new Error('not an array')
+    const before = store.entries.length
+    store.importEntries(data, 'merge')
+    notify(t('history.imported', { count: store.entries.length - before }))
   } catch {
-    alert(t('history.invalidJson'))
+    notify(t('history.invalidJson'), 'error')
   }
   ;(e.target as HTMLInputElement).value = ''
 }
 
-// expose to satisfy template usage
-void toolsByRoute
 </script>
 
 <template>
@@ -203,6 +228,19 @@ void toolsByRoute
         </template>
       </v-list-item>
     </v-list>
+
+    <v-dialog v-model="confirmDialog" max-width="440">
+      <v-card>
+        <v-card-text class="pt-6">{{ confirmMessage }}</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="confirmDialog = false">{{ t('common.cancel') }}</v-btn>
+          <v-btn color="error" @click="runConfirmed">{{ t('history.delete') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="2500">{{ snackbar.text }}</v-snackbar>
 
     <v-dialog v-model="editDialog" max-width="640">
       <v-card>

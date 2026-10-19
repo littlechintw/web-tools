@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useDisplay } from 'vuetify'
 import { allTools, categoryOrder } from '@/tools/registry'
 import { useFavoritesStore } from '@/stores/favorites'
 import { useRecentsStore } from '@/stores/recents'
@@ -8,6 +9,7 @@ import { searchTools } from '@/lib/toolSearch'
 import type { CategoryId, RegisteredTool } from '@/types'
 
 const { t } = useI18n()
+const { mobile } = useDisplay()
 const favorites = useFavoritesStore()
 const recents = useRecentsStore()
 
@@ -56,7 +58,8 @@ const showRecent = computed(() => recentTools.value.length > 0 && !query.value.t
       style="max-width: 640px"
     />
 
-    <div class="d-flex flex-wrap justify-center ga-2 mb-6">
+    <!-- Phones: one horizontally scrollable row instead of four stacked rows of chips. -->
+    <div class="d-flex ga-2 mb-6 cat-row" :class="mobile ? 'cat-row--scroll' : 'flex-wrap justify-center'">
       <v-chip
         :variant="activeCat === 'all' ? 'flat' : 'tonal'"
         :color="activeCat === 'all' ? 'primary' : undefined"
@@ -149,6 +152,21 @@ const showRecent = computed(() => recentTools.value.length > 0 && !query.value.t
 </template>
 
 <style scoped>
+.cat-row--scroll {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 4px;
+  margin-inline: -16px;
+  padding-inline: 16px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.cat-row--scroll::-webkit-scrollbar {
+  display: none;
+}
+.cat-row--scroll > * {
+  flex: 0 0 auto;
+}
 .tool-card {
   transition: transform 0.15s ease;
 }
