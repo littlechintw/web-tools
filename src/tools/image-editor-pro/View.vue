@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import * as fabric from 'fabric'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { undoRedoShortcut, useUndoStack } from '@/composables/useUndoStack'
 import { oneOf, useStoredRef } from '@/composables/useStoredRef'
 import { downloadUrl } from '@/utils/download'
 import { stripExtension } from '@/utils/format'
@@ -43,6 +44,68 @@ function syncSelection() {
   }
 }
 
+// ---- undo / redo: whole-canvas JSON snapshots, one per committed change ----
+const history = useUndoStack<string>({ maxEntries: 40 })
+let lastJson = ''
+let restoring = false
+let snapshotTimer: ReturnType<typeof setTimeout> | null = null
+
+function serialize(): string {
+  return canvas ? JSON.stringify(canvas.toJSON()) : ''
+}
+
+// Fabric fires several events per gesture (added + modified + path:created…);
+// debounce so a single user action becomes a single undo step.
+function onCanvasChanged() {
+  if (restoring || !canvas) return
+  if (snapshotTimer) clearTimeout(snapshotTimer)
+  snapshotTimer = setTimeout(() => {
+    snapshotTimer = null
+    if (restoring) return
+    const now = serialize()
+    if (now === lastJson) return
+    history.push(lastJson)
+    lastJson = now
+  }, 150)
+}
+
+async function restoreJson(json: string) {
+  if (!canvas) return
+  restoring = true
+  try {
+    await canvas.loadFromJSON(JSON.parse(json))
+    if (!canvas) return
+    canvas.requestRenderAll()
+    lastJson = json
+    hasImage.value = canvas.getObjects().some((o) => o instanceof fabric.FabricImage)
+    syncSelection()
+  } finally {
+    // Let the load's own object:added events settle before recording again.
+    setTimeout(() => (restoring = false), 0)
+  }
+}
+
+function undo() {
+  const prev = history.undo(lastJson)
+  if (prev !== undefined) void restoreJson(prev)
+}
+
+function redo() {
+  const next = history.redo(lastJson)
+  if (next !== undefined) void restoreJson(next)
+}
+
+function onKeydown(e: KeyboardEvent) {
+  const action = undoRedoShortcut(e)
+  if (!action) return
+  // Don't hijack Ctrl+Z while editing a text box on the canvas.
+  const active = canvas?.getActiveObject() as { isEditing?: boolean } | undefined
+  if (active?.isEditing) return
+  e.preventDefault()
+  if (action === 'undo') undo()
+  else redo()
+}
+
 onMounted(() => {
   if (!canvasEl.value) return
   canvas = new fabric.Canvas(canvasEl.value, {
@@ -54,9 +117,16 @@ onMounted(() => {
   canvas.on('selection:created', syncSelection)
   canvas.on('selection:updated', syncSelection)
   canvas.on('selection:cleared', syncSelection)
+  lastJson = serialize()
+  canvas.on('object:added', onCanvasChanged)
+  canvas.on('object:modified', onCanvasChanged)
+  canvas.on('object:removed', onCanvasChanged)
+  window.addEventListener('keydown', onKeydown)
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  if (snapshotTimer) clearTimeout(snapshotTimer)
   canvas?.dispose()
   canvas = null
   for (const url of objectUrls) URL.revokeObjectURL(url)
@@ -261,7 +331,26 @@ function exportPng() {
     </v-alert>
 
     <!-- Add objects -->
-    <div class="d-flex flex-wrap ga-2 mt-4">
+    <div class="d-flex flex-wrap align-center ga-2 mt-4">
+      <v-btn
+        icon="mdi-undo"
+        variant="tonal"
+        size="small"
+        :disabled="!history.canUndo.value"
+        :title="t('common.undoHint')"
+        :aria-label="t('common.undo')"
+        @click="undo"
+      />
+      <v-btn
+        icon="mdi-redo"
+        variant="tonal"
+        size="small"
+        :disabled="!history.canRedo.value"
+        :title="t('common.redoHint')"
+        :aria-label="t('common.redo')"
+        @click="redo"
+      />
+      <v-divider vertical class="mx-1 align-self-stretch" />
       <v-btn prepend-icon="mdi-format-text" variant="tonal" @click="addText">
         {{ tt('addText') }}
       </v-btn>

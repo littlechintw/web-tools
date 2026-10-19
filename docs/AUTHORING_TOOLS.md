@@ -95,6 +95,14 @@ values. It is auto-discovered (glob); optionally add a display label in
 - `useAudioContext()` — lazily created, resumed and auto-closed AudioContext
   for tools that make sounds (`audio.play((ctx) => …)`).
 - `useClipboard()` — `copy(text)` with a transient `copied` flag, `read()`.
+- `useDragReorder(onMove)` — pointer-based drag-to-reorder (mouse + touch).
+  Bind `:ref="setContainer"` on the list, `:data-index="i"` on items, and
+  `@pointerdown="start(i, $event)"` on a `.drag-handle`; keep arrow buttons as
+  the keyboard/accessible fallback.
+- `useUndoStack<T>()` — multi-level undo/redo over snapshots (`push` before a
+  change, `undo(current)` / `redo(current)` return the state to restore;
+  `maxEntries` / `maxBytes` caps). Pair with `undoRedoShortcut(e)` for
+  Ctrl/⌘+Z and Ctrl/⌘+Shift+Z.
 
 ### Utilities (`src/utils/`)
 
@@ -129,8 +137,11 @@ using them — but don't invent new breakpoint variants without adding them ther
 3. Encode/decode style tools → a swap button (output → input, flip mode).
 4. Options the user would set every time → `useStoredRef`.
 5. Files → `FileDrop`; output filenames derived from the input name.
-6. Long operations → progress indicator and a disabled/loading primary button.
+6. Long operations → progress indicator, a disabled/loading primary button and
+   a cancel button (pass an `AbortSignal`, see pdf-compress).
 7. Errors → inline `v-alert` / `error` props with an i18n message, never raw exceptions only.
+8. Anything destructive or multi-step (editing, reordering) → undo/redo via `useUndoStack`.
+9. Lists the user arranges → drag-to-reorder via `useDragReorder` (plus arrows).
 
 ## Rules
 

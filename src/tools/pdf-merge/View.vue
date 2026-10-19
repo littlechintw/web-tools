@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { PDFDocument } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { arrayMove, useDragReorder } from '@/composables/useDragReorder'
 import { downloadBlob } from '@/utils/download'
 import { formatBytes, stripExtension } from '@/utils/format'
 
@@ -61,6 +62,12 @@ function move(index: number, delta: number) {
   items.value = next
   success.value = ''
 }
+
+function moveTo(from: number, to: number) {
+  items.value = arrayMove(items.value, from, to)
+}
+
+const { setContainer: setDragContainer, dragging, start: startDrag } = useDragReorder(moveTo)
 
 function remove(index: number) {
   items.value.splice(index, 1)
@@ -125,9 +132,17 @@ async function merge() {
         </v-btn>
       </div>
 
+      <div class="text-caption text-medium-emphasis mb-1">{{ t('common.dragToReorder') }}</div>
+      <div :ref="setDragContainer">
       <v-list lines="two" density="comfortable" class="rounded-lg border">
-        <v-list-item v-for="(item, i) in items" :key="i">
+        <v-list-item v-for="(item, i) in items" :key="i" :data-index="i" :class="{ 'is-dragging': dragging === i }">
           <template #prepend>
+            <v-icon
+              icon="mdi-drag-vertical"
+              class="drag-handle mr-1 text-medium-emphasis"
+              :aria-label="t('common.dragToReorder')"
+              @pointerdown="startDrag(i, $event)"
+            />
             <v-avatar color="primary" variant="tonal" rounded="lg">
               <span class="text-caption font-weight-bold">{{ i + 1 }}</span>
             </v-avatar>
@@ -164,6 +179,7 @@ async function merge() {
           </template>
         </v-list-item>
       </v-list>
+      </div>
 
       <div class="d-flex flex-wrap align-center ga-3 mt-4">
         <v-btn

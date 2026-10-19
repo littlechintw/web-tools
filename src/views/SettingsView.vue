@@ -119,7 +119,25 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
 
     <!-- Local data -->
     <h2 class="text-subtitle-2 text-medium-emphasis mb-2">{{ t('settings.data') }}</h2>
-    <v-card rounded="lg" variant="outlined" class="mb-6 pa-4">
+    <v-card rounded="lg" variant="outlined" class="mb-6">
+      <v-list lines="three">
+        <v-list-item :subtitle="t('settings.historyToggleDescription')">
+          <template #title>
+            <span class="font-weight-medium">{{ t('settings.historyToggle') }}</span>
+          </template>
+          <template #append>
+            <v-switch
+              :model-value="settings.historyEnabled"
+              color="primary"
+              hide-details
+              inset
+              @update:model-value="settings.setHistoryEnabled($event as boolean)"
+            />
+          </template>
+        </v-list-item>
+      </v-list>
+      <v-divider />
+      <div class="pa-4">
       <p class="text-body-2 text-medium-emphasis mb-3">{{ t('settings.dataDescription') }}</p>
       <div class="d-flex flex-wrap ga-2 mb-4">
         <v-chip size="small" variant="tonal" prepend-icon="mdi-history">
@@ -137,6 +155,7 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
         <v-btn variant="outlined" color="error" prepend-icon="mdi-delete-sweep-outline" @click="confirmClear = true">
           {{ t('settings.clearAll') }}
         </v-btn>
+      </div>
       </div>
     </v-card>
 

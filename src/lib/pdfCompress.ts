@@ -577,6 +577,19 @@ export interface ImageCompressOptions extends ImageSettings {
   /** Drop XMP metadata, page thumbnails and app-private PieceInfo. */
   stripMetadata: boolean
   password?: string
+  /** Abort between images; the promise rejects with CancelledError. */
+  signal?: AbortSignal
+}
+
+export class CancelledError extends Error {
+  constructor() {
+    super('Cancelled')
+    this.name = 'CancelledError'
+  }
+}
+
+export function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new CancelledError()
 }
 
 interface ImageEntry {
@@ -717,6 +730,7 @@ export async function compressPdfImages(
   let recompressed = 0
 
   for (let i = 0; i < images.length; i++) {
+    throwIfAborted(opts.signal)
     onProgress?.({ phase: 'images', done: i, total: images.length })
     const { ref, stream, inspection } = images[i]
     if (!inspection.info) continue
@@ -736,6 +750,7 @@ export async function compressPdfImages(
     }
   }
 
+  throwIfAborted(opts.signal)
   onProgress?.({ phase: 'saving', done: images.length, total: images.length })
   if (opts.stripMetadata) stripMetadata(doc)
   const objectsRemoved = gcUnreachable(context)

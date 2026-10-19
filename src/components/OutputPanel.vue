@@ -24,8 +24,10 @@ const props = withDefaults(
     placeholder?: string
     /** Hide the character counter (e.g. for short single-line results). */
     hideCount?: boolean
+    /** Auto-grow stops here and the body scrolls, so a huge result can't push the actions off-screen. */
+    maxRows?: number | string
   }>(),
-  { label: '', error: '', rows: 6, autoGrow: true, mono: true, filename: '', mime: 'text/plain;charset=utf-8', placeholder: '', hideCount: false },
+  { label: '', error: '', rows: 6, autoGrow: true, mono: true, filename: '', mime: 'text/plain;charset=utf-8', placeholder: '', hideCount: false, maxRows: 30 },
 )
 
 const { t } = useI18n()
@@ -63,6 +65,7 @@ function download() {
         :model-value="value"
         :rows="rows"
         :auto-grow="autoGrow"
+        :max-rows="maxRows"
         :error-messages="error || undefined"
         :placeholder="placeholder || t('common.noOutput')"
         readonly

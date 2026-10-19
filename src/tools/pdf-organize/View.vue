@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PDFDocument, degrees } from '@cantoo/pdf-lib'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { arrayMove, useDragReorder } from '@/composables/useDragReorder'
+import { undoRedoShortcut, useUndoStack } from '@/composables/useUndoStack'
 import { downloadBlob } from '@/utils/download'
 import { stripExtension } from '@/utils/format'
 import { getDocument } from '@/utils/pdfjs'
@@ -37,8 +39,36 @@ function revokeThumbs() {
   }
 }
 
+// Undo/redo over the page list (order, rotation, deletion). Snapshots are
+// shallow copies: thumbnails are shared object URLs owned by `pages`.
+const history = useUndoStack<PageItem[]>({ maxEntries: 50 })
+const snapshot = () => pages.map((p) => ({ ...p }))
+const restore = (list: PageItem[]) => pages.splice(0, pages.length, ...list.map((p) => ({ ...p })))
+const record = () => history.push(snapshot())
+
+function undo() {
+  const prev = history.undo(snapshot())
+  if (prev) restore(prev)
+}
+
+function redo() {
+  const next = history.redo(snapshot())
+  if (next) restore(next)
+}
+
+function onKeydown(e: KeyboardEvent) {
+  const action = undoRedoShortcut(e)
+  if (!action || !pages.length) return
+  e.preventDefault()
+  if (action === 'undo') undo()
+  else redo()
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+
 function clearState() {
   revokeThumbs()
+  history.clear()
   pages.splice(0, pages.length)
   rawBytes.value = null
   fileName.value = ''
@@ -86,19 +116,32 @@ async function onFiles(files: File[]) {
 }
 
 function rotatePage(i: number) {
+  record()
   pages[i].rotate = (pages[i].rotate + 90) % 360
 }
 
 function toggleDelete(i: number) {
+  record()
   pages[i].deleted = !pages[i].deleted
+}
+
+function moveTo(from: number, to: number) {
+  if (from === to) return
+  restore(arrayMove(pages, from, to))
 }
 
 function move(i: number, dir: -1 | 1) {
   const j = i + dir
   if (j < 0 || j >= pages.length) return
-  const tmp = pages[i]
-  pages[i] = pages[j]
-  pages[j] = tmp
+  record()
+  moveTo(i, j)
+}
+
+// One undo step per drag, however many live swaps happen on the way.
+const drag = useDragReorder(moveTo)
+function startDrag(i: number, e: PointerEvent) {
+  record()
+  drag.start(i, e)
 }
 
 async function apply() {
@@ -171,6 +214,24 @@ onBeforeUnmount(revokeThumbs)
             {{ t('tools.pdf-organize.deletedCount', { count: deletedCount }) }}
           </v-chip>
         </div>
+        <v-btn
+          icon="mdi-undo"
+          variant="text"
+          size="small"
+          :disabled="!history.canUndo.value"
+          :title="t('common.undoHint')"
+          :aria-label="t('common.undo')"
+          @click="undo"
+        />
+        <v-btn
+          icon="mdi-redo"
+          variant="text"
+          size="small"
+          :disabled="!history.canRedo.value"
+          :title="t('common.redoHint')"
+          :aria-label="t('common.redo')"
+          @click="redo"
+        />
         <v-btn variant="text" prepend-icon="mdi-refresh" @click="clearState">
           {{ t('tools.pdf-organize.reset') }}
         </v-btn>
@@ -187,15 +248,19 @@ onBeforeUnmount(revokeThumbs)
         </v-btn>
       </div>
 
-      <div class="page-grid">
+      <div class="text-caption text-medium-emphasis mb-2">
+        <v-icon icon="mdi-gesture-tap-hold" size="14" class="mr-1" />{{ t('tools.pdf-organize.dragHint') }}
+      </div>
+      <div :ref="drag.setContainer" class="page-grid">
         <v-card
           v-for="(p, i) in pages"
-          :key="p.src + '-' + i"
+          :key="p.src"
           variant="outlined"
-          :class="{ 'page-card--deleted': p.deleted }"
+          :class="{ 'page-card--deleted': p.deleted, 'is-dragging': drag.dragging.value === i }"
           class="pa-2"
+          :data-index="i"
         >
-          <div class="thumb-wrap">
+          <div class="thumb-wrap drag-handle" @pointerdown="startDrag(i, $event)">
             <img
               :src="p.thumb"
               :alt="t('tools.pdf-organize.pageLabel', { n: i + 1 })"

@@ -86,7 +86,12 @@ export default {
     "mute": "Mute",
     "unmute": "Unmute",
     "downloadZip": "Download ZIP (all)",
-    "offlineReady": "Ready to work offline"
+    "offlineReady": "Ready to work offline",
+    "undo": "Undo",
+    "redo": "Redo",
+    "dragToReorder": "Drag the handle to reorder",
+    "undoHint": "Undo (Ctrl/⌘+Z)",
+    "redoHint": "Redo (Ctrl/⌘+Shift+Z)"
   },
   "notFound": {
     "title": "Page not found",
@@ -597,7 +602,8 @@ export default {
       "loadError": "Could not read this PDF file.",
       "applyError": "An error occurred while generating the PDF.",
       "keptCount": "{count} kept",
-      "deletedCount": "{count} deleted"
+      "deletedCount": "{count} deleted",
+      "dragHint": "Drag a thumbnail to reorder pages"
     },
     "pdf-sign": {
       "title": "PDF Sign",
@@ -611,7 +617,7 @@ export default {
       "clear": "Clear",
       "uploadSignatureHint": "Upload a transparent PNG signature image",
       "size": "Signature size",
-      "placeHint": "Click on the page preview above to set where the signature goes.",
+      "placeHint": "Click the page preview below where the signature should go.",
       "placed": "Placement set",
       "noSignature": "Create or upload a signature first.",
       "noPlacement": "Click on the page to set a placement point.",
@@ -621,7 +627,8 @@ export default {
       "loadError": "Could not read this PDF file.",
       "signatureError": "Could not read this signature image.",
       "applyError": "An error occurred while generating the PDF.",
-      "applied": "Signed PDF saved as {name}."
+      "applied": "Signed PDF saved as {name}.",
+      "padHint": "Sign here with your mouse or finger"
     },
     "pdf-split": {
       "title": "Split / Extract PDF",
@@ -1137,7 +1144,9 @@ export default {
     "clearAllConfirm": "Clear all local data? History, favorites, recent tools and tool options will be deleted. This cannot be undone.",
     "cleared": "Local data cleared",
     "shortcuts": "Keyboard shortcuts",
-    "shortcutSearch": "Open tool search"
+    "shortcutSearch": "Open tool search",
+    "historyToggle": "Save history automatically",
+    "historyToggleDescription": "When on, text tools keep your inputs in the local history so you can find them again later. When off, nothing new is recorded (existing entries are kept)."
   },
   "palette": {
     "placeholder": "Type a tool name or keyword…",

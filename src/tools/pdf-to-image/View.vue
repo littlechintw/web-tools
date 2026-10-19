@@ -126,6 +126,13 @@ watch([scale, format, quality], () => {
   }, 300)
 })
 
+/** Stop an in-flight render; the loop notices the bumped sequence and bails. */
+function cancelRender() {
+  renderSeq++
+  busy.value = false
+  progress.value = { done: 0, total: 0 }
+}
+
 function downloadPage(p: RenderedPage) {
   downloadUrl(p.url, pageFilename(p))
 }
@@ -197,12 +204,16 @@ onUnmounted(() => {
         rounded
         height="6"
       />
-      <div class="text-caption text-medium-emphasis mt-2">
-        {{
-          progress.total
-            ? T('renderingPage', { n: Math.min(progress.done + 1, progress.total), total: progress.total })
-            : T('rendering')
-        }}
+      <div class="d-flex align-center ga-2 mt-2">
+        <span class="text-caption text-medium-emphasis">
+          {{
+            progress.total
+              ? T('renderingPage', { n: Math.min(progress.done + 1, progress.total), total: progress.total })
+              : T('rendering')
+          }}
+        </span>
+        <v-spacer />
+        <v-btn size="small" variant="text" prepend-icon="mdi-close" @click="cancelRender">{{ t('common.cancel') }}</v-btn>
       </div>
     </div>
 

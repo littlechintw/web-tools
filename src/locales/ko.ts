@@ -86,7 +86,12 @@ export default {
     "mute": "음소거",
     "unmute": "소리 켜기",
     "downloadZip": "ZIP 다운로드 (전체)",
-    "offlineReady": "오프라인에서 사용할 수 있습니다"
+    "offlineReady": "오프라인에서 사용할 수 있습니다",
+    "undo": "실행 취소",
+    "redo": "다시 실행",
+    "dragToReorder": "핸들을 끌어 순서 변경",
+    "undoHint": "실행 취소 (Ctrl/⌘+Z)",
+    "redoHint": "다시 실행 (Ctrl/⌘+Shift+Z)"
   },
   "notFound": {
     "title": "페이지를 찾을 수 없습니다",
@@ -566,7 +571,8 @@ export default {
       "loadError": "이 PDF 파일을 읽을 수 없습니다.",
       "applyError": "PDF를 생성하는 중 오류가 발생했습니다.",
       "keptCount": "{count}페이지 유지",
-      "deletedCount": "{count}페이지 삭제"
+      "deletedCount": "{count}페이지 삭제",
+      "dragHint": "썸네일을 끌어 페이지 순서 변경"
     },
     "pdf-sign": {
       "title": "PDF 전자 서명",
@@ -580,7 +586,7 @@ export default {
       "clear": "지우기",
       "uploadSignatureHint": "투명 배경 PNG 서명 이미지를 업로드하세요",
       "size": "서명 크기",
-      "placeHint": "위의 페이지 미리보기를 클릭하여 서명 위치를 지정하세요.",
+      "placeHint": "아래 페이지 미리보기를 클릭해 서명을 놓을 위치를 선택하세요.",
       "placed": "위치 설정됨",
       "noSignature": "먼저 서명을 만들거나 업로드하세요.",
       "noPlacement": "페이지를 클릭하여 위치를 지정하세요.",
@@ -590,7 +596,8 @@ export default {
       "loadError": "이 PDF 파일을 읽을 수 없습니다.",
       "signatureError": "이 서명 이미지를 읽을 수 없습니다.",
       "applyError": "PDF를 생성하는 중 오류가 발생했습니다.",
-      "applied": "서명된 PDF를 {name}(으)로 저장했습니다."
+      "applied": "서명된 PDF를 {name}(으)로 저장했습니다.",
+      "padHint": "마우스나 손가락으로 여기에 서명하세요"
     },
     "pdf-split": {
       "title": "PDF 분할 / 페이지 추출",
@@ -1099,7 +1106,9 @@ export default {
     "clearAllConfirm": "모든 로컬 데이터를 지울까요? 기록, 즐겨찾기, 최근 사용 도구, 도구 설정이 삭제되며 되돌릴 수 없습니다.",
     "cleared": "로컬 데이터를 지웠습니다",
     "shortcuts": "키보드 단축키",
-    "shortcutSearch": "도구 검색 열기"
+    "shortcutSearch": "도구 검색 열기",
+    "historyToggle": "기록 자동 저장",
+    "historyToggleDescription": "켜면 텍스트 도구의 입력을 로컬 기록에 저장해 나중에 다시 찾을 수 있습니다. 끄면 새 기록을 남기지 않습니다(기존 기록은 유지됩니다)."
   },
   "palette": {
     "placeholder": "도구 이름이나 키워드 입력…",

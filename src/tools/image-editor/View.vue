@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import { undoRedoShortcut, useUndoStack } from '@/composables/useUndoStack'
 import { isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
 import { downloadBlob } from '@/utils/download'
 import { stripExtension } from '@/utils/format'
@@ -55,7 +56,9 @@ const dragging = ref(false)
 const dragStart = ref<{ x: number; y: number } | null>(null)
 
 // Single-level undo: snapshot of committed pixels before the last operation.
-const undoSnapshot = ref<ImageData | null>(null)
+// Multi-level undo/redo of the committed pixels (each snapshot is a full
+// ImageData; the stack is capped by memory so huge photos don't pile up).
+const history = useUndoStack<ImageData>({ maxEntries: 30, maxBytes: 400 * 1024 * 1024, sizeOf: (s) => s.data.byteLength })
 
 function ctx2d(): CanvasRenderingContext2D | null {
   const c = canvasRef.value
@@ -97,7 +100,7 @@ async function onFiles(files: File[]) {
     resizeWidth.value = canvas.width
     resizeHeight.value = canvas.height
     hasImage.value = true
-    undoSnapshot.value = null
+    history.clear()
     clearSelection()
   } catch {
     hasImage.value = false
@@ -106,18 +109,22 @@ async function onFiles(files: File[]) {
 }
 
 // Snapshot current pixels so the next destructive op can be undone.
+function currentPixels(): ImageData | null {
+  const ctx = ctx2d()
+  const canvas = canvasRef.value
+  if (!ctx || !canvas) return null
+  return ctx.getImageData(0, 0, canvas.width, canvas.height)
+}
+
 function commitSnapshot() {
+  const snap = currentPixels()
+  if (snap) history.push(snap)
+}
+
+function restorePixels(snap: ImageData) {
   const ctx = ctx2d()
   const canvas = canvasRef.value
   if (!ctx || !canvas) return
-  undoSnapshot.value = ctx.getImageData(0, 0, canvas.width, canvas.height)
-}
-
-function undo() {
-  const ctx = ctx2d()
-  const canvas = canvasRef.value
-  const snap = undoSnapshot.value
-  if (!ctx || !canvas || !snap) return
   canvas.width = snap.width
   canvas.height = snap.height
   ctx.putImageData(snap, 0, 0)
@@ -125,11 +132,25 @@ function undo() {
   imgHeight.value = canvas.height
   resizeWidth.value = canvas.width
   resizeHeight.value = canvas.height
-  undoSnapshot.value = null
   clearSelection()
 }
 
-const canUndo = computed(() => undoSnapshot.value !== null)
+function undo() {
+  const cur = currentPixels()
+  if (!cur) return
+  const prev = history.undo(cur)
+  if (prev) restorePixels(prev)
+}
+
+function redo() {
+  const cur = currentPixels()
+  if (!cur) return
+  const next = history.redo(cur)
+  if (next) restorePixels(next)
+}
+
+const canUndo = history.canUndo
+const canRedo = history.canRedo
 
 // Draw the current canvas onto a fresh off-screen canvas (used as the source for
 // transforms so we read a stable copy while we mutate the visible canvas).
@@ -469,14 +490,13 @@ const formats = [
 // Switching tools clears any in-progress selection.
 watch(mode, () => clearSelection())
 
-// Ctrl/⌘+Z undoes the last operation, unless the user is typing in a field.
+// Ctrl/⌘+Z undoes, Ctrl/⌘+Shift+Z (or Ctrl+Y) redoes, unless typing in a field.
 function onKeydown(e: KeyboardEvent) {
-  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return
-  const target = e.target as HTMLElement | null
-  if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
-  if (!canUndo.value) return
+  const action = undoRedoShortcut(e)
+  if (!action || !hasImage.value) return
   e.preventDefault()
-  undo()
+  if (action === 'undo') undo()
+  else redo()
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
@@ -503,8 +523,11 @@ onUnmounted(() => {
           <v-btn value="text" prepend-icon="mdi-format-text">{{ T('toolText') }}</v-btn>
         </v-btn-toggle>
         <v-spacer />
-        <v-btn variant="tonal" :disabled="!canUndo" prepend-icon="mdi-undo" :title="T('undoShortcut')" @click="undo">
+        <v-btn variant="tonal" :disabled="!canUndo" prepend-icon="mdi-undo" :title="t('common.undoHint')" @click="undo">
           {{ T('undo') }}
+        </v-btn>
+        <v-btn variant="tonal" :disabled="!canRedo" prepend-icon="mdi-redo" :title="t('common.redoHint')" @click="redo">
+          {{ t('common.redo') }}
         </v-btn>
       </div>
 

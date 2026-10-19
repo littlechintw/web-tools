@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { nanoid } from '@/utils/nanoid'
+import { useSettingsStore } from '@/stores/settings'
 import type { HistoryEntry } from '@/types'
 
 const STORAGE_KEY = 'app.history.v1'
@@ -67,8 +68,15 @@ export const useHistoryStore = defineStore('history', () => {
     }
   }
 
+  const settings = useSettingsStore()
+
   function add<T>(toolId: string, label: string, data: T): HistoryEntry<T> {
     const now = Date.now()
+    // Recording is opt-out in Settings; return a detached entry so callers
+    // don't need to special-case the disabled state.
+    if (!settings.historyEnabled) {
+      return { id: '', toolId, label: label.slice(0, 200), data, createdAt: now }
+    }
     // Coalesce rapid successive saves (e.g. typing) into the tool's latest entry.
     const latest = entries.value.find((e) => e.toolId === toolId)
     if (latest && now - latest.createdAt < COALESCE_MS) {

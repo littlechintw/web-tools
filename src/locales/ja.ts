@@ -86,7 +86,12 @@ export default {
     "mute": "ミュート",
     "unmute": "ミュート解除",
     "downloadZip": "ZIP でダウンロード（すべて）",
-    "offlineReady": "オフラインで利用できます"
+    "offlineReady": "オフラインで利用できます",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "dragToReorder": "ハンドルをドラッグして並べ替え",
+    "undoHint": "元に戻す（Ctrl/⌘+Z）",
+    "redoHint": "やり直す（Ctrl/⌘+Shift+Z）"
   },
   "notFound": {
     "title": "ページが見つかりません",
@@ -566,7 +571,8 @@ export default {
       "loadError": "この PDF ファイルを読み込めませんでした。",
       "applyError": "PDF の生成中にエラーが発生しました。",
       "keptCount": "{count} ページを保持",
-      "deletedCount": "{count} ページを削除"
+      "deletedCount": "{count} ページを削除",
+      "dragHint": "サムネイルをドラッグしてページを並べ替え"
     },
     "pdf-sign": {
       "title": "PDF 電子署名",
@@ -580,7 +586,7 @@ export default {
       "clear": "クリア",
       "uploadSignatureHint": "透過 PNG の署名画像をアップロード",
       "size": "署名サイズ",
-      "placeHint": "上のページプレビューをクリックして署名の配置位置を指定します。",
+      "placeHint": "下のページプレビューをクリックして、署名を置く位置を選んでください。",
       "placed": "配置位置を設定しました",
       "noSignature": "先に署名を作成またはアップロードしてください。",
       "noPlacement": "ページ上をクリックして配置位置を指定してください。",
@@ -590,7 +596,8 @@ export default {
       "loadError": "この PDF ファイルを読み込めませんでした。",
       "signatureError": "この署名画像を読み込めませんでした。",
       "applyError": "PDF の生成中にエラーが発生しました。",
-      "applied": "署名済み PDF を {name} として保存しました。"
+      "applied": "署名済み PDF を {name} として保存しました。",
+      "padHint": "ここにマウスや指で署名してください"
     },
     "pdf-split": {
       "title": "PDF 分割 / ページ抽出",
@@ -1099,7 +1106,9 @@ export default {
     "clearAllConfirm": "すべてのローカルデータを削除しますか？履歴、お気に入り、最近使ったツール、ツール設定が削除されます。この操作は元に戻せません。",
     "cleared": "ローカルデータを削除しました",
     "shortcuts": "キーボードショートカット",
-    "shortcutSearch": "ツール検索を開く"
+    "shortcutSearch": "ツール検索を開く",
+    "historyToggle": "履歴を自動保存",
+    "historyToggleDescription": "オンにすると、テキスト系ツールの入力をローカル履歴に記録し、あとから探せます。オフにすると新しい記録は行いません（既存の履歴は保持されます）。"
   },
   "palette": {
     "placeholder": "ツール名またはキーワードを入力…",

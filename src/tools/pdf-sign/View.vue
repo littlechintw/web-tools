@@ -377,6 +377,17 @@ onBeforeUnmount(() => {
             />
           </div>
 
+          <!-- The one step people miss: say it before the preview, not under it. -->
+          <v-alert
+            :type="placement ? 'success' : 'info'"
+            variant="tonal"
+            density="compact"
+            class="mb-2"
+            :icon="placement ? 'mdi-check-circle-outline' : 'mdi-cursor-default-click-outline'"
+          >
+            {{ placement ? t('tools.pdf-sign.placed') : t('tools.pdf-sign.placeHint') }}
+          </v-alert>
+
           <div class="preview-wrap">
             <canvas
               ref="previewCanvas"
@@ -394,9 +405,6 @@ onBeforeUnmount(() => {
                 height: (sigBox.height / previewH) * 100 + '%',
               }"
             />
-          </div>
-          <div class="text-caption text-medium-emphasis mt-1">
-            {{ placement ? t('tools.pdf-sign.placed') : t('tools.pdf-sign.placeHint') }}
           </div>
         </div>
 
@@ -417,16 +425,21 @@ onBeforeUnmount(() => {
           </v-btn-toggle>
 
           <template v-if="sigMode === 'draw'">
-            <canvas
-              ref="padCanvas"
-              width="400"
-              height="160"
-              class="sig-pad mb-2"
-              @pointerdown="onPadDown"
-              @pointermove="onPadMove"
-              @pointerup="onPadUp"
-              @pointercancel="onPadUp"
-            />
+            <div class="pad-wrap mb-2">
+              <canvas
+                ref="padCanvas"
+                width="400"
+                height="160"
+                class="sig-pad"
+                @pointerdown="onPadDown"
+                @pointermove="onPadMove"
+                @pointerup="onPadUp"
+                @pointercancel="onPadUp"
+              />
+              <div v-if="!hasDrawing" class="pad-hint text-body-2">
+                <v-icon icon="mdi-draw" size="18" class="mr-1" />{{ t('tools.pdf-sign.padHint') }}
+              </div>
+            </div>
             <v-btn
               variant="tonal"
               size="small"
@@ -509,6 +522,21 @@ onBeforeUnmount(() => {
   border: 1.5px dashed rgb(var(--v-theme-primary));
   background: rgba(var(--v-theme-primary), 0.12);
   pointer-events: none;
+}
+.pad-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+.pad-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9a9a9a;
+  pointer-events: none;
+  user-select: none;
 }
 .sig-pad {
   width: 100%;

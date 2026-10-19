@@ -86,7 +86,12 @@ export default {
     "mute": "靜音",
     "unmute": "開啟音效",
     "downloadZip": "下載 ZIP（全部）",
-    "offlineReady": "已可離線使用"
+    "offlineReady": "已可離線使用",
+    "undo": "復原",
+    "redo": "重做",
+    "dragToReorder": "拖曳左側把手可調整順序",
+    "undoHint": "復原（Ctrl/⌘+Z）",
+    "redoHint": "重做（Ctrl/⌘+Shift+Z）"
   },
   "notFound": {
     "title": "找不到頁面",
@@ -597,7 +602,8 @@ export default {
       "loadError": "無法讀取此 PDF 檔案。",
       "applyError": "產生 PDF 時發生錯誤。",
       "keptCount": "保留 {count} 頁",
-      "deletedCount": "刪除 {count} 頁"
+      "deletedCount": "刪除 {count} 頁",
+      "dragHint": "拖曳縮圖可調整頁面順序"
     },
     "pdf-sign": {
       "title": "PDF 電子簽名",
@@ -611,7 +617,7 @@ export default {
       "clear": "清除",
       "uploadSignatureHint": "上傳透明背景的 PNG 簽名圖片",
       "size": "簽名大小",
-      "placeHint": "在上方頁面預覽點選要放置簽名的位置。",
+      "placeHint": "點一下下方的頁面預覽，選擇簽名要放置的位置。",
       "placed": "已選擇放置位置",
       "noSignature": "請先建立或上傳簽名。",
       "noPlacement": "請在頁面上點選放置位置。",
@@ -621,7 +627,8 @@ export default {
       "loadError": "無法讀取此 PDF 檔案。",
       "signatureError": "無法讀取此簽名圖片。",
       "applyError": "產生 PDF 時發生錯誤。",
-      "applied": "已下載簽名後的 PDF：{name}。"
+      "applied": "已下載簽名後的 PDF：{name}。",
+      "padHint": "用滑鼠或手指在此簽名"
     },
     "pdf-split": {
       "title": "PDF 分割 / 取頁",
@@ -1137,7 +1144,9 @@ export default {
     "clearAllConfirm": "確定要清除所有本機資料嗎？歷史紀錄、最愛、最近使用與工具選項都會被刪除，此動作無法復原。",
     "cleared": "已清除本機資料",
     "shortcuts": "快速鍵",
-    "shortcutSearch": "開啟工具搜尋"
+    "shortcutSearch": "開啟工具搜尋",
+    "historyToggle": "自動儲存歷史紀錄",
+    "historyToggleDescription": "開啟時，文字類工具會把你的輸入記在本機歷史紀錄，方便之後找回；關閉後不再寫入任何紀錄（既有紀錄不受影響）。"
   },
   "palette": {
     "placeholder": "輸入工具名稱或關鍵字…",

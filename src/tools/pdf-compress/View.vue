@@ -10,6 +10,7 @@ import {
   PRESETS,
   PRESET_IDS,
   RASTER_LADDER,
+  CancelledError,
   PdfPasswordError,
   analyzePdf,
   compressPdfImages,
@@ -159,17 +160,28 @@ function onProgress(p: CompressProgress) {
   }
 }
 
+// One controller per run so the cancel button can stop a multi-pass search.
+let controller: AbortController | null = null
+
+function cancel() {
+  controller?.abort()
+}
+
 function runImage(s: ImageSettings): Promise<PassResult> {
   return compressPdfImages(
     originalBytes!,
-    { ...s, stripMetadata: stripMeta.value, password: password.value || undefined },
+    { ...s, stripMetadata: stripMeta.value, password: password.value || undefined, signal: controller?.signal },
     canvasJpegEncoder,
     onProgress,
   )
 }
 
 async function runRaster(s: RasterSettings): Promise<PassResult> {
-  const bytes = await rasterizePdf(originalBytes!, { ...s, password: password.value || undefined }, onProgress)
+  const bytes = await rasterizePdf(
+    originalBytes!,
+    { ...s, password: password.value || undefined, signal: controller?.signal },
+    onProgress,
+  )
   return { bytes }
 }
 
@@ -230,12 +242,14 @@ async function compress() {
   busy.value = true
   error.value = ''
   attemptText = ''
+  controller = new AbortController()
   progress.value = { text: '', value: null }
   try {
     result.value = mode.value === 'preset' ? await compressPreset(preset.value) : await compressTarget()
   } catch (e) {
-    error.value = (e as Error).message
+    if (!(e instanceof CancelledError)) error.value = (e as Error).message
   } finally {
+    controller = null
     busy.value = false
     attemptText = ''
   }
@@ -246,6 +260,7 @@ async function estimateAll() {
   if (!originalBytes || busy.value) return
   busy.value = true
   error.value = ''
+  controller = new AbortController()
   try {
     for (const id of PRESET_IDS) {
       attemptText = T(PRESET_LABEL[id])
@@ -253,8 +268,9 @@ async function estimateAll() {
     }
     result.value = cache.get(cacheKey(preset.value)) ?? null
   } catch (e) {
-    error.value = (e as Error).message
+    if (!(e instanceof CancelledError)) error.value = (e as Error).message
   } finally {
+    controller = null
     busy.value = false
     attemptText = ''
   }
@@ -443,7 +459,11 @@ function download() {
           rounded
           height="6"
         />
-        <div class="text-caption text-medium-emphasis mt-2">{{ progress.text }}</div>
+        <div class="d-flex align-center ga-2 mt-2">
+          <span class="text-caption text-medium-emphasis">{{ progress.text }}</span>
+          <v-spacer />
+          <v-btn size="small" variant="text" prepend-icon="mdi-close" @click="cancel">{{ t('common.cancel') }}</v-btn>
+        </div>
       </div>
 
       <!-- Result -->

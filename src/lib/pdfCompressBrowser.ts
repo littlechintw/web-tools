@@ -3,7 +3,7 @@
 // built on pdf.js + pdf-lib.
 import { PDFDocument } from '@cantoo/pdf-lib'
 import { getDocument } from '@/utils/pdfjs'
-import type { ImageEncoder, ProgressFn, RasterSettings } from '@/lib/pdfCompress'
+import { throwIfAborted, type ImageEncoder, type ProgressFn, type RasterSettings } from '@/lib/pdfCompress'
 
 /** Refuse to allocate canvases beyond this many pixels (≈ 200 MB of RGBA). */
 const MAX_CANVAS_PIXELS = 50_000_000
@@ -54,6 +54,8 @@ export const canvasJpegEncoder: ImageEncoder = async (img, width, height, qualit
 
 export interface RasterizeOptions extends RasterSettings {
   password?: string
+  /** Abort between pages; rejects with CancelledError. */
+  signal?: AbortSignal
 }
 
 /** Render every page to a JPEG and rebuild the PDF from those images. Highest
@@ -69,6 +71,7 @@ export async function rasterizePdf(
     const out = await PDFDocument.create({ updateMetadata: false })
     const total = pdf.numPages
     for (let n = 1; n <= total; n++) {
+      throwIfAborted(opts.signal)
       onProgress?.({ phase: 'pages', done: n - 1, total })
       const page = await pdf.getPage(n)
       const base = page.getViewport({ scale: 1 })
