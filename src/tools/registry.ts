@@ -57,6 +57,7 @@ const POPULARITY: string[] = [
   'text-stats',
   'image-editor',
   'image-convert',
+  'image-watermark',
   'pdf-merge',
   'pdf-split',
   'pdf-compress',
