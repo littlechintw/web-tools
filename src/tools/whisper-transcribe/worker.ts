@@ -6,6 +6,29 @@ import type { TranscriptChunk } from './srt'
 
 env.allowLocalModels = false
 
+// transformers.js defaults to loading the ONNX Runtime loader (.mjs) and WASM
+// from cdn.jsdelivr.net at runtime — third-party code executed with no
+// integrity check, and a hole in the site's CSP. Serve both from our own
+// origin instead (bundled by Vite, runtime-cached by the service worker).
+// The variant choice mirrors transformers.js (wasmPathSuffix in its onnx
+// backend setup): the plain build only for Safari < 26 without WebGPU,
+// the asyncify build everywhere else. Re-check this when bumping
+// @huggingface/transformers (and keep onnxruntime-web on the exact version it pins).
+const ua = navigator.userAgent
+const isSafari = (navigator.vendor || '').includes('Apple') && !/CriOS|FxiOS|EdgiOS|OPiOS|mercury|brave|Chrome|Android/i.test(ua)
+const safariMajor = Number(/Version\/(\d+)/.exec(ua)?.[1] ?? NaN)
+const usePlainBuild = isSafari && safariMajor < 26 && !('gpu' in navigator)
+const ORT = usePlainBuild
+  ? {
+      mjs: new URL('../../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.mjs', import.meta.url).href,
+      wasm: new URL('../../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.wasm', import.meta.url).href,
+    }
+  : {
+      mjs: new URL('../../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.mjs', import.meta.url).href,
+      wasm: new URL('../../../node_modules/onnxruntime-web/dist/ort-wasm-simd-threaded.asyncify.wasm', import.meta.url).href,
+    }
+if (env.backends.onnx.wasm) env.backends.onnx.wasm.wasmPaths = ORT
+
 type LoadRequest = { type: 'load'; model: string }
 type TranscribeRequest = {
   type: 'transcribe'

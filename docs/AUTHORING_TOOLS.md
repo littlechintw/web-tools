@@ -163,3 +163,17 @@ Minimal by design (security). `qrcode`, `@zxing/browser`, `@zxing/library`,
 Self-written, zero-dependency utils in `src/utils/`: `md5`, `nanoid`,
 `uaParser`. Prefer Web Crypto (`crypto.subtle`, `crypto.getRandomValues`,
 `crypto.randomUUID`) and native canvas APIs before reaching for a package.
+
+### Network access & Content-Security-Policy
+
+The production `index.html` carries a CSP `<meta>` (see `CSP` in
+`vite.config.ts`). It allows **only** this origin plus the two external
+services the app already uses: Google Analytics (after the user opts in) and
+Hugging Face (Whisper model downloads). A tool must not load scripts, styles,
+fonts, images, WASM or workers from anywhere else — bundle them instead (see
+how `whisper-transcribe/worker.ts` self-hosts the ONNX Runtime files rather
+than letting transformers.js fetch them from a CDN). If a feature truly needs
+a new host, add it to `CSP` in the same change and say why in the PR.
+
+The policy is a meta tag because GitHub Pages cannot send headers, so it does
+not cover `frame-ancestors` or code running inside dedicated Web Workers.

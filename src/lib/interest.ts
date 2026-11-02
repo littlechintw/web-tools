@@ -107,6 +107,20 @@ export function projectSavings(input: SavingsInput): SavingsResult {
   }
 }
 
+/**
+ * Recurring deposit needed to reach `target`. The balance is linear in the
+ * deposit size, so solve it from two projections instead of iterating.
+ * Returns 0 when the starting amount alone already reaches the target, and
+ * null when no deposit can help (zero-length term).
+ */
+export function requiredContribution(input: Omit<SavingsInput, 'contribution'>, target: number): number | null {
+  const lump = projectSavings({ ...input, contribution: 0 }).balance
+  if (lump >= target) return 0
+  const unit = projectSavings({ ...input, principal: 0, contribution: 1 }).balance
+  if (!(unit > 0)) return null
+  return (target - lump) / unit
+}
+
 /** Years for money to double at the given effective annual rate (compound). */
 export function doublingYears(ear: number): number | null {
   if (!(ear > 0)) return null

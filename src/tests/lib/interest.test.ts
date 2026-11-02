@@ -3,6 +3,7 @@ import {
   afterTax,
   annuityPayment,
   realValue,
+  requiredContribution,
   buildLoan,
   doublingYears,
   effectiveAnnualRate,
@@ -184,5 +185,25 @@ describe('tax & inflation', () => {
   it('discounts by inflation', () => {
     expect(realValue(1000, 0.02, 10)).toBeCloseTo(820.35, 1)
     expect(realValue(1000, 0, 10)).toBe(1000)
+  })
+})
+
+describe('requiredContribution()', () => {
+  const { contribution: _c, ...input } = { ...base, principal: 5000 }
+  void _c
+
+  it('reaching the target with the solved deposit', () => {
+    const c = requiredContribution(input, 100000)!
+    expect(c).toBeGreaterThan(0)
+    expect(projectSavings({ ...input, contribution: c }).balance).toBeCloseTo(100000, 4)
+  })
+
+  it('is zero when the lump sum already gets there', () => {
+    expect(requiredContribution(input, 6000)).toBe(0)
+  })
+
+  it('with no interest it is a straight division', () => {
+    const c = requiredContribution({ ...input, nominalAnnual: 0, principal: 0 }, 12000)!
+    expect(c).toBeCloseTo(100) // 120 monthly deposits
   })
 })

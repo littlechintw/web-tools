@@ -49,6 +49,55 @@ ${body}`
   }
 }
 
+/**
+ * Content-Security-Policy, injected as a <meta> tag into the production
+ * index.html (GitHub Pages cannot send response headers; the dev server needs
+ * inline HMR scripts, so it is left alone).
+ *
+ * Every external origin the app can reach is listed here on purpose:
+ *  - Google Analytics: only loaded after the user opts in (src/plugins/analytics.ts)
+ *  - Hugging Face: Whisper model downloads (the worker fetches them)
+ * Everything else — scripts, styles, fonts, images, ONNX/pdf.js workers and
+ * WASM — is served from this origin. Add a host here BEFORE adding a feature
+ * that talks to a new one.
+ *
+ * Limits of a meta policy: it cannot set frame-ancestors / report-uri, and it
+ * does not apply inside dedicated Web Workers (they take their policy from
+ * their own response headers, which GitHub Pages does not send).
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval' https://*.googletagmanager.com",
+  "style-src 'self' 'unsafe-inline'", // Vuetify sets inline style attributes
+  "img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com",
+  "font-src 'self' data:",
+  "media-src 'self' blob: data:",
+  "connect-src 'self' blob: data: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://huggingface.co https://*.huggingface.co https://*.hf.co",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ')
+
+function contentSecurityPolicy(): Plugin {
+  return {
+    name: 'content-security-policy',
+    transformIndexHtml: {
+      order: 'post',
+      handler(html, ctx) {
+        if (ctx.server) return html
+        // Must come before any script/link so it governs them.
+        return html.replace(
+          /<meta charset="UTF-8" \/>/,
+          (m) => `${m}\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`,
+        )
+      },
+    },
+  }
+}
+
 /** The service worker logic, independent of the generated constants above. */
 function workerBody(): string {
   return `
@@ -122,6 +171,7 @@ export default defineConfig({
     vue(),
     vuetify({ autoImport: true }),
     serviceWorker(),
+    contentSecurityPolicy(),
   ],
   resolve: {
     alias: {
