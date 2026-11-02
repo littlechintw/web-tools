@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { shuffle } from '@/lib/random'
 import { useAudioContext } from '@/composables/useAudioContext'
 import { isBoolean, useStoredRef } from '@/composables/useStoredRef'
 
@@ -73,11 +74,7 @@ async function popAll() {
   poppingAll.value = true
   try {
     // Fisher-Yates shuffle of un-popped indices
-    const indices = Array.from({ length: TOTAL }, (_, i) => i).filter((i) => !bubbles.value[i])
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[indices[i], indices[j]] = [indices[j], indices[i]]
-    }
+    const indices = shuffle(Array.from({ length: TOTAL }, (_, i) => i).filter((i) => !bubbles.value[i]))
     for (const i of indices) {
       if (unmounted) break
       pop(i)

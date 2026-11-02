@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { randomInt } from '@/lib/random'
 import CopyBtn from '@/components/CopyBtn.vue'
 import OutputPanel from '@/components/OutputPanel.vue'
 import { isBoolean, isNumber, useStoredRef } from '@/composables/useStoredRef'
@@ -40,17 +41,7 @@ const charset = computed(() => {
   return chars
 })
 
-/** Uniform random integer in [0, max) using rejection sampling — no modulo bias. */
-function randomIndex(max: number): number {
-  const limit = Math.floor(0x100000000 / max) * max
-  const buf = new Uint32Array(1)
-  let x: number
-  do {
-    crypto.getRandomValues(buf)
-    x = buf[0]
-  } while (x >= limit)
-  return x % max
-}
+const randomIndex = randomInt
 
 function generateOne(chars: string): string {
   let out = ''

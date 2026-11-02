@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { randomInt } from '@/lib/random'
 import OutputPanel from '@/components/OutputPanel.vue'
 import { isBoolean, isNumber, oneOf, useStoredRef } from '@/composables/useStoredRef'
 
@@ -27,7 +28,7 @@ const count = useStoredRef('lorem-ipsum.count', 3, isNumber)
 const startClassic = useStoredRef('lorem-ipsum.startClassic', true, isBoolean)
 const output = ref('')
 
-const rand = (n: number) => Math.floor(Math.random() * n)
+const rand = (n: number) => randomInt(n)
 const pick = () => WORDS[rand(WORDS.length)]
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 

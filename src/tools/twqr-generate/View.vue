@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import QRCode from 'qrcode'
 import ToolShell from '@/components/ToolShell.vue'
 import CopyBtn from '@/components/CopyBtn.vue'
@@ -11,6 +12,7 @@ import {
   MAX_NOTE_LENGTH,
   buildTwqr,
   formatAccount,
+  isValidAmount,
   isShortAccount,
   isValidAccount,
   maskAccount,
@@ -41,7 +43,10 @@ const selectedId = useStoredRef<string>('twqr.selected', '')
 
 const selected = computed(() => accounts.value.find((a) => a.id === selectedId.value) ?? accounts.value[0] ?? null)
 
-const amount = ref('')
+// Other tools (e.g. split-bill) link here with ?amount=<n>. Only a valid whole
+// amount is accepted; anything else in the URL is ignored.
+const queryAmount = Number(useRoute().query.amount)
+const amount = ref(isValidAmount(queryAmount) ? String(queryAmount) : '')
 const note = ref('')
 
 const bankItems = TW_BANKS.map(([code, name]) => ({ title: `${code} ${name}`, value: code }))

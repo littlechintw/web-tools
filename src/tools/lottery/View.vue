@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { randomInt } from '@/lib/random'
 import CopyBtn from '@/components/CopyBtn.vue'
 import { maskName } from '@/lib/lottery'
 import { downloadText } from '@/utils/download'
@@ -129,7 +130,7 @@ function draw() {
   let interval = 50
 
   function step() {
-    const randomIdx = Math.floor(Math.random() * pool.value.length)
+    const randomIdx = randomInt(pool.value.length)
     displayMasked.value = maskedNames.value[pool.value[randomIdx]]
     elapsed += interval
 
@@ -151,7 +152,7 @@ function draw() {
       animInterval = setTimeout(step, interval)
     } else {
       // Pick winner
-      const winnerPoolIdx = Math.floor(Math.random() * pool.value.length)
+      const winnerPoolIdx = randomInt(pool.value.length)
       const winnerNameIdx = pool.value[winnerPoolIdx]
       displayMasked.value = maskedNames.value[winnerNameIdx]
       winnerIndex.value = winnerNameIdx
@@ -175,7 +176,7 @@ function drawAll() {
   while (pool.value.length > 0) {
     const prize = prizeQueue.value.find((p) => p.count > 0)
     if (!prize) break
-    const winnerPoolIdx = Math.floor(Math.random() * pool.value.length)
+    const winnerPoolIdx = randomInt(pool.value.length)
     const winnerNameIdx = pool.value[winnerPoolIdx]
     history.value.unshift({
       maskedName: maskedNames.value[winnerNameIdx],

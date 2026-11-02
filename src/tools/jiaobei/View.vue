@@ -2,6 +2,7 @@
 import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { randomInt } from '@/lib/random'
 import { useAudioContext } from '@/composables/useAudioContext'
 
 const { t } = useI18n()
@@ -48,11 +49,12 @@ function throwCups() {
   throwing.value = true
   currentResult.value = null
 
-  const rand = Math.random()
+  // 聖筊 50% (one up, one down), 笑筊 25% (both up), 陰筊 25% (both down).
+  const roll = randomInt(4)
   let c1: boolean, c2: boolean
-  if (rand < 0.5)       { c1 = Math.random() < 0.5; c2 = !c1 }
-  else if (rand < 0.75) { c1 = true;  c2 = true  }
-  else                  { c1 = false; c2 = false }
+  if (roll < 2)        { c1 = randomInt(2) === 0; c2 = !c1 }
+  else if (roll === 2) { c1 = true;  c2 = true  }
+  else                 { c1 = false; c2 = false }
 
   // Hide static cups, show flying animation
   showFlying.value = true

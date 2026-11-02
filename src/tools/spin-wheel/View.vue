@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ToolShell from '@/components/ToolShell.vue'
+import { randomFloat, randomInt, randomWeighted } from '@/lib/random'
 import { useAudioContext } from '@/composables/useAudioContext'
 import { isBoolean, useStoredRef } from '@/composables/useStoredRef'
 
@@ -281,13 +282,7 @@ function spin() {
   const total = ws.reduce((s, w) => s + w, 0)
 
   // Weighted random pick — cumulative comparison guarantees equal probability per weight unit
-  const rand = Math.random() * total
-  let cumulative = 0
-  let targetIndex = ws.length - 1
-  for (let i = 0; i < ws.length; i++) {
-    cumulative += ws[i]
-    if (rand < cumulative) { targetIndex = i; break }
-  }
+  const targetIndex = randomWeighted(ws)
 
   // Calculate target angle using the same sanitized weights for visual consistency
   let cumAngle = 0
@@ -296,11 +291,11 @@ function spin() {
   }
   const segSize = (ws[targetIndex] / total) * 2 * Math.PI
   // Land anywhere in the middle 80% of segment (avoids very edges)
-  const segMid = cumAngle + segSize * (0.1 + Math.random() * 0.8)
+  const segMid = cumAngle + segSize * (0.1 + randomFloat() * 0.8)
 
   // We want: startAngle + segMid ≡ -π/2 (mod 2π)
   // => finalAngle = -π/2 - segMid + 2π * k
-  const spins = 5 + Math.floor(Math.random() * 4)
+  const spins = 5 + randomInt(4)
   // targetAngle relative to 0 reference
   const targetAngle = -Math.PI / 2 - segMid
 
@@ -312,7 +307,7 @@ function spin() {
   const k = Math.ceil((2 * Math.PI * spins - base) / (2 * Math.PI))
   const finalAngle = startA + base + 2 * Math.PI * k
 
-  const duration = 3000 + Math.random() * 1000
+  const duration = 3000 + randomFloat() * 1000
   const startTime = performance.now()
 
   let lastSegment = getSegmentAtAngle(startA, items.value)
