@@ -52,6 +52,8 @@ const POPULARITY: string[] = [
   'qr-scan',
   'number-base',
   'unit-convert',
+  'compound-interest',
+  'loan-calculator',
   'date-calc',
   'cron-parser',
   'text-stats',
