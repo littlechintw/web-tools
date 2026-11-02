@@ -72,15 +72,15 @@ ${body}`
  */
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'wasm-unsafe-eval' https://*.googletagmanager.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com",
+  "script-src 'self' 'wasm-unsafe-eval' https://*.googletagmanager.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google",
   "style-src 'self' 'unsafe-inline'", // Vuetify sets inline style attributes
-  "img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com",
+  "img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com https://*.adtrafficquality.google",
   "font-src 'self' data:",
   "media-src 'self' blob: data:",
-  "connect-src 'self' blob: data: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://huggingface.co https://*.huggingface.co https://*.hf.co https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com",
+  "connect-src 'self' blob: data: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://huggingface.co https://*.huggingface.co https://*.hf.co https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
-  "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.safeframe.googlesyndication.com https://www.google.com https://fundingchoicesmessages.google.com",
+  "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.safeframe.googlesyndication.com https://www.google.com https://fundingchoicesmessages.google.com https://*.adtrafficquality.google",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -25,8 +25,8 @@ export const ADSENSE_CLIENT = 'ca-pub-5042600791806925'
 
 /** data-ad-slot per placement. Empty = that placement renders nothing. */
 export const AD_SLOTS = {
-  home: '', // home-bottom — create the unit in AdSense, then paste its id here
-  settings: '', // settings-bottom
+  home: '8748103492', // tools-home-bottom
+  settings: '4186876104', // tools-settings-bottom
 } as const
 
 export const adsEnabled = (slot: string): boolean => Boolean(ADSENSE_CLIENT && slot)
