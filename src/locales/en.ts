@@ -1033,7 +1033,7 @@ export default {
       "noteHint": "Some banking apps may not show the note",
       "anyAmount": "Payer enters the amount",
       "toggleAccount": "Show / hide full account number",
-      "note2": "TWQR is not an officially published spec and app support varies. Before relying on it, scan it and make a test transfer from another account. Bank list: public data from Taiwan's Banking Bureau (FSC)."
+      "note2": "The format is based on public community analysis and open-source implementations. It is not an official FISC document — use with caution."
     },
     "unit-convert": {
       "title": "Unit Converter",

@@ -1,17 +1,32 @@
 /**
  * TWQR personal-transfer ("個人轉帳") payload builder.
  *
- *   TWQRP://個人轉帳(punycode)/158/02/V1?D5=<bank>&D6=<16-digit account>[&D1=<amount×100>]&D10=901[&D9=<note>]
+ *   TWQRP://<any service name>/158/02/V1?D5=<bank>&D6=<16-digit account>[&D1=<amount×100>]&D10=901[&D9=<note>]
  *
- * D1 (amount) is optional: leaving it out makes the payer's banking app ask
- * for the amount. The format is reverse-engineered, not an official public
- * spec; field layout follows the OpenTWQR project (MIT).
+ *   158 = ISO 3166 numeric code for Taiwan, 02 = transfer-type transaction
+ *   D1  = amount with two implied decimals (XXXXXXX00 — at most 7 integer digits)
+ *   D5  = receiving bank code (3 digits)
+ *   D6  = receiving account, left-padded with zeros to 16 digits
+ *   D9  = note, D10 = ISO 4217 currency (901 = TWD, the default)
+ *
+ * D-parameters are locked once set: the payer cannot edit them. Leaving D1 out
+ * makes the payer's banking app ask for the amount.
+ *
+ * NOT an official FISC document. Sources:
+ *  - community analysis: https://www.ptt.cc/bbs/MobilePay/M.1543779469.A.577.html
+ *    (the only source for the type-02 transfer fields D5/D6/D9)
+ *  - the MIT-licensed OpenTWQR project (github.com/garyellow/OpenTWQR)
+ *  - patent TW M575888 U (臺灣行動支付), Fig. 5: confirms the overall layout
+ *    `TWQRP://name/158/<type>/V1?D…&E…&O…`, D1 = amount×100 and D10 = 901, using a
+ *    type-01 (purchase) example. It does not cover type 02 or D5/D6.
+ *  - FISC's public article (金融資訊 No.91) only describes the overall structure.
  */
 
 const BASE_URI = 'TWQRP://xn--gmqw5ax42ad01c/158/02/V1'
 
 export const MAX_NOTE_LENGTH = 20
-export const MAX_AMOUNT = 999_999_999
+/** D1 holds at most 7 integer digits. */
+export const MAX_AMOUNT = 9_999_999
 
 /** Strip zero-width / control / bidi-override characters pasted from elsewhere. */
 export function removeInvisibleChars(s: string): string {

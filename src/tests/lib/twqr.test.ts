@@ -13,6 +13,21 @@ describe('buildTwqr()', () => {
     expect(buildTwqr({ bankCode: '822', account: '1234567890', amount: 150 })).toContain('&D1=15000&')
   })
 
+  it('caps the amount at 7 integer digits (D1 = XXXXXXX00)', () => {
+    expect(buildTwqr({ bankCode: '822', account: '1234567890', amount: 9_999_999 })).toContain('&D1=999999900&')
+    expect(buildTwqr({ bankCode: '822', account: '1234567890', amount: 10_000_000 })).toBeNull()
+  })
+
+  it('matches the published example (bank 001, account 598759875987, 3254)', () => {
+    // From the PTT analysis; only the free-form service-name part differs.
+    const q = buildTwqr({ bankCode: '001', account: '598759875987', amount: 3254 })!
+    expect(q.split('?')[0].endsWith('/158/02/V1')).toBe(true)
+    const params = new URLSearchParams(q.split('?')[1])
+    expect(params.get('D1')).toBe('325400')
+    expect(params.get('D5')).toBe('001')
+    expect(params.get('D6')).toBe('0000598759875987')
+  })
+
   it('treats amount 0 as "not set"', () => {
     expect(buildTwqr({ bankCode: '822', account: '1234567890', amount: 0 })).not.toContain('D1=')
   })
