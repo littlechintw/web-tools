@@ -7,6 +7,40 @@ export default {
     "tagline": "A free, client-side, privacy-first web toolbox",
     "privacy": "Everything runs in your browser. Your data never leaves your device."
   },
+  "ads": {
+    "label": "Advertisement"
+  },
+  "privacyPage": {
+    "title": "Privacy Policy",
+    "updated": "Last updated: 2 November 2026",
+    "intro": "This is a free online toolbox with no accounts and no server or database of its own. Below is what data is used and which third parties may see it.",
+    "sections": {
+      "input": {
+        "title": "What you enter",
+        "body": "Every tool runs locally in your browser. The text, files, numbers and accounts you enter are never uploaded to us or to any server."
+      },
+      "storage": {
+        "title": "Local storage",
+        "body": "Preferences, history (can be turned off in Settings), favourites and the accounts you save in the TWQR tool live only in this browser's local storage. They never leave your device and can be cleared in Settings at any time."
+      },
+      "analytics": {
+        "title": "Usage statistics",
+        "body": "If you agree on your first visit, we use Google Analytics to record anonymous page views and usage events to learn which tools are used. If you decline, it is never loaded, and you can change your mind in Settings. Statistics never include anything you enter."
+      },
+      "ads": {
+        "title": "Advertising",
+        "body": "One Google AdSense ad may appear at the very bottom of the home and settings pages. There are no ads on any tool page, and no full-screen, interstitial or floating ads anywhere. We ask Google for non-personalised ads, but Google may still use cookies to serve and measure them. To protect the data you handle in tools, once an ad has loaded, leaving the home or settings page reloads the page to remove the ad code. You can manage preferences in Google's Ad Settings or use an ad blocker; nothing on this site depends on ads."
+      },
+      "external": {
+        "title": "External connections",
+        "body": "Besides the statistics and ads above, only Speech-to-Text downloads its model files from Hugging Face the first time it is used (your audio is never uploaded). Everything else works without a network once loaded."
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "Questions about this policy are welcome via littlechin.tw."
+      }
+    }
+  },
   "nav": {
     "home": "Home",
     "history": "History",

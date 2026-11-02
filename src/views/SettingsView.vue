@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AdSlot from '@/components/AdSlot.vue'
+import { AD_SLOTS } from '@/config/ads'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore } from '@/stores/settings'
@@ -185,6 +187,7 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform)
     </v-dialog>
 
     <v-snackbar v-model="cleared" :timeout="2500" color="success">{{ t('settings.cleared') }}</v-snackbar>
+    <AdSlot location="settings" :slot-id="AD_SLOTS.settings" />
   </v-container>
 </template>
 

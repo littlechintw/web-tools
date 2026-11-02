@@ -42,7 +42,7 @@ jobs:
       # SPA fallback: GitHub Pages serves 404.html for unknown paths, so client-
       # side routes like /qrcode-generate resolve when opened/refreshed directly.
       - name: Add SPA 404 fallback
-        run: cp dist/index.html dist/404.html
+        run: test -f dist/404.html || cp dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

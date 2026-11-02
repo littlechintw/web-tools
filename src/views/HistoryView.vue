@@ -153,7 +153,7 @@ async function onImport(e: Event) {
 
 <template>
   <v-container class="py-6" style="max-width: 1080px">
-    <div class="d-flex align-center ga-3 mb-4">
+    <div class="d-flex flex-wrap align-center ga-3 mb-4">
       <v-icon icon="mdi-history" size="32" color="primary" />
       <h1 class="text-h5 font-weight-bold">{{ t('history.title') }}</h1>
       <v-spacer />

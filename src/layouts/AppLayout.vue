@@ -26,7 +26,7 @@ watch(
   [() => route.meta.titleKey, locale],
   () => {
     const key = route.meta.titleKey as string | undefined
-    document.title = key ? `${t(key)} · ${t('app.name')}` : t('app.name')
+    document.title = route.name === 'home' ? `${t('app.name')} · ${t('app.tagline')}` : key ? `${t(key)} · ${t('app.name')}` : t('app.name')
   },
   { immediate: true },
 )
@@ -194,7 +194,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
     <v-footer class="text-center d-flex flex-column ga-1 py-6 mt-8" color="transparent">
       <div class="text-caption text-medium-emphasis">{{ t('app.privacy') }}</div>
       <div class="text-caption text-disabled">
-        © {{ new Date().getFullYear() }} tools.littlechin.tw · {{ t('app.tagline') }}
+        © {{ new Date().getFullYear() }} tools.littlechin.tw · {{ t('app.tagline') }} ·
+        <RouterLink to="/privacy" class="text-disabled">{{ t('privacyPage.title') }}</RouterLink>
       </div>
     </v-footer>
   </v-main>

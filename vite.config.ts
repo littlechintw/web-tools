@@ -1,8 +1,11 @@
 import { fileURLToPath, URL } from 'node:url'
 import { createHash } from 'node:crypto'
-import { defineConfig, type Plugin } from 'vite'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { createServer, defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vuetify from 'vite-plugin-vuetify'
+import { buildPages, buildSitemap, fileForPath, renderPage } from './src/lib/seo'
 
 /**
  * Emits `sw.js` with the list of files to precache (the app shell, CSS, the
@@ -57,6 +60,8 @@ ${body}`
  * Every external origin the app can reach is listed here on purpose:
  *  - Google Analytics: only loaded after the user opts in (src/plugins/analytics.ts)
  *  - Hugging Face: Whisper model downloads (the worker fetches them)
+ *  - Google AdSense: home + settings only (src/config/ads.ts); the ad script is
+ *    dropped by a full page load before any tool page opens (see router guard)
  * Everything else — scripts, styles, fonts, images, ONNX/pdf.js workers and
  * WASM — is served from this origin. Add a host here BEFORE adding a feature
  * that talks to a new one.
@@ -67,15 +72,15 @@ ${body}`
  */
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'wasm-unsafe-eval' https://*.googletagmanager.com",
+  "script-src 'self' 'wasm-unsafe-eval' https://*.googletagmanager.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://fundingchoicesmessages.google.com",
   "style-src 'self' 'unsafe-inline'", // Vuetify sets inline style attributes
-  "img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com",
+  "img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.google.com",
   "font-src 'self' data:",
   "media-src 'self' blob: data:",
-  "connect-src 'self' blob: data: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://huggingface.co https://*.huggingface.co https://*.hf.co",
+  "connect-src 'self' blob: data: https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://huggingface.co https://*.huggingface.co https://*.hf.co https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
-  "frame-src 'none'",
+  "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://*.safeframe.googlesyndication.com https://www.google.com https://fundingchoicesmessages.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -94,6 +99,56 @@ function contentSecurityPolicy(): Plugin {
           (m) => `${m}\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`,
         )
       },
+    },
+  }
+}
+
+/**
+ * After the bundle is written: emit one static HTML file per route
+ * (dist/base64.html is served by GitHub Pages at /base64 with HTTP 200),
+ * a sitemap.xml, and a noindex 404.html for unknown paths. Titles and
+ * descriptions come from the zh-TW locale (the default/indexed language).
+ * Without this every deep link is served as HTTP 404 and cannot be indexed.
+ */
+function seoPages(): Plugin {
+  let root = process.cwd()
+  let outDir = 'dist'
+  return {
+    name: 'seo-pages',
+    apply: 'build',
+    configResolved(c) {
+      root = c.root
+      outDir = resolve(c.root, c.build.outDir)
+    },
+    async closeBundle() {
+      // Load the registry / locale / ads config through Vite itself (no extra loader or flags).
+      const server = await createServer({
+        configFile: false,
+        root,
+        logLevel: 'silent',
+        appType: 'custom',
+        server: { middlewareMode: true, hmr: false, watch: null },
+        resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+        optimizeDeps: { noDiscovery: true, include: [] },
+      })
+      try {
+        const { allTools } = await server.ssrLoadModule('/src/tools/registry.ts')
+        const zh = (await server.ssrLoadModule('/src/locales/zh-TW.ts')).default
+        const { ADSENSE_CLIENT } = await server.ssrLoadModule('/src/config/ads.ts')
+        const template = readFileSync(join(outDir, 'index.html'), 'utf8')
+        const opts = { siteName: zh.app.name as string, adsenseAccount: (ADSENSE_CLIENT as string) || undefined }
+        const pages = buildPages(allTools, zh)
+        for (const page of pages) {
+          const file = join(outDir, fileForPath(page.path))
+          mkdirSync(dirname(file), { recursive: true })
+          writeFileSync(file, renderPage(template, page, opts))
+        }
+        // Unknown paths: the SPA shell (its router shows the not-found view), served with HTTP 404, never indexed.
+        writeFileSync(join(outDir, '404.html'), renderPage(template, { path: '/404', title: zh.app.name, description: zh.app.privacy, noindex: true }, opts))
+        writeFileSync(join(outDir, 'sitemap.xml'), buildSitemap(pages.filter((p) => !p.noindex).map((p) => p.path)))
+      } finally {
+        await server.close()
+      }
     },
   }
 }
@@ -172,6 +227,7 @@ export default defineConfig({
     vuetify({ autoImport: true }),
     serviceWorker(),
     contentSecurityPolicy(),
+    seoPages(),
   ],
   resolve: {
     alias: {

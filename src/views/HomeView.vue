@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AdSlot from '@/components/AdSlot.vue'
+import { AD_SLOTS } from '@/config/ads'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDisplay } from 'vuetify'
@@ -148,6 +150,7 @@ const showRecent = computed(() => recentTools.value.length > 0 && !query.value.t
     </v-row>
 
     <v-empty-state v-else icon="mdi-magnify-close" :title="t('home.noResults')" />
+    <AdSlot location="home" :slot-id="AD_SLOTS.home" />
   </v-container>
 </template>
 

@@ -3,6 +3,8 @@ import { nextTick } from 'vue'
 import { allTools } from '@/tools/registry'
 import HomeView from '@/views/HomeView.vue'
 import { trackPageView } from '@/plugins/analytics'
+import { shouldReloadForAds } from '@/config/ads'
+import { isAdScriptLoaded } from '@/utils/adsense'
 
 const toolRoutes: RouteRecordRaw[] = allTools.map((tool) => ({
   path: `/${tool.route}`,
@@ -25,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/SettingsView.vue'),
     meta: { titleKey: 'nav.settings' },
   },
+  {
+    path: '/privacy',
+    name: 'privacy',
+    component: () => import('@/views/PrivacyView.vue'),
+    meta: { titleKey: 'privacyPage.title' },
+  },
   ...toolRoutes,
   {
     path: '/:pathMatch(.*)*',
@@ -39,6 +47,16 @@ export const router = createRouter({
   scrollBehavior(_to, _from, savedPosition) {
     return savedPosition ?? { top: 0 }
   },
+})
+
+// The ad script has full access to whatever page it runs in. Once it has been
+// loaded (home / settings only), leaving for any other page is a full page load
+// so the script is discarded before a tool that handles user data opens.
+router.beforeEach((to) => {
+  if (shouldReloadForAds(isAdScriptLoaded(), to.name)) {
+    window.location.assign(to.fullPath)
+    return false
+  }
 })
 
 router.afterEach((to) => {
